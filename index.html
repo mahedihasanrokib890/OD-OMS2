@@ -762,6 +762,9 @@ function showModal(title, body, footer = '') {
   document.getElementById('modalBody').innerHTML = body;
   document.getElementById('modalFooter').innerHTML = footer;
   document.getElementById('modalOverlay').classList.add('active');
+  // Auto-close notification panel when modal opens
+  const notifPanel = document.getElementById('notifPanel');
+  if (notifPanel) notifPanel.classList.remove('active');
 }
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('active');
@@ -955,8 +958,9 @@ async function sendResetEmail() {
 
   try {
     console.log('🔑 Sending reset email to:', email);
+    const resetRedirectUrl = window.location.origin + window.location.pathname + '?reset=1';
     const result = await Promise.race([
-      sb.auth.resetPasswordForEmail(email),
+      sb.auth.resetPasswordForEmail(email, { redirectTo: resetRedirectUrl }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 20000))
     ]);
     console.log('🔑 Reset response:', result);
@@ -1107,13 +1111,14 @@ async function resendOtp(email, type) {
   setBtnLoading(btn, true);
   try {
     if (type === 'recovery') {
-      await sb.auth.resetPasswordForEmail(email);
+      const resetRedirectUrl = window.location.origin + window.location.pathname + '?reset=1';
+      await sb.auth.resetPasswordForEmail(email, { redirectTo: resetRedirectUrl });
     } else {
-      await sb.auth.resend({ type: 'signup', email });
+      await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin } });
     }
     showToast('✅ নতুন কোড পাঠানো হয়েছে!');
   } catch (e) {
-    showToast('❌ ' + e.message, 'error');
+    showToast('❌ ' + (e.message || 'পাঠাতে ব্যর্থ'), 'error');
   } finally {
     setBtnLoading(btn, false);
   }
@@ -2007,8 +2012,10 @@ async function refreshAttendanceList() {
     if (error) throw error;
 
     const myData = App.isAdmin ? (data||[]).filter(r => r.user_id === App.user.id) : (data||[]);
-    document.getElementById('aStatPresent').textContent = bnDigits(myData.length);
+    document.getElementById('aStatPresent').textContent = bnDigits(myData.filter(r => r.status === 'present' || r.status === 'late').length);
     document.getElementById('aStatLate').textContent    = bnDigits(myData.filter(r => r.late_minutes > 0).length);
+    const leaveEl = document.getElementById('aStatLeave');
+    if (leaveEl) leaveEl.textContent = bnDigits(myData.filter(r => r.status === 'leave' || r.status === 'absent').length);
     const hoursTotal = Math.round(myData.reduce((s, r) => s + (r.total_hours || 0), 0));
     document.getElementById('aStatHours').textContent = bnDigits(hoursTotal);
 
@@ -2201,6 +2208,10 @@ async function openMarkOthersAttendance() {
         <option value="IL">IL · দায়িত্বহীন ছুটি</option>
       </select>
     </div>
+    <div class="form-group" id="moaLateRow" style="display:none">
+      <label>লেট (মিনিট)</label>
+      <input class="form-input num" type="number" id="moaLateMin" min="1" max="480" placeholder="যেমন: ১৫" value="15">
+    </div>
     <div class="form-grid">
       <div class="form-group"><label>চেক-ইন (ঐচ্ছিক)</label><input class="form-input" type="time" id="moaIn"></div>
       <div class="form-group"><label>চেক-আউট (ঐচ্ছিক)</label><input class="form-input" type="time" id="moaOut"></div>
@@ -2216,6 +2227,8 @@ function toggleMoaCode() {
   const s = document.getElementById('moaStatus')?.value;
   const r = document.getElementById('moaCodeRow');
   if (r) r.style.display = (s === 'leave' || s === 'absent' || s === 'holiday') ? 'block' : 'none';
+  const lr = document.getElementById('moaLateRow');
+  if (lr) lr.style.display = (s === 'late') ? 'block' : 'none';
 }
 
 async function saveOthersAttendance() {
@@ -2227,12 +2240,13 @@ async function saveOthersAttendance() {
   const outTime = document.getElementById('moaOut').value;
   const notes   = document.getElementById('moaNotes').value.trim() || null;
 
+  const lateMin = parseInt(document.getElementById('moaLateMin')?.value) || 15;
   const payload = {
     user_id, date, status, notes,
     leave_code: (status==='leave'||status==='absent'||status==='holiday') ? code : null,
     check_in:  inTime  ? new Date(`${date}T${inTime}:00`).toISOString()  : null,
     check_out: outTime ? new Date(`${date}T${outTime}:00`).toISOString() : null,
-    late_minutes: status === 'late' ? 1 : 0,
+    late_minutes: status === 'late' ? lateMin : 0,
     updated_at: new Date().toISOString()
   };
   // total_hours
@@ -3886,14 +3900,24 @@ async function deleteType(id) {
   }
 
   // Listen for auth changes
-  sb.auth.onAuthStateChange((event) => {
+  sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
       App.user = null;
       document.getElementById('appContainer').classList.remove('active');
       document.getElementById('authScreen').style.display = 'flex';
     } else if (event === 'PASSWORD_RECOVERY') {
       // Supabase fires this when user clicks the reset link
-      openSetNewPassword();
+      // Make sure auth screen is visible and app is hidden
+      document.getElementById('appContainer').classList.remove('active');
+      document.getElementById('authScreen').style.display = 'flex';
+      setTimeout(() => openSetNewPassword(), 400);
+    } else if (event === 'SIGNED_IN' && session) {
+      // If user signed in and app is not showing, start app
+      // But not during password recovery flow
+      const urlParams = new URLSearchParams(window.location.search);
+      if (!urlParams.get('reset') && !document.getElementById('appContainer').classList.contains('active')) {
+        loadUserAndStart();
+      }
     }
   });
 })();
