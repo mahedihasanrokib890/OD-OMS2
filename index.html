@@ -947,28 +947,36 @@ async function sendResetEmail() {
   setBtnLoading(btn, true);
 
   try {
-    const { error } = await withTimeout(
+    console.log('🔑 Sending reset email to:', email);
+    const result = await Promise.race([
       sb.auth.resetPasswordForEmail(email),
-      15000
-    );
-    if (error) {
-      showToast('❌ ' + error.message, 'error');
+      new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 20000))
+    ]);
+    console.log('🔑 Reset response:', result);
+    if (result.error) {
+      console.error('🔑 Reset error:', result.error);
+      showToast('❌ ' + result.error.message, 'error');
       return;
     }
     closeModal();
-    // Show OTP input modal directly
-    showOtpModal({
+    showToast('✅ কোড পাঠানো হয়েছে — ইমেইল চেক করুন', 'success');
+    // Open OTP modal for code entry
+    setTimeout(() => showOtpModal({
       email,
       type: 'recovery',
       title: '🔑 পাসওয়ার্ড রিসেট কোড',
       subtitle: 'আপনার ইমেইলে পাঠানো ৬-অঙ্কের কোডটি লিখুন',
       onSuccess: async () => {
-        // Now user is authenticated via OTP — show new password modal
         openSetNewPassword();
       }
-    });
+    }), 300);
   } catch (e) {
-    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+    console.error('🔑 Reset exception:', e);
+    if (e.message === 'TIMEOUT') {
+      showToast('❌ Server response নেই — Supabase Site URL সেট আছে কি?', 'error');
+    } else {
+      showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+    }
   } finally {
     setBtnLoading(btn, false);
   }
