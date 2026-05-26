@@ -301,62 +301,51 @@
   .tab.active{color:var(--purple-700);border-bottom-color:var(--purple-700)}
   .tab .num{background:var(--purple-100);padding:2px 8px;border-radius:99px;font-size:11px;color:var(--purple-700)}
 
-  /* Profile */
-  .profile-banner{
-    height:200px;
-    background:
-      radial-gradient(ellipse at 20% 30%, rgba(244,114,182,.55) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 60%, rgba(139,92,246,.5) 0%, transparent 55%),
-      radial-gradient(ellipse at 50% 90%, rgba(233,30,99,.45) 0%, transparent 60%),
-      linear-gradient(135deg,#3b1c5c 0%,#5b2d8a 35%,#7c3aed 65%,#db2777 100%);
-    background-size:200% 200%;
-    animation:gradientShift 15s ease infinite;
+  /* Profile — compact card style (no banner) */
+  .profile-card{
+    background:linear-gradient(135deg,#ffffff 0%,#fdfaff 100%);
+    border:1px solid var(--border);
     border-radius:var(--r-2xl);
-    margin-bottom:80px;
-    position:relative;
-    overflow:visible;
-    box-shadow:0 20px 50px -12px rgba(91,45,138,.35), 0 0 0 1px rgba(255,255,255,.1) inset;
+    padding:24px 28px;
+    margin-bottom:18px;
+    display:flex;align-items:center;gap:24px;
+    position:relative;overflow:hidden;
+    box-shadow:var(--shadow-md);
   }
-  .profile-banner::before{
-    content:'';position:absolute;inset:0;border-radius:var(--r-2xl);
-    background:
-      radial-gradient(circle at 15% 20%, rgba(255,255,255,.18) 0%, transparent 25%),
-      radial-gradient(circle at 85% 80%, rgba(255,255,255,.12) 0%, transparent 30%);
-    pointer-events:none;
+  .profile-card::before{
+    content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;
+    background:radial-gradient(circle,rgba(168,85,247,.15) 0%,transparent 70%);
+    border-radius:50%;pointer-events:none;
   }
-  .profile-banner::after{
-    content:'';position:absolute;inset:0;border-radius:var(--r-2xl);
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(255,255,255,.18) 1.5px, transparent 1.5px),
-      radial-gradient(circle at 60% 70%, rgba(255,255,255,.12) 1.5px, transparent 1.5px),
-      radial-gradient(circle at 80% 30%, rgba(255,255,255,.08) 1px, transparent 1px);
-    background-size:50px 50px, 70px 70px, 30px 30px;
-    pointer-events:none;
-    overflow:hidden;
+  .profile-card::after{
+    content:'';position:absolute;bottom:-50px;left:-50px;width:200px;height:200px;
+    background:radial-gradient(circle,rgba(244,114,182,.12) 0%,transparent 70%);
+    border-radius:50%;pointer-events:none;
   }
-  /* decorative blur orbs floating */
-  .profile-banner-orb{position:absolute;border-radius:50%;filter:blur(40px);pointer-events:none;mix-blend-mode:screen}
-  .profile-banner-orb.o1{top:-30px;right:10%;width:160px;height:160px;background:radial-gradient(circle,rgba(244,114,182,.7) 0%,transparent 70%);animation:floatSlow 7s ease-in-out infinite}
-  .profile-banner-orb.o2{bottom:-30px;left:25%;width:140px;height:140px;background:radial-gradient(circle,rgba(168,85,247,.6) 0%,transparent 70%);animation:floatSlow 9s ease-in-out infinite 2s}
-
   .profile-photo{
-    position:absolute;bottom:-50px;left:36px;
-    width:120px;height:120px;border-radius:50%;
+    position:relative;flex-shrink:0;
+    width:96px;height:96px;border-radius:50%;
     background:linear-gradient(135deg,#8b5cf6 0%,#e91e63 100%);
-    border:5px solid white;
+    border:4px solid white;
     display:flex;align-items:center;justify-content:center;
-    color:white;font-family:var(--font-en);font-size:42px;font-weight:800;
-    box-shadow:0 16px 32px -8px rgba(91,45,138,.45),0 0 0 4px rgba(139,92,246,.15);
-    text-transform:uppercase;overflow:hidden;z-index:2;
+    color:white;font-family:var(--font-en);font-size:34px;font-weight:800;
+    box-shadow:0 12px 28px -6px rgba(91,45,138,.35),0 0 0 3px rgba(139,92,246,.12);
+    text-transform:uppercase;overflow:hidden;cursor:pointer;
+    transition:transform .25s;
   }
-  .profile-info{position:absolute;bottom:-70px;left:175px;right:24px;color:var(--gray-900)}
-  .profile-info h2{font-size:22px;font-weight:800;margin-bottom:2px;color:var(--gray-900)}
-  .profile-info p{font-size:13px;color:var(--gray-600);font-weight:600}
-  .badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .profile-photo:hover{transform:scale(1.04)}
+  .profile-photo .cam{
+    position:absolute;bottom:-2px;right:-2px;background:white;border-radius:50%;
+    width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    color:var(--purple-700);box-shadow:var(--shadow-md);border:2px solid var(--purple-100);font-size:12px;
+  }
+  .profile-info{flex:1;min-width:0;position:relative;z-index:1}
+  .profile-info h2{font-size:22px;font-weight:800;color:var(--gray-900);margin-bottom:2px}
+  .profile-info p{font-size:13px;color:var(--gray-600);font-weight:600;margin-bottom:8px}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
   @media (max-width:600px){
-    .profile-banner{margin-bottom:140px;height:160px}
-    .profile-photo{left:50%;transform:translateX(-50%);bottom:-60px;width:108px;height:108px;font-size:36px}
-    .profile-info{left:0;right:0;bottom:-138px;text-align:center;padding:0 16px}
+    .profile-card{flex-direction:column;text-align:center;padding:24px 18px}
+    .profile-info h2{font-size:18px}
     .badges{justify-content:center}
   }
   .verify-badge{display:inline-flex;align-items:center;gap:4px;background:var(--emerald-100);color:var(--emerald-500);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:800}
@@ -373,10 +362,12 @@
   .data-table tr:last-child td{border-bottom:none}
   .data-table tr:hover{filter:brightness(.97)}
   /* Late / On-time row indicators */
-  .data-table tr.row-late td   {background:rgba(239,68,68,.18) !important}
-  .data-table tr.row-late td:first-child{box-shadow:inset 4px 0 0 #ef4444}
-  .data-table tr.row-ok td     {background:rgba(16,185,129,.10) !important}
-  .data-table tr.row-ok td:first-child  {box-shadow:inset 4px 0 0 #10b981}
+  .data-table tr.row-late td   {background:rgba(239,68,68,.28) !important;color:var(--gray-800)}
+  .data-table tr.row-late td:first-child{box-shadow:inset 5px 0 0 #dc2626}
+  .data-table tr.row-ok td     {background:rgba(16,185,129,.16) !important;color:var(--gray-800)}
+  .data-table tr.row-ok td:first-child  {box-shadow:inset 5px 0 0 #059669}
+  .data-table tr.row-late:hover td{background:rgba(239,68,68,.36) !important}
+  .data-table tr.row-ok:hover td{background:rgba(16,185,129,.24) !important}
 
   .note-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border-left:4px solid var(--amber-500);padding:14px 18px;border-radius:var(--r-md);margin:16px 0;font-size:13px;color:var(--gray-800);font-weight:600}
   .empty-state{padding:60px 20px;text-align:center;color:var(--gray-500)}
@@ -1234,17 +1225,19 @@ async function renderDashboard() {
     `;
   }
 
-  // Employee dashboard — clock + my stats + my notices + my leaves + motivational
+  // Employee dashboard — NO clock here (attendance page only). Show personalized summary.
   const motivationalQuotes = [
     'প্রত্যেক দিন নতুন সুযোগ নিয়ে আসে।',
     'আজকের পরিশ্রম আগামীকালের সাফল্য।',
     'সময়ের কাজ সময়ে করুন।',
     'টিমওয়ার্কেই বড় সাফল্য আসে।',
-    'ছোট ছোট প্রচেষ্টাই বড় অর্জনে রূপ নেয়।'
+    'ছোট ছোট প্রচেষ্টাই বড় অর্জনে রূপ নেয়।',
+    'যেখানে দৃঢ় সংকল্প, সেখানেই সাফল্য।',
+    'প্রতিদিন একটু একটু করে এগোলেই বড় পরিবর্তন আসে।'
   ];
   const quote = motivationalQuotes[new Date().getDate() % motivationalQuotes.length];
   const ot = App.myOfficeTime;
-  const officeTimeText = ot ? `${formatBnTime('2000-01-01T'+ot.check_in_time)} - ${formatBnTime('2000-01-01T'+ot.check_out_time)}` : '—';
+  const officeTimeText = ot ? `${ot.check_in_time.slice(0,5)} - ${ot.check_out_time.slice(0,5)}` : '—';
 
   return `
     <div class="welcome-banner">
@@ -1252,32 +1245,35 @@ async function renderDashboard() {
       <p>${dayName(today())}, ${formatBnDate(today())} · ${escapeHtml(quote)}</p>
     </div>
 
-    <div class="clock-widget">
-      <div class="clock-display"><span id="liveClock">--:--:--</span> <span style="font-size:18px;color:var(--gray-500);font-weight:700" id="liveAmPm">AM</span></div>
-      <div class="clock-date">${dayName(today())} · ${formatBnDate(today())} · অফিস টাইম <span class="num">${officeTimeText}</span></div>
-      <div class="clock-actions">
-        <button class="clock-btn in"   onclick="markAttendance('check_in')"  ><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু</small></button>
-        <button class="clock-btn lout" onclick="markAttendance('lunch_out')" ><i class="fa-solid fa-utensils"></i><span>লাঞ্চ আউট</span><small>খেতে যাচ্ছেন</small></button>
-        <button class="clock-btn lin"  onclick="markAttendance('lunch_in')"  ><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small>ফিরে এসেছেন</small></button>
-        <button class="clock-btn pout" onclick="markAttendance('personal_out')"><i class="fa-solid fa-walking"></i><span>ব্রেক শুরু</span><small>পার্সোনাল</small></button>
-        <button class="clock-btn pin"  onclick="markAttendance('personal_in')"><i class="fa-solid fa-arrow-rotate-left"></i><span>ব্রেক শেষ</span><small>ফিরে এলেন</small></button>
-        <button class="clock-btn out"  onclick="markAttendance('check_out')" ><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ</small></button>
-      </div>
-      <div class="clock-status" id="todayStatus" style="display:none"></div>
-    </div>
-
     <div class="stats-grid">
-      <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">${bnDigits(stats.myMonthPresent||0)}</h3><p>এই মাসে উপস্থিত</p></div>
-      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">${bnDigits(stats.myMonthLate||0)}</h3><p>লেট</p></div>
+      <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">${bnDigits(stats.myMonthPresent||0)}</h3><p>এই মাসে উপস্থিত</p><div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত দেখুন</div></div>
+      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">${bnDigits(stats.myMonthLate||0)}</h3><p>লেট হয়েছেন</p></div>
       <div class="stat-card" onclick="navigate('leaves')" style="cursor:pointer"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">${bnDigits(stats.myMonthLeave||0)}</h3><p>ছুটি (এ মাস)</p></div>
       <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">${bnDigits(stats.myMonthHours||0)}</h3><p>কাজের ঘন্টা</p></div>
     </div>
 
     <div class="quick-actions">
+      <div class="quick-action" onclick="navigate('attendance')"><div class="qa-icon emerald"><i class="fa-solid fa-clock"></i></div><span>এটেন্ডেন্স দিন</span></div>
       <div class="quick-action" onclick="openLeaveModal()"><div class="qa-icon pink"><i class="fa-solid fa-calendar-plus"></i></div><span>ছুটির আবেদন</span></div>
-      <div class="quick-action" onclick="navigate('attendance')"><div class="qa-icon"><i class="fa-solid fa-history"></i></div><span>আমার এটেন্ডেন্স</span></div>
-      <div class="quick-action" onclick="navigate('notices')"><div class="qa-icon emerald"><i class="fa-solid fa-bullhorn"></i></div><span>নোটিশ দেখুন</span></div>
+      <div class="quick-action" onclick="navigate('notices')"><div class="qa-icon"><i class="fa-solid fa-bullhorn"></i></div><span>নোটিশ দেখুন</span></div>
       <div class="quick-action" onclick="navigate('profile')"><div class="qa-icon amber"><i class="fa-solid fa-user-pen"></i></div><span>প্রোফাইল আপডেট</span></div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-calendar-day"></i> আজকের তথ্য</span></div>
+        <div class="info-row"><div class="info-label">তারিখ</div><div class="info-value">${formatBnDate(today())}</div></div>
+        <div class="info-row"><div class="info-label">দিন</div><div class="info-value">${dayName(today())}</div></div>
+        <div class="info-row"><div class="info-label">অফিস টাইম</div><div class="info-value num">${officeTimeText}</div></div>
+        ${ot ? `<div class="info-row"><div class="info-label">গ্রেস টাইম</div><div class="info-value num">${bnDigits(ot.grace_minutes||0)} মিনিট</div></div>` : ''}
+        <div class="info-row" id="todayCheckInfo"><div class="info-label">আজকের স্ট্যাটাস</div><div class="info-value" style="color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
+        <div style="margin-top:14px"><button class="btn btn-primary btn-block" onclick="navigate('attendance')"><i class="fa-solid fa-clock"></i> এটেন্ডেন্স পেজে যান</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-umbrella-beach"></i> ছুটির ব্যালেন্স</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
+        <div id="dashLeaveBalance"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
     </div>
 
     <div class="card-grid">
@@ -1286,7 +1282,7 @@ async function renderDashboard() {
         <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
       <div class="card">
-        <div class="card-title"><span><i class="fa-solid fa-calendar-check"></i> আমার সাম্প্রতিক ছুটি</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
+        <div class="card-title"><span><i class="fa-solid fa-list-check"></i> আমার সাম্প্রতিক ছুটি</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
         <div id="dashMyLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
     </div>
@@ -1340,7 +1336,8 @@ async function loadDashboardLists() {
       }
     } catch (e) { console.warn(e); }
   } else {
-    // Employee: show my recent leaves
+    // Employee dashboard extras
+    // 1. My recent leaves
     try {
       const { data: leaves } = await sb.from('leaves').select('*').eq('user_id', App.user.id).order('created_at', { ascending: false }).limit(3);
       const el = document.getElementById('dashMyLeaves');
@@ -1351,10 +1348,62 @@ async function loadDashboardLists() {
           el.innerHTML = leaves.map(l => `
             <div class="leave-card ${l.status}">
               <span class="leave-status ${l.status}">${statusIcon(l.status)} ${statusLabel(l.status)}</span>
-              <h4>${leaveTypeLabel(l.leave_type)}</h4>
+              <h4>${leaveTypeLabel(l.leave_type, l.leave_code)}</h4>
               <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</span> <span class="num">(${bnDigits(l.total_days)} দিন)</span></div>
             </div>
           `).join('');
+        }
+      }
+    } catch (e) { console.warn(e); }
+
+    // 2. Leave balance (per type)
+    try {
+      const { data: policies } = await sb.from('leave_policies').select('*').eq('is_active', true).order('display_order');
+      const year = new Date().getFullYear();
+      const { data: myUsed } = await sb.from('leaves').select('leave_code, total_days').eq('user_id', App.user.id).eq('status','approved').gte('start_date', year+'-01-01');
+      const usedMap = {};
+      (myUsed||[]).forEach(l => { usedMap[l.leave_code] = (usedMap[l.leave_code]||0) + (l.total_days||0); });
+      const el = document.getElementById('dashLeaveBalance');
+      if (el) {
+        if (!policies || policies.length === 0) {
+          el.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-info-circle"></i><h3>v3 SQL চালান</h3></div>`;
+        } else {
+          el.innerHTML = policies.filter(p => p.yearly_limit).map(p => {
+            const used = usedMap[p.code] || 0;
+            const total = p.yearly_limit;
+            const remaining = Math.max(0, total - used);
+            const pct = Math.min(100, (used/total)*100);
+            const barColor = pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
+            return `
+              <div style="margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+                  <span style="font-weight:700">${escapeHtml(p.name_bn)} <small style="color:var(--gray-400);font-weight:500">(${p.code})</small></span>
+                  <span class="num" style="font-weight:800">${bnDigits(remaining)}/${bnDigits(total)} দিন</span>
+                </div>
+                <div style="height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden">
+                  <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .4s"></div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (e) { console.warn(e); }
+
+    // 3. Today check-in info
+    try {
+      const { data: today_att } = await sb.from('attendance').select('*').eq('user_id', App.user.id).eq('date', today()).maybeSingle();
+      const row = document.getElementById('todayCheckInfo');
+      if (row) {
+        const valEl = row.querySelector('.info-value');
+        if (today_att) {
+          const isLate = today_att.late_minutes > 0;
+          const lateText = isLate ? ` <span style="color:var(--red-500);font-weight:800">⚠️ ${bnDigits(today_att.late_minutes)} মিনিট লেট</span>` : '';
+          valEl.innerHTML = today_att.check_in
+            ? `<i class="fa-solid fa-circle-check" style="color:var(--emerald-500)"></i> ${formatBnTimeSec(today_att.check_in)}${lateText}`
+            : '<span style="color:var(--gray-400)">এখনো চেক-ইন হয়নি</span>';
+        } else {
+          valEl.innerHTML = '<span style="color:var(--gray-400)">এখনো চেক-ইন হয়নি</span>';
         }
       }
     } catch (e) { console.warn(e); }
@@ -2268,12 +2317,10 @@ async function renderProfile() {
   } catch {}
 
   return `
-    <div class="profile-banner">
-      <div class="profile-banner-orb o1"></div>
-      <div class="profile-banner-orb o2"></div>
-      <div class="profile-photo" id="profilePhoto" style="cursor:pointer" onclick="openPhotoUpdate()" title="ছবি পরিবর্তন">
+    <div class="profile-card">
+      <div class="profile-photo" id="profilePhoto" onclick="openPhotoUpdate()" title="ছবি পরিবর্তন">
         ${photoUrl ? `<img src="${photoUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : i}
-        <div style="position:absolute;bottom:4px;right:4px;background:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--purple-700);box-shadow:var(--shadow-md);border:2px solid var(--purple-100);font-size:13px"><i class="fa-solid fa-camera"></i></div>
+        <div class="cam"><i class="fa-solid fa-camera"></i></div>
       </div>
       <div class="profile-info">
         <h2>${escapeHtml(p.full_name || '—')}</h2>
