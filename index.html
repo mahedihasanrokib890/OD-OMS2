@@ -929,20 +929,22 @@ async function resendVerification(email, btn) {
 
 function openForgotPassword() {
   const prefilled = document.getElementById('loginEmail').value.trim();
-  // Show toast IMMEDIATELY so user knows the click worked
   showToast('পাসওয়ার্ড রিসেট ফর্ম খুলছে...', 'info');
   setTimeout(() => {
     showModal(
       '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড রিসেট',
       `<div style="padding:8px 0">
-        <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">আপনার ইমেইল লিখুন। আমরা ৬-অঙ্কের রিসেট কোড পাঠাব।</p>
+        <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">আপনার ইমেইল লিখুন। আমরা পাসওয়ার্ড রিসেট লিংক পাঠাবো।</p>
         <div class="form-group">
           <label><i class="fa-solid fa-envelope"></i> ইমেইল</label>
           <input class="form-input" type="email" id="forgotEmail" placeholder="apnar@example.com" value="${prefilled}">
         </div>
+        <div class="note-banner" style="margin:8px 0 0;font-size:12px">
+          ১️⃣ রিসেট লিংক যাবে ইমেইলে &nbsp;|&nbsp; ২️⃣ Spam/Junk ফোল্ডার চেক করুন
+        </div>
       </div>`,
       `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-       <button class="btn btn-primary" id="forgotBtn" onclick="sendResetEmail()"><i class="fa-solid fa-paper-plane"></i> কোড পাঠান</button>`
+       <button class="btn btn-primary" id="forgotBtn" onclick="sendResetEmail()"><i class="fa-solid fa-paper-plane"></i> রিসেট লিংক পাঠান</button>`
     );
     setTimeout(() => document.getElementById('forgotEmail')?.focus(), 200);
   }, 100);
@@ -957,43 +959,73 @@ async function sendResetEmail() {
   setBtnLoading(btn, true);
 
   try {
-    console.log('🔑 Sending reset email to:', email);
-    const resetRedirectUrl = window.location.origin + window.location.pathname + '?reset=1';
-    const result = await Promise.race([
-      sb.auth.resetPasswordForEmail(email, { redirectTo: resetRedirectUrl }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 20000))
-    ]);
-    console.log('🔑 Reset response:', result);
-    if (result.error) {
-      console.error('🔑 Reset error:', result.error);
-      const msg = result.error.message;
-      let friendly = msg;
-      if (msg.toLowerCase().includes('sending recovery') || msg.toLowerCase().includes('email')) {
-        friendly = 'ইমেইল পাঠাতে সমস্যা — এই ইমেইল কি registered? অথবা Brevo SMTP setup চেক করুন';
-      } else if (msg.toLowerCase().includes('rate')) {
-        friendly = 'বেশি বার চেষ্টা করা হয়েছে — ১ মিনিট পর আবার চেষ্টা করুন';
-      } else if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('user')) {
-        friendly = 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই — সঠিক ইমেইল লিখুন';
+    const resetRedirectUrl = window.location.origin + window.location.pathname;
+    const { error } = await withTimeout(
+      sb.auth.resetPasswordForEmail(email, {
+        redirectTo: resetRedirectUrl
+      }), 20000
+    );
+
+    if (error) {
+      const msg = error.message || '';
+      console.error('🔑 Reset error:', msg);
+
+      // Rate limit
+      if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('too many')) {
+        showToast('⚠️ বেশি বার চেষ্টা হয়েছে — ৫ মিনিট পর আবার চেষ্টা করুন', 'warning');
+        return;
       }
-      showToast('❌ ' + friendly, 'error');
+
+      // SMTP / email sending error — show helpful modal
+      closeModal();
+      showModal(
+        '<i class="fa-solid fa-envelope-circle-check" style="color:var(--amber-500)"></i> ইমেইল পাঠাতে সমস্যা',
+        `<div style="padding:8px 0">
+          <div style="text-align:center;font-size:48px;margin-bottom:12px">📧</div>
+          <p style="font-size:14px;color:var(--gray-700);margin-bottom:16px;text-align:center">
+            ইমেইল সার্ভার এই মুহূর্তে রিসপন্স করছে না। নিচের বিকল্প ব্যবহার করুন:
+          </p>
+          <div style="background:var(--purple-50);border-radius:12px;padding:16px;margin-bottom:12px">
+            <div style="font-weight:800;color:var(--purple-700);margin-bottom:8px">১️⃣ পরে আবার চেষ্টা করুন</div>
+            <div style="font-size:13px;color:var(--gray-600)">ইমেইল সার্ভার সাময়িক সমস্যা থাকলে ৫-১০ মিনিট পর আবার চেষ্টা করুন।</div>
+          </div>
+          <div style="background:var(--emerald-100);border-radius:12px;padding:16px;margin-bottom:12px">
+            <div style="font-weight:800;color:var(--emerald-500);margin-bottom:8px">২️⃣ অ্যাডমিনকে যোগাযোগ করুন</div>
+            <div style="font-size:13px;color:var(--gray-600)">অ্যাডমিন Supabase Dashboard থেকে সরাসরি পাসওয়ার্ড দিয়ে দিতে পারবেন।</div>
+          </div>
+          <div style="background:var(--amber-100);border-radius:12px;padding:14px">
+            <div style="font-weight:800;color:var(--amber-500);margin-bottom:6px">🔧 তত্ত্বগত তথ্য (অ্যাডমিন এর জন্য)</div>
+            <div style="font-size:12px;color:var(--gray-700);font-family:monospace">Error: ${escapeHtml(msg)}</div>
+          </div>
+        </div>`,
+        `<button class="btn btn-outline" onclick="closeModal()">ঠিক আছে</button>
+         <button class="btn btn-primary" onclick="closeModal();openForgotPassword()"><i class="fa-solid fa-rotate-right"></i> আবার চেষ্টা</button>`
+      );
       return;
     }
+
+    // Success
     closeModal();
-    showToast('✅ কোড পাঠানো হয়েছে — ইমেইল চেক করুন', 'success');
-    // Open OTP modal for code entry
-    setTimeout(() => showOtpModal({
-      email,
-      type: 'recovery',
-      title: '🔑 পাসওয়ার্ড রিসেট কোড',
-      subtitle: 'আপনার ইমেইলে পাঠানো ৬-অঙ্কের কোডটি লিখুন',
-      onSuccess: async () => {
-        openSetNewPassword();
-      }
-    }), 300);
+    showModal(
+      '<i class="fa-solid fa-envelope-circle-check" style="color:var(--emerald-500)"></i> ইমেইল পাঠানো হয়েছে',
+      `<div style="text-align:center;padding:16px 0">
+        <div style="font-size:64px;margin-bottom:16px">📧</div>
+        <p style="font-size:15px;color:var(--gray-700);margin-bottom:8px">
+          <b style="color:var(--purple-700)">${escapeHtml(email)}</b> এ একটি পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে।
+        </p>
+        <div class="note-banner" style="text-align:left;margin:12px 0">
+          📥 ইমেইল ইনবক্স খুলুন<br>
+          📁 Spam/Junk ফোল্ডার চেক করুন<br>
+          🔗 "পাসওয়ার্ড রিসেট" লিংকে ক্লিক করুন<br>
+          ⏱️ লিংকটি ১ ঘন্টা পর্যন্ত সক্রিয় থাকবে
+        </div>
+      </div>`,
+      `<button class="btn btn-primary btn-block" onclick="closeModal()">ঠিক আছে, ইমেইল চেক করব</button>`
+    );
   } catch (e) {
     console.error('🔑 Reset exception:', e);
-    if (e.message === 'TIMEOUT') {
-      showToast('❌ Server response নেই — Supabase Site URL সেট আছে কি?', 'error');
+    if (e.message === 'নেটওয়ার্ক টাইমআউট' || e.message === 'TIMEOUT') {
+      showToast('❌ সার্ভার রিসপন্স নেই — ইন্টারনেট সংযোগ চেক করুন', 'error');
     } else {
       showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
     }
