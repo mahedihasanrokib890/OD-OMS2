@@ -243,17 +243,20 @@
   .clock-widget::before{content:'';position:absolute;top:-100px;right:-100px;width:300px;height:300px;background:radial-gradient(circle,rgba(139,92,246,.08) 0%,transparent 70%)}
   .clock-display{font-family:var(--font-en);font-size:48px;font-weight:900;background:linear-gradient(135deg,#5b2d8a 0%,#e91e63 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1.5px;line-height:1;margin-bottom:6px;font-feature-settings:'tnum'}
   .clock-date{font-size:13px;color:var(--gray-600);font-weight:600;margin-bottom:18px}
-  .clock-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:480px;margin:0 auto}
-  @media (min-width:600px){.clock-actions{grid-template-columns:repeat(4,1fr);max-width:600px}}
-  .clock-btn{padding:12px 8px;border-radius:var(--r-md);border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;color:white;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .3s;box-shadow:var(--shadow-sm);min-height:68px;justify-content:center}
+  .clock-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:560px;margin:0 auto}
+  @media (min-width:600px){.clock-actions{grid-template-columns:repeat(3,1fr);max-width:680px}}
+  @media (min-width:900px){.clock-actions{grid-template-columns:repeat(6,1fr);max-width:none}}
+  .clock-btn{padding:10px 6px;border-radius:var(--r-md);border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;color:white;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .3s;box-shadow:var(--shadow-sm);min-height:62px;justify-content:center}
   .clock-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:var(--shadow-md)}
   .clock-btn:disabled{opacity:.4;cursor:not-allowed}
-  .clock-btn i{font-size:16px}
-  .clock-btn small{opacity:.85;font-weight:500;font-size:10px;line-height:1}
-  .clock-btn.in{background:linear-gradient(135deg,#10b981,#059669)}
-  .clock-btn.out{background:linear-gradient(135deg,#ef4444,#dc2626)}
-  .clock-btn.lout{background:linear-gradient(135deg,#f59e0b,#d97706)}
-  .clock-btn.lin{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+  .clock-btn i{font-size:14px}
+  .clock-btn small{opacity:.85;font-weight:500;font-size:9px;line-height:1}
+  .clock-btn.in   {background:linear-gradient(135deg,#10b981,#059669)}
+  .clock-btn.out  {background:linear-gradient(135deg,#ef4444,#dc2626)}
+  .clock-btn.lout {background:linear-gradient(135deg,#f59e0b,#d97706)}
+  .clock-btn.lin  {background:linear-gradient(135deg,#3b82f6,#2563eb)}
+  .clock-btn.pout {background:linear-gradient(135deg,#a78bfa,#7c3aed)}
+  .clock-btn.pin  {background:linear-gradient(135deg,#f472b6,#db2777)}
   .clock-status{margin-top:14px;padding:10px 14px;border-radius:var(--r-md);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;line-height:1.4}
   .clock-status.ok    {background:var(--emerald-100);color:var(--emerald-500)}
   .clock-status.late  {background:var(--red-100);  color:var(--red-500)}
@@ -636,6 +639,14 @@ const formatBnTime = (d) => {
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
   return `${bnDigits(h)}:${bnDigits(String(m).padStart(2,'0'))} ${ampm}`;
+};
+// With seconds — for attendance precision
+const formatBnTimeSec = (d) => {
+  const dt = new Date(d);
+  let h = dt.getHours(); const m = dt.getMinutes(); const s = dt.getSeconds();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${bnDigits(h)}:${bnDigits(String(m).padStart(2,'0'))}:${bnDigits(String(s).padStart(2,'0'))} ${ampm}`;
 };
 const dayName = (d) => ['রবিবার','সোমবার','মঙ্গলবার','বুধবার','বৃহস্পতিবার','শুক্রবার','শনিবার'][new Date(d).getDay()];
 
@@ -1198,9 +1209,11 @@ async function renderDashboard() {
       <div class="clock-date">${dayName(today())} · ${formatBnDate(today())} · অফিস টাইম <span class="num">${officeTimeText}</span></div>
       <div class="clock-actions">
         <button class="clock-btn in"   onclick="markAttendance('check_in')"  ><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু</small></button>
-        <button class="clock-btn out"  onclick="markAttendance('check_out')" ><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ</small></button>
         <button class="clock-btn lout" onclick="markAttendance('lunch_out')" ><i class="fa-solid fa-utensils"></i><span>লাঞ্চ আউট</span><small>খেতে যাচ্ছেন</small></button>
         <button class="clock-btn lin"  onclick="markAttendance('lunch_in')"  ><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small>ফিরে এসেছেন</small></button>
+        <button class="clock-btn pout" onclick="markAttendance('personal_out')"><i class="fa-solid fa-walking"></i><span>ব্রেক শুরু</span><small>পার্সোনাল</small></button>
+        <button class="clock-btn pin"  onclick="markAttendance('personal_in')"><i class="fa-solid fa-arrow-rotate-left"></i><span>ব্রেক শেষ</span><small>ফিরে এলেন</small></button>
+        <button class="clock-btn out"  onclick="markAttendance('check_out')" ><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ</small></button>
       </div>
       <div class="clock-status" id="todayStatus" style="display:none"></div>
     </div>
@@ -1372,43 +1385,57 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════
 async function markAttendance(type) {
   if (!App.user) return showToast('লগইন করুন', 'error');
-  const labels = { check_in: 'অফিস ইন', check_out: 'অফিস আউট', lunch_out: 'লাঞ্চ আউট', lunch_in: 'লাঞ্চ ইন' };
-  const fields = { check_in: 'check_in', check_out: 'check_out', lunch_out: 'lunch_out', lunch_in: 'lunch_in' };
+  const labels = {
+    check_in:    'অফিস ইন',
+    check_out:   'অফিস আউট',
+    lunch_out:   'লাঞ্চ আউট',
+    lunch_in:    'লাঞ্চ ইন',
+    personal_out:'পার্সোনাল ব্রেক শুরু',
+    personal_in: 'পার্সোনাল ব্রেক শেষ'
+  };
+  const fields = {
+    check_in:    'check_in',
+    check_out:   'check_out',
+    lunch_out:   'lunch_out',
+    lunch_in:    'lunch_in',
+    personal_out:'personal_out',
+    personal_in: 'personal_in'
+  };
   const now = new Date().toISOString();
 
   try {
-    // Get today's record
     const { data: existing } = await sb.from('attendance').select('*').eq('user_id', App.user.id).eq('date', today()).maybeSingle();
 
     let payload, lateMinutes = 0, status = 'present';
 
-    // Calculate late if it's check_in
     if (type === 'check_in') {
       const officeTime = await getMyOfficeTime();
       if (officeTime) {
         const [oh, om] = officeTime.check_in_time.split(':').map(Number);
         const officeStart = new Date(now); officeStart.setHours(oh, om + (officeTime.grace_minutes || 0), 0, 0);
         const diff = new Date(now) - officeStart;
-        if (diff > 0) {
-          lateMinutes = Math.floor(diff / 60000);
-          status = 'late';
-        }
+        if (diff > 0) { lateMinutes = Math.floor(diff / 60000); status = 'late'; }
       }
     }
 
     if (existing) {
       payload = { ...existing, [fields[type]]: now, updated_at: now };
       if (type === 'check_in') { payload.late_minutes = lateMinutes; payload.status = status; }
-      // calc total hours if check_out
+      // Calc total hours when check_out
       if (type === 'check_out' && existing.check_in) {
         let ms = new Date(now) - new Date(existing.check_in);
         if (existing.lunch_out && existing.lunch_in) ms -= (new Date(existing.lunch_in) - new Date(existing.lunch_out));
+        if (existing.personal_out && existing.personal_in) ms -= (new Date(existing.personal_in) - new Date(existing.personal_out));
         payload.total_hours = Math.round((ms / 3600000) * 100) / 100;
+      }
+      // Calc personal_minutes when personal_in is marked
+      if (type === 'personal_in' && existing.personal_out) {
+        const mins = Math.floor((new Date(now) - new Date(existing.personal_out)) / 60000);
+        payload.personal_minutes = (existing.personal_minutes || 0) + mins;
       }
       const { error } = await sb.from('attendance').update(payload).eq('id', existing.id);
       if (error) throw error;
     } else {
-      // First entry of the day
       payload = {
         user_id: App.user.id, date: today(), [fields[type]]: now,
         status: type === 'check_in' ? status : 'present',
@@ -1420,11 +1447,12 @@ async function markAttendance(type) {
 
     let extra = '';
     if (type === 'check_in' && lateMinutes > 0) extra = ` (${bnDigits(lateMinutes)} মিনিট লেট)`;
-    showToast(`✅ ${labels[type]} সফল! · ${formatBnTime(now)}${extra}`);
+    showToast(`✅ ${labels[type]} সফল! · ${formatBnTimeSec(now)}${extra}`);
     refreshTodayClockStatus();
     if (App.currentPage === 'attendance') refreshAttendanceList();
+    if (App.currentPage === 'dashboard') loadDashboardLists();
   } catch (e) {
-    showToast('❌ ' + (e.message || 'সেভ ব্যর্থ — SQL চালানো হয়েছে কি?'), 'error');
+    showToast('❌ ' + (e.message || 'সেভ ব্যর্থ'), 'error');
     console.error(e);
   }
 }
@@ -1467,16 +1495,16 @@ async function refreshAttendanceList() {
   const start = month + '-01';
   const lastDay = new Date(parseInt(month.slice(0,4)), parseInt(month.slice(5,7)), 0).getDate();
   const end = `${month}-${String(lastDay).padStart(2,'0')}`;
+  const colCount = App.isAdmin ? 11 : 9;
 
   try {
-    let q = sb.from('attendance').select('*, profiles!user_id(full_name)').gte('date', start).lte('date', end).order('date', { ascending: false });
+    let q = sb.from('attendance').select('*, profiles!user_id(full_name, photo_url)').gte('date', start).lte('date', end).order('date', { ascending: false });
     if (!App.isAdmin) q = q.eq('user_id', App.user.id);
     if (statusFilter) q = q.eq('status', statusFilter);
 
     const { data, error } = await q;
     if (error) throw error;
 
-    // Update stats from filtered data
     const myData = App.isAdmin ? (data||[]).filter(r => r.user_id === App.user.id) : (data||[]);
     document.getElementById('aStatPresent').textContent = bnDigits(myData.length);
     document.getElementById('aStatLate').textContent    = bnDigits(myData.filter(r => r.late_minutes > 0).length);
@@ -1484,25 +1512,126 @@ async function refreshAttendanceList() {
     document.getElementById('aStatHours').textContent = bnDigits(hoursTotal);
 
     if (!data || data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="${App.isAdmin?7:6}" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-database" style="font-size:32px;margin-bottom:8px;display:block"></i> এই মাসে কোনো রেকর্ড নেই</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-database" style="font-size:32px;margin-bottom:8px;display:block"></i> এই মাসে কোনো রেকর্ড নেই</td></tr>`;
       return;
     }
-    tbody.innerHTML = data.map(r => `
-      <tr>
-        ${App.isAdmin ? `<td><b>${escapeHtml(r.profiles?.full_name||'—')}</b></td>` : ''}
-        <td>${formatBnDate(r.date)}</td>
-        <td class="num">${r.check_in ? formatBnTime(r.check_in) : '—'}</td>
-        <td class="num">${r.check_out ? formatBnTime(r.check_out) : '—'}</td>
-        <td class="num" style="font-size:12px">${r.lunch_out && r.lunch_in ? formatBnTime(r.lunch_out)+' - '+formatBnTime(r.lunch_in) : '—'}</td>
-        <td class="num">${r.total_hours ? bnDigits(r.total_hours) + ' ঘ' : '—'}</td>
-        <td>
-          ${r.late_minutes > 0
-            ? `<span class="leave-status pending">লেট ${bnDigits(r.late_minutes)}মি</span>`
-            : `<span class="leave-status approved">নিয়মিত</span>`}
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = data.map(r => {
+      const isLate = r.late_minutes > 0;
+      const rowStyle = isLate
+        ? 'background:rgba(239,68,68,.06);border-left:4px solid #ef4444'
+        : 'background:rgba(16,185,129,.04);border-left:4px solid #10b981';
+      const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
+      const empCell = App.isAdmin ? `
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:30px;height:30px;border-radius:8px;background:var(--gradient-brand);color:white;font-weight:800;font-family:var(--font-en);font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${r.profiles?.photo_url?`<img src="${r.profiles.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`:initial(r.profiles?.full_name)}</div>
+          <span style="font-weight:700">${escapeHtml(r.profiles?.full_name||'—')}</span>
+        </div></td>` : '';
+      const actionCell = App.isAdmin ? `<td><button class="icon-btn" onclick="editAttendance(${r.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button></td>` : '';
+      return `
+        <tr style="${rowStyle}">
+          ${empCell}
+          <td>${formatBnDate(r.date)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.check_in)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.lunch_out)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.lunch_in)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.personal_out)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.personal_in)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.check_out)}</td>
+          <td class="num" style="font-weight:800">${r.total_hours ? bnDigits(r.total_hours) + ' ঘ' : '—'}</td>
+          <td>${isLate
+            ? `<span class="leave-status pending">⚠️ লেট ${bnDigits(r.late_minutes)}মি</span>`
+            : `<span class="leave-status approved">✓ নিয়মিত</span>`}</td>
+          ${actionCell}
+        </tr>
+      `;
+    }).join('');
   } catch (e) { console.warn(e); }
+}
+
+// Admin: edit any attendance row
+async function editAttendance(id) {
+  if (!App.isAdmin) return;
+  const { data } = await sb.from('attendance').select('*, profiles!user_id(full_name)').eq('id', id).maybeSingle();
+  if (!data) return;
+  const toLocalInput = (iso) => iso ? new Date(iso).toISOString().slice(0,16) : '';
+  showModal(
+    `<i class="fa-solid fa-pen" style="color:var(--purple-600)"></i> এটেন্ডেন্স এডিট — ${escapeHtml(data.profiles?.full_name||'')}`,
+    `
+    <div class="form-group"><label>তারিখ</label><input class="form-input" type="date" id="atDate" value="${data.date}"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>চেক-ইন</label><input class="form-input" type="datetime-local" id="atIn" value="${toLocalInput(data.check_in)}"></div>
+      <div class="form-group"><label>চেক-আউট</label><input class="form-input" type="datetime-local" id="atOut" value="${toLocalInput(data.check_out)}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>লাঞ্চ আউট</label><input class="form-input" type="datetime-local" id="atLout" value="${toLocalInput(data.lunch_out)}"></div>
+      <div class="form-group"><label>লাঞ্চ ইন</label><input class="form-input" type="datetime-local" id="atLin" value="${toLocalInput(data.lunch_in)}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>ব্রেক আউট</label><input class="form-input" type="datetime-local" id="atPout" value="${toLocalInput(data.personal_out)}"></div>
+      <div class="form-group"><label>ব্রেক ইন</label><input class="form-input" type="datetime-local" id="atPin" value="${toLocalInput(data.personal_in)}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>লেট (মিনিট)</label><input class="form-input num" type="number" id="atLate" value="${data.late_minutes||0}" min="0"></div>
+      <div class="form-group"><label>স্ট্যাটাস</label>
+        <select class="form-select" id="atStatus">
+          <option value="present" ${data.status==='present'?'selected':''}>নিয়মিত</option>
+          <option value="late"    ${data.status==='late'?'selected':''}>লেট</option>
+          <option value="absent"  ${data.status==='absent'?'selected':''}>অনুপস্থিত</option>
+          <option value="leave"   ${data.status==='leave'?'selected':''}>ছুটি</option>
+          <option value="holiday" ${data.status==='holiday'?'selected':''}>সরকারি ছুটি</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>মন্তব্য</label><textarea class="form-textarea" id="atNotes" style="min-height:60px">${escapeHtml(data.notes||'')}</textarea></div>
+    `,
+    `<button class="btn btn-danger btn-sm" onclick="deleteAttendance(${id})"><i class="fa-solid fa-trash"></i> ডিলিট</button>
+     <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="atSaveBtn" onclick="saveAttendance(${id})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
+  );
+}
+
+async function saveAttendance(id) {
+  const fromLocal = (v) => v ? new Date(v).toISOString() : null;
+  const updates = {
+    date:         document.getElementById('atDate').value,
+    check_in:     fromLocal(document.getElementById('atIn').value),
+    check_out:    fromLocal(document.getElementById('atOut').value),
+    lunch_out:    fromLocal(document.getElementById('atLout').value),
+    lunch_in:     fromLocal(document.getElementById('atLin').value),
+    personal_out: fromLocal(document.getElementById('atPout').value),
+    personal_in:  fromLocal(document.getElementById('atPin').value),
+    late_minutes: parseInt(document.getElementById('atLate').value) || 0,
+    status:       document.getElementById('atStatus').value,
+    notes:        document.getElementById('atNotes').value.trim() || null,
+    updated_at:   new Date().toISOString()
+  };
+  // Recompute total_hours if both in/out exist
+  if (updates.check_in && updates.check_out) {
+    let ms = new Date(updates.check_out) - new Date(updates.check_in);
+    if (updates.lunch_out && updates.lunch_in)     ms -= (new Date(updates.lunch_in) - new Date(updates.lunch_out));
+    if (updates.personal_out && updates.personal_in) ms -= (new Date(updates.personal_in) - new Date(updates.personal_out));
+    updates.total_hours = Math.round((ms / 3600000) * 100) / 100;
+  }
+  const btn = document.getElementById('atSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    const { error } = await sb.from('attendance').update(updates).eq('id', id);
+    if (error) throw error;
+    showToast('✅ এটেন্ডেন্স আপডেট হয়েছে');
+    closeModal();
+    refreshAttendanceList();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally { setBtnLoading(btn, false); }
+}
+
+async function deleteAttendance(id) {
+  if (!confirm('এই এটেন্ডেন্স রেকর্ড ডিলিট করবেন?')) return;
+  const { error } = await sb.from('attendance').delete().eq('id', id);
+  if (error) return showToast('❌ ' + error.message, 'error');
+  showToast('✅ ডিলিট হয়েছে');
+  closeModal();
+  refreshAttendanceList();
 }
 
 async function exportAttendance() {
@@ -1546,10 +1675,12 @@ function renderAttendance() {
       <div class="clock-display"><span id="liveClock">--:--:--</span> <span style="font-size:24px;color:var(--gray-500);font-weight:700" id="liveAmPm">AM</span></div>
       <div class="clock-date">${dayName(today())} · ${formatBnDate(today())}</div>
       <div class="clock-actions">
-        <button class="clock-btn in" onclick="markAttendance('check_in')"><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু করুন</small></button>
-        <button class="clock-btn out" onclick="markAttendance('check_out')"><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ করুন</small></button>
+        <button class="clock-btn in"   onclick="markAttendance('check_in')"><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু করুন</small></button>
         <button class="clock-btn lout" onclick="markAttendance('lunch_out')"><i class="fa-solid fa-utensils"></i><span>লাঞ্চ আউট</span><small>খেতে যাচ্ছেন</small></button>
-        <button class="clock-btn lin" onclick="markAttendance('lunch_in')"><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small>ফিরে এসেছেন</small></button>
+        <button class="clock-btn lin"  onclick="markAttendance('lunch_in')"><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small>ফিরে এসেছেন</small></button>
+        <button class="clock-btn pout" onclick="markAttendance('personal_out')"><i class="fa-solid fa-walking"></i><span>ব্রেক শুরু</span><small>পার্সোনাল</small></button>
+        <button class="clock-btn pin"  onclick="markAttendance('personal_in')"><i class="fa-solid fa-arrow-rotate-left"></i><span>ব্রেক শেষ</span><small>ফিরে এলেন</small></button>
+        <button class="clock-btn out"  onclick="markAttendance('check_out')"><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ করুন</small></button>
       </div>
       <div class="clock-status" id="todayStatus" style="display:none"></div>
     </div>
@@ -1574,10 +1705,24 @@ function renderAttendance() {
           <button class="btn btn-outline btn-sm" onclick="exportAttendance()" title="CSV Download"><i class="fa-solid fa-file-csv"></i> এক্সপোর্ট</button>
         </div>
       </div>
-      <table class="data-table" id="attendanceTable">
-        <thead><tr>${App.isAdmin ? '<th>কর্মী</th>' : ''}<th>তারিখ</th><th>চেক-ইন</th><th>চেক-আউট</th><th>লাঞ্চ</th><th>মোট</th><th>স্ট্যাটাস</th></tr></thead>
-        <tbody><tr><td colspan="${App.isAdmin?7:6}" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></td></tr></tbody>
-      </table>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="attendanceTable" style="min-width:900px">
+          <thead><tr>
+            ${App.isAdmin ? '<th>কর্মী</th>' : ''}
+            <th>তারিখ</th>
+            <th>ইন</th>
+            <th>লাঞ্চ আউট</th>
+            <th>লাঞ্চ ইন</th>
+            <th>ব্রেক আউট</th>
+            <th>ব্রেক ইন</th>
+            <th>আউট</th>
+            <th>মোট</th>
+            <th>স্ট্যাটাস</th>
+            ${App.isAdmin ? '<th>একশন</th>' : ''}
+          </tr></thead>
+          <tbody><tr><td colspan="${App.isAdmin?11:9}" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></td></tr></tbody>
+        </table>
+      </div>
     </div>
   `;
 }
@@ -1795,12 +1940,14 @@ function renderLeaves() {
           </select>
           <select class="form-select" id="lvTypeFilter" onchange="_renderLeavesContent()" style="width:auto;min-height:38px">
             <option value="">সব ধরন</option>
-            <option value="casual">নৈমিত্তিক</option>
-            <option value="sick">অসুস্থতা</option>
-            <option value="annual">বার্ষিক</option>
-            <option value="unpaid">বিনা বেতন</option>
-            <option value="maternity">মাতৃত্ব</option>
-            <option value="hajj">হজ্জ</option>
+            <option value="SL">SL · অসুস্থতা</option>
+            <option value="CL">CL · নৈমিত্তিক</option>
+            <option value="ML">ML · বিবাহ</option>
+            <option value="CoL">CoL · সমবেদনা</option>
+            <option value="AL">AL · বার্ষিক</option>
+            <option value="PH">PH · সরকারি</option>
+            <option value="UL">UL · অননুমোদিত</option>
+            <option value="IL">IL · দায়িত্বহীন</option>
           </select>
           <button class="btn btn-outline btn-sm" onclick="exportLeaves()" title="CSV"><i class="fa-solid fa-file-csv"></i></button>
         </div>
@@ -1853,7 +2000,7 @@ async function _renderLeavesContent() {
     if (_leavesTab === 'my')           q = q.eq('user_id', App.user.id);
     else if (_leavesTab === 'pending') q = q.eq('status', 'pending');
     if (status) q = q.eq('status', status);
-    if (ltype)  q = q.eq('leave_type', ltype);
+    if (ltype)  q = q.eq('leave_code', ltype);
 
     const { data, error } = await q;
     if (error) throw error;
@@ -1868,7 +2015,7 @@ async function _renderLeavesContent() {
           <span class="leave-status ${l.status}">${statusIcon(l.status)} ${statusLabel(l.status)}</span>
           ${(_leavesTab !== 'my' || App.isAdmin) ? `<small style="color:var(--gray-500);font-weight:600">${escapeHtml(l.profiles?.full_name||'')}</small>` : ''}
         </div>
-        <h4>${leaveTypeLabel(l.leave_type)}</h4>
+        <h4>${leaveTypeLabel(l.leave_type, l.leave_code)}</h4>
         <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</span> <span class="num">(${bnDigits(l.total_days)} দিন)</span></div>
         <div class="leave-reason">"${escapeHtml(l.reason)}"</div>
         ${l.review_comment ? `<div style="margin-top:8px;font-size:12px;background:var(--gray-50);padding:8px 12px;border-radius:8px"><b>মন্তব্য:</b> ${escapeHtml(l.review_comment)}</div>` : ''}
@@ -1902,25 +2049,66 @@ async function exportLeaves() {
 
 function statusIcon(s) { return s==='pending'?'<i class="fa-solid fa-hourglass-half"></i>':s==='approved'?'<i class="fa-solid fa-check"></i>':s==='rejected'?'<i class="fa-solid fa-xmark"></i>':'<i class="fa-solid fa-ban"></i>'; }
 function statusLabel(s) { return s==='pending'?'অপেক্ষমাণ':s==='approved'?'অনুমোদিত':s==='rejected'?'প্রত্যাখ্যাত':'বাতিল'; }
-function leaveTypeLabel(t) { return ({casual:'নৈমিত্তিক ছুটি', sick:'অসুস্থতা ছুটি', annual:'বার্ষিক ছুটি', unpaid:'বিনা বেতনে ছুটি', maternity:'মাতৃত্ব ছুটি', hajj:'হজ্জ ছুটি'})[t] || t; }
+function leaveTypeLabel(t, code) {
+  // code-based first
+  const codeMap = {
+    SL:'অসুস্থতা ছুটি (SL)', CL:'নৈমিত্তিক ছুটি (CL)', ML:'বিবাহ ছুটি (ML)',
+    CoL:'সমবেদনা ছুটি (CoL)', AL:'বার্ষিক ছুটি (AL)', PH:'সরকারি ছুটি (PH)',
+    UL:'অননুমোদিত ছুটি (UL)', IL:'দায়িত্বহীন ছুটি (IL)'
+  };
+  if (code && codeMap[code]) return codeMap[code];
+  return ({casual:'নৈমিত্তিক ছুটি', sick:'অসুস্থতা ছুটি', annual:'বার্ষিক ছুটি', unpaid:'বিনা বেতনে ছুটি', maternity:'মাতৃত্ব ছুটি', hajj:'হজ্জ ছুটি'})[t] || t;
+}
 
-function openLeaveModal() {
+async function openLeaveModal() {
+  // Load leave policies
+  let policies = [];
+  try {
+    const { data } = await sb.from('leave_policies').select('*').eq('is_active', true).order('display_order');
+    policies = data || [];
+  } catch (e) { console.warn('Run v3 SQL upgrade'); }
+
+  const year = new Date().getFullYear();
+  // Get my used days for each policy
+  const usedMap = {};
+  if (policies.length) {
+    try {
+      const { data: myLeaves } = await sb.from('leaves').select('leave_code, total_days, status').eq('user_id', App.user.id).gte('start_date', year+'-01-01').eq('status', 'approved');
+      (myLeaves||[]).forEach(l => { usedMap[l.leave_code] = (usedMap[l.leave_code]||0) + (l.total_days||0); });
+    } catch {}
+  }
+
+  const policyOptions = policies.length ? policies.map(p => {
+    const used = usedMap[p.code] || 0;
+    const remaining = p.yearly_limit ? Math.max(0, p.yearly_limit - used) : null;
+    const remText = p.yearly_limit ? ` (অবশিষ্ট ${bnDigits(remaining)}/${bnDigits(p.yearly_limit)})` : '';
+    return `<option value="${p.code}">${p.name_bn} — ${p.code}${remText}</option>`;
+  }).join('') : `
+    <option value="CL">নৈমিত্তিক ছুটি (CL)</option>
+    <option value="SL">অসুস্থতা ছুটি (SL)</option>
+    <option value="AL">বার্ষিক ছুটি (AL)</option>
+  `;
+
+  const policyTable = policies.length ? `
+    <details style="margin:8px 0 16px"><summary style="cursor:pointer;font-weight:700;color:var(--purple-700);font-size:13px">📋 ছুটির নীতি দেখুন</summary>
+    <div style="margin-top:10px;font-size:12px;background:var(--gray-50);padding:12px;border-radius:8px">
+      ${policies.map(p => `<div style="padding:4px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--gray-100)"><span><b>${p.code}</b> · ${escapeHtml(p.name_bn)}${p.is_paid?'':' <span style="color:var(--red-500)">(বিনা বেতন)</span>'}</span><span class="num" style="color:var(--gray-500)">${p.yearly_limit?bnDigits(p.yearly_limit)+' দিন/বছর':'—'}</span></div>`).join('')}
+    </div>
+    </details>
+  ` : '';
+
   showModal(
     '<i class="fa-solid fa-calendar-plus" style="color:var(--purple-600)"></i> ছুটির আবেদন',
     `
-    <div class="form-group"><label>ছুটির ধরন</label>
-      <select class="form-select" id="lvType">
-        <option value="casual">নৈমিত্তিক ছুটি</option>
-        <option value="sick">অসুস্থতা ছুটি</option>
-        <option value="annual">বার্ষিক ছুটি</option>
-        <option value="unpaid">বিনা বেতনে ছুটি</option>
-      </select>
+    ${policyTable}
+    <div class="form-group"><label>ছুটির ধরন *</label>
+      <select class="form-select" id="lvCode">${policyOptions}</select>
     </div>
     <div class="form-grid">
-      <div class="form-group"><label>শুরুর তারিখ</label><input class="form-input" type="date" id="lvStart" value="${today()}"></div>
-      <div class="form-group"><label>শেষ তারিখ</label><input class="form-input" type="date" id="lvEnd" value="${today()}"></div>
+      <div class="form-group"><label>শুরুর তারিখ *</label><input class="form-input" type="date" id="lvStart" value="${today()}"></div>
+      <div class="form-group"><label>শেষ তারিখ *</label><input class="form-input" type="date" id="lvEnd" value="${today()}"></div>
     </div>
-    <div class="form-group"><label>কারণ</label><textarea class="form-textarea" id="lvReason" placeholder="ছুটির কারণ বিস্তারিত লিখুন..."></textarea></div>
+    <div class="form-group"><label>কারণ *</label><textarea class="form-textarea" id="lvReason" placeholder="ছুটির কারণ বিস্তারিত লিখুন..."></textarea></div>
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
      <button class="btn btn-primary" id="lvSaveBtn" onclick="submitLeave()"><i class="fa-solid fa-paper-plane"></i> আবেদন জমা দিন</button>`
@@ -1928,17 +2116,42 @@ function openLeaveModal() {
 }
 
 async function submitLeave() {
-  const leave_type = document.getElementById('lvType').value;
+  const leave_code = document.getElementById('lvCode').value;
   const start_date = document.getElementById('lvStart').value;
   const end_date   = document.getElementById('lvEnd').value;
   const reason     = document.getElementById('lvReason').value.trim();
   if (!start_date || !end_date || !reason) return showToast('সব ফিল্ড পূরণ করুন', 'error');
   if (new Date(end_date) < new Date(start_date)) return showToast('শেষ তারিখ শুরুর তারিখের পর হতে হবে', 'error');
 
+  // Per-request validation against policy
+  try {
+    const { data: policy } = await sb.from('leave_policies').select('*').eq('code', leave_code).maybeSingle();
+    if (policy) {
+      const days = Math.floor((new Date(end_date) - new Date(start_date)) / 86400000) + 1;
+      if (policy.per_request_max && days > policy.per_request_max) {
+        return showToast(`❌ ${policy.name_bn} এ একবারে সর্বোচ্চ ${bnDigits(policy.per_request_max)} দিন`, 'error');
+      }
+      if (policy.yearly_limit) {
+        const year = new Date(start_date).getFullYear();
+        const { data: used } = await sb.from('leaves').select('total_days').eq('user_id', App.user.id).eq('leave_code', leave_code).eq('status', 'approved').gte('start_date', year+'-01-01').lte('start_date', year+'-12-31');
+        const usedDays = (used||[]).reduce((s,r) => s + (r.total_days||0), 0);
+        if (usedDays + days > policy.yearly_limit) {
+          return showToast(`❌ এই বছরে ${policy.name_bn} এর সীমা পূরণ — অবশিষ্ট ${bnDigits(policy.yearly_limit - usedDays)} দিন`, 'error');
+        }
+      }
+    }
+  } catch {}
+
   const btn = document.getElementById('lvSaveBtn');
   setBtnLoading(btn, true);
   try {
-    const { error } = await sb.from('leaves').insert({ user_id: App.user.id, leave_type, start_date, end_date, reason, status: 'pending' });
+    const { error } = await sb.from('leaves').insert({
+      user_id: App.user.id,
+      leave_code,
+      leave_type: leave_code.toLowerCase(),  // backward compat
+      start_date, end_date, reason,
+      status: 'pending'
+    });
     if (error) throw error;
     showToast('✅ ছুটির আবেদন জমা হয়েছে!');
     closeModal();
