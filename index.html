@@ -868,28 +868,17 @@ async function doRegister() {
       return;
     }
 
-    // Case 2: try sign-in (works if confirmation off but signUp didn't return session)
-    try {
-      const r = await withTimeout(sb.auth.signInWithPassword({ email, password }), 8000);
-      if (!r.error && r.data.session) {
+    // Email verification required → show OTP input modal
+    showOtpModal({
+      email,
+      type: 'signup',
+      title: '✉️ ইমেইল ভেরিফাই করুন',
+      onSuccess: async () => {
+        // After OTP verify, user is signed in
         showToast('🎉 স্বাগতম, ' + fullName + '!');
         await loadUserAndStart();
-        return;
       }
-    } catch (_) { /* fall through to verification screen */ }
-
-    // Case 3: email verification required
-    showModal(
-      '✉️ ইমেইল ভেরিফাই করুন',
-      `<div style="text-align:center;padding:20px 0">
-        <div style="font-size:64px;margin-bottom:16px">📧</div>
-        <p style="font-size:15px;color:var(--gray-700);margin-bottom:12px">আপনার অ্যাকাউন্ট তৈরি হয়েছে!</p>
-        <p style="font-size:14px;color:var(--gray-500);margin-bottom:14px">আমরা <b>${email}</b> এ একটি ভেরিফিকেশন লিংক পাঠিয়েছি।<br>লিংকে ক্লিক করে অ্যাকাউন্ট সক্রিয় করুন এবং তারপর লগইন করুন।</p>
-        <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600;margin-bottom:10px">💡 ইমেইল না পেলে: Spam/Junk folder চেক করুন।</p>
-        <button class="btn btn-outline btn-sm" onclick="resendVerification('${email}', this)" id="resendBtn"><i class="fa-solid fa-rotate-right"></i> আবার পাঠান</button>
-      </div>`,
-      `<button class="btn btn-primary" onclick="closeModal(); switchAuthTab('login'); document.getElementById('loginEmail').value='${email}';">ঠিক আছে</button>`
-    );
+    });
   } catch (e) {
     showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
     console.error(e);
@@ -959,27 +948,148 @@ async function sendResetEmail() {
 
   try {
     const { error } = await withTimeout(
-      sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/?reset=1'
-      }),
+      sb.auth.resetPasswordForEmail(email),
       15000
     );
     if (error) {
       showToast('❌ ' + error.message, 'error');
       return;
     }
-    showModal(
-      '✅ ইমেইল পাঠানো হয়েছে',
-      `<div style="text-align:center;padding:20px 0">
-        <div style="font-size:64px;margin-bottom:16px">📬</div>
-        <p style="font-size:15px;color:var(--gray-700);margin-bottom:12px">পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে!</p>
-        <p style="font-size:14px;color:var(--gray-500);margin-bottom:14px"><b>${email}</b> এ চেক করুন। লিংকে ক্লিক করে নতুন পাসওয়ার্ড সেট করুন।</p>
-        <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600">💡 ইমেইল না পেলে Spam/Junk folder চেক করুন।</p>
-      </div>`,
-      `<button class="btn btn-primary" onclick="closeModal()">ঠিক আছে</button>`
-    );
+    closeModal();
+    // Show OTP input modal directly
+    showOtpModal({
+      email,
+      type: 'recovery',
+      title: '🔑 পাসওয়ার্ড রিসেট কোড',
+      subtitle: 'আপনার ইমেইলে পাঠানো ৬-অঙ্কের কোডটি লিখুন',
+      onSuccess: async () => {
+        // Now user is authenticated via OTP — show new password modal
+        openSetNewPassword();
+      }
+    });
   } catch (e) {
     showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// OTP VERIFICATION MODAL — beautiful 6-digit code input
+// ═══════════════════════════════════════════════════════════
+function showOtpModal({ email, type, title, subtitle, onSuccess }) {
+  showModal(
+    `<i class="fa-solid fa-${type==='recovery'?'key':'envelope-circle-check'}" style="color:var(--purple-600)"></i> ${title}`,
+    `
+    <div style="text-align:center;padding:8px 0 16px">
+      <div style="font-size:56px;margin-bottom:14px">📧</div>
+      <p style="font-size:14px;color:var(--gray-700);margin-bottom:6px">আমরা <b style="color:var(--purple-700)">${email}</b> এ একটি ৬-অঙ্কের কোড পাঠিয়েছি।</p>
+      <p style="font-size:13px;color:var(--gray-500)">${subtitle||'নিচে কোডটি লিখুন:'}</p>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin:20px 0">
+      ${[0,1,2,3,4,5].map(i => `<input type="text" inputmode="numeric" maxlength="1" id="otp_${i}" class="otp-box" oninput="handleOtpInput(${i})" onkeydown="handleOtpKey(event,${i})" onpaste="handleOtpPaste(event)" style="width:46px;height:54px;text-align:center;font-size:24px;font-weight:800;font-family:var(--font-en);border:2px solid var(--purple-200);border-radius:12px;outline:none;transition:all .2s;color:var(--purple-700);background:white">`).join('')}
+    </div>
+    <div style="text-align:center;margin-top:14px">
+      <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600;margin-bottom:10px">💡 ইমেইল না পেলে Spam/Junk folder চেক করুন</p>
+      <button class="btn btn-outline btn-sm" id="resendOtpBtn" onclick="resendOtp('${email}','${type}')"><i class="fa-solid fa-rotate-right"></i> আবার পাঠান</button>
+    </div>
+    `,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="otpVerifyBtn" onclick="verifyOtp('${email}','${type}')"><i class="fa-solid fa-check"></i> ভেরিফাই করুন</button>`
+  );
+  // Store callback globally for the verify function
+  window._otpSuccessCallback = onSuccess;
+  setTimeout(() => document.getElementById('otp_0')?.focus(), 200);
+  // Add focus styles
+  if (!document.getElementById('otpStyles')) {
+    const s = document.createElement('style');
+    s.id = 'otpStyles';
+    s.textContent = `.otp-box:focus{border-color:var(--purple-500);box-shadow:0 0 0 4px rgba(139,92,246,.15);transform:scale(1.05)}.otp-box.filled{background:var(--purple-50);border-color:var(--purple-500)}`;
+    document.head.appendChild(s);
+  }
+}
+
+function handleOtpInput(idx) {
+  const el = document.getElementById('otp_' + idx);
+  el.value = el.value.replace(/[^0-9]/g, '');
+  if (el.value) {
+    el.classList.add('filled');
+    if (idx < 5) document.getElementById('otp_' + (idx+1))?.focus();
+    else {
+      // Auto-verify when all 6 digits are entered
+      const allFilled = [0,1,2,3,4,5].every(i => document.getElementById('otp_'+i).value);
+      if (allFilled) {
+        const btn = document.getElementById('otpVerifyBtn');
+        if (btn && !btn.disabled) btn.click();
+      }
+    }
+  } else {
+    el.classList.remove('filled');
+  }
+}
+
+function handleOtpKey(e, idx) {
+  if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+    document.getElementById('otp_' + (idx-1))?.focus();
+  } else if (e.key === 'ArrowLeft' && idx > 0) {
+    document.getElementById('otp_' + (idx-1))?.focus();
+  } else if (e.key === 'ArrowRight' && idx < 5) {
+    document.getElementById('otp_' + (idx+1))?.focus();
+  }
+}
+
+function handleOtpPaste(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  const digits = text.replace(/[^0-9]/g, '').slice(0, 6).split('');
+  digits.forEach((d, i) => {
+    const el = document.getElementById('otp_' + i);
+    if (el) { el.value = d; el.classList.add('filled'); }
+  });
+  if (digits.length === 6) {
+    document.getElementById('otp_5').focus();
+    setTimeout(() => document.getElementById('otpVerifyBtn')?.click(), 200);
+  } else if (digits.length > 0) {
+    document.getElementById('otp_' + digits.length)?.focus();
+  }
+}
+
+async function verifyOtp(email, type) {
+  const code = [0,1,2,3,4,5].map(i => document.getElementById('otp_'+i)?.value || '').join('');
+  if (code.length !== 6) return showToast('৬ অঙ্কের কোড লিখুন', 'error');
+  const btn = document.getElementById('otpVerifyBtn');
+  setBtnLoading(btn, true);
+  try {
+    const { data, error } = await withTimeout(
+      sb.auth.verifyOtp({ email, token: code, type }),
+      15000
+    );
+    if (error) {
+      showToast('❌ ' + (error.message.includes('expired')?'কোডের মেয়াদ শেষ — আবার পাঠান':error.message.includes('Invalid')?'ভুল কোড — আবার চেষ্টা করুন':error.message), 'error');
+      return;
+    }
+    closeModal();
+    showToast('✅ ভেরিফিকেশন সফল!');
+    if (window._otpSuccessCallback) await window._otpSuccessCallback(data);
+  } catch (e) {
+    showToast('❌ ' + (e.message||'ভেরিফাই ব্যর্থ'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function resendOtp(email, type) {
+  const btn = document.getElementById('resendOtpBtn');
+  setBtnLoading(btn, true);
+  try {
+    if (type === 'recovery') {
+      await sb.auth.resetPasswordForEmail(email);
+    } else {
+      await sb.auth.resend({ type: 'signup', email });
+    }
+    showToast('✅ নতুন কোড পাঠানো হয়েছে!');
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
   } finally {
     setBtnLoading(btn, false);
   }
