@@ -260,8 +260,7 @@
   .clock-status{margin-top:14px;padding:10px 14px;border-radius:var(--r-md);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;line-height:1.4}
   .clock-status.ok    {background:var(--emerald-100);color:var(--emerald-500)}
   .clock-status.late  {background:var(--red-100);  color:var(--red-500)}
-  .clock-display.late {background:linear-gradient(135deg,#dc2626 0%,#ef4444 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .clock-display.ok   {background:linear-gradient(135deg,#059669 0%,#10b981 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  /* Note: clock-display always keeps brand gradient, color status shown via clock-status banner only */
 
   /* Leave */
   .leave-card{background:white;padding:18px;border-radius:var(--r-lg);border:1px solid var(--gray-100);margin-bottom:10px;transition:all .3s;position:relative;overflow:hidden}
@@ -328,7 +327,12 @@
   .data-table th{background:var(--gray-50);padding:12px;text-align:left;font-weight:800;font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--gray-100)}
   .data-table td{padding:14px 12px;border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700);font-weight:600}
   .data-table tr:last-child td{border-bottom:none}
-  .data-table tr:hover{background:var(--purple-50)}
+  .data-table tr:hover{filter:brightness(.97)}
+  /* Late / On-time row indicators */
+  .data-table tr.row-late td   {background:rgba(239,68,68,.18) !important}
+  .data-table tr.row-late td:first-child{box-shadow:inset 4px 0 0 #ef4444}
+  .data-table tr.row-ok td     {background:rgba(16,185,129,.10) !important}
+  .data-table tr.row-ok td:first-child  {box-shadow:inset 4px 0 0 #10b981}
 
   .note-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border-left:4px solid var(--amber-500);padding:14px 18px;border-radius:var(--r-md);margin:16px 0;font-size:13px;color:var(--gray-800);font-weight:600}
   .empty-state{padding:60px 20px;text-align:center;color:var(--gray-500)}
@@ -1367,17 +1371,9 @@ setInterval(() => {
   const ampmEl = document.getElementById('liveAmPm');
   if (ampmEl) ampmEl.textContent = ampm;
 
-  // Color the clock based on whether we're past office start time
-  const ot = App.myOfficeTime;
-  if (ot && ot.check_in_time) {
-    const [oh, om] = ot.check_in_time.split(':').map(Number);
-    const officeStart = new Date(now); officeStart.setHours(oh, om + (ot.grace_minutes||0), 0, 0);
-    const isLate = now.getTime() > officeStart.getTime();
-    el.classList.toggle('late', isLate);
-    el.classList.toggle('ok', !isLate);
-  } else {
-    el.classList.remove('late', 'ok');
-  }
+  // Note: do NOT color the clock display itself — keep brand gradient.
+  // Status (late vs on-time) is shown only via the row coloring + status banner.
+  el.classList.remove('late', 'ok');
 }, 1000);
 
 // ═══════════════════════════════════════════════════════════
@@ -1517,18 +1513,16 @@ async function refreshAttendanceList() {
     }
     tbody.innerHTML = data.map(r => {
       const isLate = r.late_minutes > 0;
-      const rowStyle = isLate
-        ? 'background:rgba(239,68,68,.06);border-left:4px solid #ef4444'
-        : 'background:rgba(16,185,129,.04);border-left:4px solid #10b981';
+      const rowClass = isLate ? 'row-late' : 'row-ok';
       const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
       const empCell = App.isAdmin ? `
         <td><div style="display:flex;align-items:center;gap:8px">
-          <div class="avatar" style="width:30px;height:30px;border-radius:8px;background:var(--gradient-brand);color:white;font-weight:800;font-family:var(--font-en);font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${r.profiles?.photo_url?`<img src="${r.profiles.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`:initial(r.profiles?.full_name)}</div>
+          <div class="avatar" style="width:30px;height:30px;border-radius:8px;background:var(--gradient-brand);color:white;font-weight:800;font-family:var(--font-en);font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">${r.profiles?.photo_url?`<img src="${r.profiles.photo_url}" style="width:100%;height:100%;object-fit:cover">`:initial(r.profiles?.full_name)}</div>
           <span style="font-weight:700">${escapeHtml(r.profiles?.full_name||'—')}</span>
         </div></td>` : '';
       const actionCell = App.isAdmin ? `<td><button class="icon-btn" onclick="editAttendance(${r.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button></td>` : '';
       return `
-        <tr style="${rowStyle}">
+        <tr class="${rowClass}">
           ${empCell}
           <td>${formatBnDate(r.date)}</td>
           <td class="num" style="font-size:12px">${fmtT(r.check_in)}</td>
