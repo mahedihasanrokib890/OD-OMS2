@@ -302,17 +302,61 @@
   .tab .num{background:var(--purple-100);padding:2px 8px;border-radius:99px;font-size:11px;color:var(--purple-700)}
 
   /* Profile */
-  .profile-banner{height:160px;background:var(--gradient-brand);background-size:200% 200%;animation:gradientShift 12s ease infinite;border-radius:var(--r-xl);margin-bottom:80px;position:relative;overflow:visible;box-shadow:var(--shadow-md)}
-  .profile-banner::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.2) 1px,transparent 1px),radial-gradient(circle at 60% 70%,rgba(255,255,255,.15) 1px,transparent 1px);background-size:40px 40px;border-radius:var(--r-xl);overflow:hidden}
-  .profile-photo{position:absolute;bottom:-50px;left:32px;width:110px;height:110px;border-radius:50%;background:var(--gradient-brand);border:5px solid white;display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-en);font-size:38px;font-weight:800;box-shadow:var(--shadow-lg);text-transform:uppercase;overflow:hidden;z-index:2}
-  .profile-info{position:absolute;bottom:-70px;left:155px;right:24px;color:var(--gray-900)}
-  .profile-info h2{font-size:20px;font-weight:800;margin-bottom:2px;color:var(--gray-900)}
+  .profile-banner{
+    height:200px;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(244,114,182,.55) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 60%, rgba(139,92,246,.5) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 90%, rgba(233,30,99,.45) 0%, transparent 60%),
+      linear-gradient(135deg,#3b1c5c 0%,#5b2d8a 35%,#7c3aed 65%,#db2777 100%);
+    background-size:200% 200%;
+    animation:gradientShift 15s ease infinite;
+    border-radius:var(--r-2xl);
+    margin-bottom:80px;
+    position:relative;
+    overflow:visible;
+    box-shadow:0 20px 50px -12px rgba(91,45,138,.35), 0 0 0 1px rgba(255,255,255,.1) inset;
+  }
+  .profile-banner::before{
+    content:'';position:absolute;inset:0;border-radius:var(--r-2xl);
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255,255,255,.18) 0%, transparent 25%),
+      radial-gradient(circle at 85% 80%, rgba(255,255,255,.12) 0%, transparent 30%);
+    pointer-events:none;
+  }
+  .profile-banner::after{
+    content:'';position:absolute;inset:0;border-radius:var(--r-2xl);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,.18) 1.5px, transparent 1.5px),
+      radial-gradient(circle at 60% 70%, rgba(255,255,255,.12) 1.5px, transparent 1.5px),
+      radial-gradient(circle at 80% 30%, rgba(255,255,255,.08) 1px, transparent 1px);
+    background-size:50px 50px, 70px 70px, 30px 30px;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  /* decorative blur orbs floating */
+  .profile-banner-orb{position:absolute;border-radius:50%;filter:blur(40px);pointer-events:none;mix-blend-mode:screen}
+  .profile-banner-orb.o1{top:-30px;right:10%;width:160px;height:160px;background:radial-gradient(circle,rgba(244,114,182,.7) 0%,transparent 70%);animation:floatSlow 7s ease-in-out infinite}
+  .profile-banner-orb.o2{bottom:-30px;left:25%;width:140px;height:140px;background:radial-gradient(circle,rgba(168,85,247,.6) 0%,transparent 70%);animation:floatSlow 9s ease-in-out infinite 2s}
+
+  .profile-photo{
+    position:absolute;bottom:-50px;left:36px;
+    width:120px;height:120px;border-radius:50%;
+    background:linear-gradient(135deg,#8b5cf6 0%,#e91e63 100%);
+    border:5px solid white;
+    display:flex;align-items:center;justify-content:center;
+    color:white;font-family:var(--font-en);font-size:42px;font-weight:800;
+    box-shadow:0 16px 32px -8px rgba(91,45,138,.45),0 0 0 4px rgba(139,92,246,.15);
+    text-transform:uppercase;overflow:hidden;z-index:2;
+  }
+  .profile-info{position:absolute;bottom:-70px;left:175px;right:24px;color:var(--gray-900)}
+  .profile-info h2{font-size:22px;font-weight:800;margin-bottom:2px;color:var(--gray-900)}
   .profile-info p{font-size:13px;color:var(--gray-600);font-weight:600}
   .badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   @media (max-width:600px){
-    .profile-banner{margin-bottom:130px;height:140px}
-    .profile-photo{left:50%;transform:translateX(-50%);bottom:-60px;width:100px;height:100px;font-size:32px}
-    .profile-info{left:0;right:0;bottom:-130px;text-align:center;padding:0 16px}
+    .profile-banner{margin-bottom:140px;height:160px}
+    .profile-photo{left:50%;transform:translateX(-50%);bottom:-60px;width:108px;height:108px;font-size:36px}
+    .profile-info{left:0;right:0;bottom:-138px;text-align:center;padding:0 16px}
     .badges{justify-content:center}
   }
   .verify-badge{display:inline-flex;align-items:center;gap:4px;background:var(--emerald-100);color:var(--emerald-500);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:800}
@@ -2225,6 +2269,8 @@ async function renderProfile() {
 
   return `
     <div class="profile-banner">
+      <div class="profile-banner-orb o1"></div>
+      <div class="profile-banner-orb o2"></div>
       <div class="profile-photo" id="profilePhoto" style="cursor:pointer" onclick="openPhotoUpdate()" title="ছবি পরিবর্তন">
         ${photoUrl ? `<img src="${photoUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : i}
         <div style="position:absolute;bottom:4px;right:4px;background:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--purple-700);box-shadow:var(--shadow-md);border:2px solid var(--purple-100);font-size:13px"><i class="fa-solid fa-camera"></i></div>
@@ -2308,7 +2354,7 @@ async function handlePhotoFile(e) {
   if (file.size > 5 * 1024 * 1024) return showToast('ছবি ৫MB এর চেয়ে বড়', 'error');
   if (!file.type.startsWith('image/')) return showToast('ছবি ফাইল দিন', 'error');
 
-  // Show local preview
+  // Show local preview right away
   const reader = new FileReader();
   reader.onload = ev => {
     const prev = document.getElementById('photoPreview');
@@ -2316,19 +2362,52 @@ async function handlePhotoFile(e) {
   };
   reader.readAsDataURL(file);
 
-  // Upload to Supabase storage
+  // Try Supabase Storage first
   showToast('আপলোড হচ্ছে...', 'info');
   try {
-    const ext = file.name.split('.').pop();
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const filename = `${App.user.id}/${Date.now()}.${ext}`;
-    const { error: upErr } = await sb.storage.from('avatars').upload(filename, file, { upsert: true });
+    const { error: upErr } = await sb.storage.from('avatars').upload(filename, file, { upsert: true, contentType: file.type });
     if (upErr) throw upErr;
     const { data: urlData } = sb.storage.from('avatars').getPublicUrl(filename);
-    document.getElementById('photoUrl').value = urlData.publicUrl;
+    const publicUrl = urlData.publicUrl + (urlData.publicUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+    document.getElementById('photoUrl').value = publicUrl;
     showToast('✅ আপলোড সফল! এখন সংরক্ষণ চাপুন', 'success');
-  } catch (e) {
-    showToast('❌ ' + (e.message || 'আপলোড ব্যর্থ — Storage bucket এর জন্য SQL v2 চালান'), 'error');
+  } catch (err) {
+    console.warn('Storage upload failed, falling back to base64:', err);
+    // Fallback: compress to ~400px and store as base64 data URL directly in profile
+    showToast('Storage ব্যবহার করা যাচ্ছে না — ছবি compress করে সরাসরি সংরক্ষণ করছি...', 'warning');
+    try {
+      const dataUrl = await compressImage(file, 400, 0.85);
+      document.getElementById('photoUrl').value = dataUrl;
+      showToast('✅ Compressed ছবি প্রস্তুত — এখন সংরক্ষণ চাপুন', 'success');
+    } catch (e2) {
+      showToast('❌ ছবি প্রসেসিং ব্যর্থ: ' + e2.message, 'error');
+    }
   }
+}
+
+// Compress image to maxSize on longest edge, return base64 JPEG data URL
+function compressImage(file, maxSize = 400, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); // white background for jpeg
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 async function savePhoto() {
@@ -2336,10 +2415,11 @@ async function savePhoto() {
   const btn = document.getElementById('phSaveBtn');
   setBtnLoading(btn, true);
   try {
-    const { error } = await sb.from('profiles').update({ photo_url: url || null }).eq('id', App.user.id);
+    const { data, error } = await sb.from('profiles').update({ photo_url: url || null, updated_at: new Date().toISOString() }).eq('id', App.user.id).select().maybeSingle();
     if (error) throw error;
-    App.profile.photo_url = url;
-    // Update sidebar/topbar avatars
+    if (!data) throw new Error('Profile row পাওয়া যায়নি — SQL setup চালানো হয়েছে কি?');
+    App.profile = { ...App.profile, ...data };
+    // Update sidebar/topbar avatars instantly
     const photoHTML = url ? `<img src="${url}" style="width:100%;height:100%;object-fit:cover">` : initial(App.profile.full_name);
     document.getElementById('sidebarAvatar').innerHTML = photoHTML;
     document.getElementById('topbarAvatar').innerHTML  = photoHTML;
@@ -2347,7 +2427,8 @@ async function savePhoto() {
     closeModal();
     navigate('profile');
   } catch (e) {
-    showToast('❌ ' + e.message, 'error');
+    console.error('savePhoto error:', e);
+    showToast('❌ ' + (e.message || 'সংরক্ষণ ব্যর্থ'), 'error');
   } finally { setBtnLoading(btn, false); }
 }
 
