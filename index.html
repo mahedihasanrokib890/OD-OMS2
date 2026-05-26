@@ -142,6 +142,10 @@
   .nav-badge.pink{background:linear-gradient(135deg,var(--pink-500),var(--pink-400));box-shadow:0 2px 6px rgba(233,30,99,.3)}
   .admin-only{display:none}
   .is-admin .admin-only{display:block}
+  .editor-or-admin{display:none}
+  .is-admin .editor-or-admin, .is-editor .editor-or-admin{display:block}
+  .employee-only{display:none}
+  .is-employee .employee-only{display:block}
   .sidebar-user{padding:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(250,245,255,.8))}
   .sidebar-user .avatar{width:42px;height:42px;border-radius:12px;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-family:var(--font-en);border:2px solid var(--purple-300);text-transform:uppercase}
   .sidebar-user-info{flex:1;min-width:0}
@@ -235,21 +239,26 @@
   .priority-badge.general{background:var(--emerald-100);color:var(--emerald-500)}
 
   /* Clock */
-  .clock-widget{background:white;padding:36px;border-radius:var(--r-2xl);box-shadow:var(--shadow-lg);text-align:center;margin-bottom:24px;border:1px solid var(--border);position:relative;overflow:hidden}
+  .clock-widget{background:white;padding:28px 24px;border-radius:var(--r-2xl);box-shadow:var(--shadow-lg);text-align:center;margin-bottom:20px;border:1px solid var(--border);position:relative;overflow:hidden}
   .clock-widget::before{content:'';position:absolute;top:-100px;right:-100px;width:300px;height:300px;background:radial-gradient(circle,rgba(139,92,246,.08) 0%,transparent 70%)}
-  .clock-display{font-family:var(--font-en);font-size:64px;font-weight:900;background:linear-gradient(135deg,#5b2d8a 0%,#e91e63 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-2px;line-height:1;margin-bottom:8px;font-feature-settings:'tnum'}
-  .clock-date{font-size:15px;color:var(--gray-600);font-weight:600;margin-bottom:24px}
-  .clock-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:520px;margin:0 auto}
-  .clock-btn{padding:18px;border-radius:var(--r-lg);border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;color:white;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .3s;box-shadow:var(--shadow-md);min-height:90px;justify-content:center}
-  .clock-btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .clock-display{font-family:var(--font-en);font-size:48px;font-weight:900;background:linear-gradient(135deg,#5b2d8a 0%,#e91e63 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1.5px;line-height:1;margin-bottom:6px;font-feature-settings:'tnum'}
+  .clock-date{font-size:13px;color:var(--gray-600);font-weight:600;margin-bottom:18px}
+  .clock-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:480px;margin:0 auto}
+  @media (min-width:600px){.clock-actions{grid-template-columns:repeat(4,1fr);max-width:600px}}
+  .clock-btn{padding:12px 8px;border-radius:var(--r-md);border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;color:white;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .3s;box-shadow:var(--shadow-sm);min-height:68px;justify-content:center}
+  .clock-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:var(--shadow-md)}
   .clock-btn:disabled{opacity:.4;cursor:not-allowed}
-  .clock-btn i{font-size:22px}
-  .clock-btn small{opacity:.85;font-weight:500;font-size:11px}
+  .clock-btn i{font-size:16px}
+  .clock-btn small{opacity:.85;font-weight:500;font-size:10px;line-height:1}
   .clock-btn.in{background:linear-gradient(135deg,#10b981,#059669)}
   .clock-btn.out{background:linear-gradient(135deg,#ef4444,#dc2626)}
   .clock-btn.lout{background:linear-gradient(135deg,#f59e0b,#d97706)}
   .clock-btn.lin{background:linear-gradient(135deg,#3b82f6,#2563eb)}
-  .clock-status{margin-top:18px;padding:12px 18px;background:var(--emerald-100);color:var(--emerald-500);border-radius:var(--r-md);font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:8px}
+  .clock-status{margin-top:14px;padding:10px 14px;border-radius:var(--r-md);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;line-height:1.4}
+  .clock-status.ok    {background:var(--emerald-100);color:var(--emerald-500)}
+  .clock-status.late  {background:var(--red-100);  color:var(--red-500)}
+  .clock-display.late {background:linear-gradient(135deg,#dc2626 0%,#ef4444 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .clock-display.ok   {background:linear-gradient(135deg,#059669 0%,#10b981 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
   /* Leave */
   .leave-card{background:white;padding:18px;border-radius:var(--r-lg);border:1px solid var(--gray-100);margin-bottom:10px;transition:all .3s;position:relative;overflow:hidden}
@@ -291,13 +300,19 @@
   .tab .num{background:var(--purple-100);padding:2px 8px;border-radius:99px;font-size:11px;color:var(--purple-700)}
 
   /* Profile */
-  .profile-banner{height:180px;background:var(--gradient-brand);background-size:200% 200%;animation:gradientShift 12s ease infinite;border-radius:var(--r-xl);margin-bottom:60px;position:relative;overflow:hidden;box-shadow:var(--shadow-md)}
-  .profile-banner::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.2) 1px,transparent 1px),radial-gradient(circle at 60% 70%,rgba(255,255,255,.15) 1px,transparent 1px);background-size:40px 40px}
-  .profile-photo{position:absolute;bottom:-50px;left:32px;width:120px;height:120px;border-radius:50%;background:var(--gradient-brand);border:6px solid white;display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-en);font-size:42px;font-weight:800;box-shadow:var(--shadow-lg);text-transform:uppercase}
-  .profile-info{position:absolute;bottom:-40px;left:170px;color:var(--gray-900)}
-  .profile-info h2{font-size:22px;font-weight:800;margin-bottom:2px}
-  .profile-info p{font-size:13px;color:var(--gray-500);font-weight:600}
-  .badges{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+  .profile-banner{height:160px;background:var(--gradient-brand);background-size:200% 200%;animation:gradientShift 12s ease infinite;border-radius:var(--r-xl);margin-bottom:80px;position:relative;overflow:visible;box-shadow:var(--shadow-md)}
+  .profile-banner::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.2) 1px,transparent 1px),radial-gradient(circle at 60% 70%,rgba(255,255,255,.15) 1px,transparent 1px);background-size:40px 40px;border-radius:var(--r-xl);overflow:hidden}
+  .profile-photo{position:absolute;bottom:-50px;left:32px;width:110px;height:110px;border-radius:50%;background:var(--gradient-brand);border:5px solid white;display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-en);font-size:38px;font-weight:800;box-shadow:var(--shadow-lg);text-transform:uppercase;overflow:hidden;z-index:2}
+  .profile-info{position:absolute;bottom:-70px;left:155px;right:24px;color:var(--gray-900)}
+  .profile-info h2{font-size:20px;font-weight:800;margin-bottom:2px;color:var(--gray-900)}
+  .profile-info p{font-size:13px;color:var(--gray-600);font-weight:600}
+  .badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  @media (max-width:600px){
+    .profile-banner{margin-bottom:130px;height:140px}
+    .profile-photo{left:50%;transform:translateX(-50%);bottom:-60px;width:100px;height:100px;font-size:32px}
+    .profile-info{left:0;right:0;bottom:-130px;text-align:center;padding:0 16px}
+    .badges{justify-content:center}
+  }
   .verify-badge{display:inline-flex;align-items:center;gap:4px;background:var(--emerald-100);color:var(--emerald-500);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:800}
 
   .info-row{display:flex;padding:12px 0;border-bottom:1px solid var(--gray-100);font-size:14px;flex-wrap:wrap}
@@ -433,16 +448,10 @@
         </div>
       </div>
       <div class="form-group">
-        <label><i class="fa-solid fa-users"></i> কর্মী ধরন</label>
-        <select class="form-select" id="regType">
-          <option value="type_1">কর্মী টাইপ ১</option>
-          <option value="type_2">কর্মী টাইপ ২</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label><i class="fa-solid fa-lock"></i> পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)</label>
         <input class="form-input" type="password" id="regPassword" placeholder="********" minlength="6" required>
       </div>
+      <div class="note-banner" style="margin:6px 0 14px;font-size:12px"><i class="fa-solid fa-info-circle"></i> অ্যাকাউন্ট তৈরির পর আপনার ইমেইলে একটি ভেরিফিকেশন লিংক পাঠানো হবে। লিংকে ক্লিক করে অ্যাকাউন্ট সক্রিয় করুন।</div>
       <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-user-plus"></i> অ্যাকাউন্ট তৈরি করুন</button>
       <div class="auth-footer">ইতিমধ্যে অ্যাকাউন্ট আছে? <a onclick="switchAuthTab('login')">লগইন করুন</a></div>
     </form>
@@ -489,11 +498,13 @@
         <span class="nav-item-left"><i class="fa-solid fa-user"></i> আমার প্রোফাইল</span>
       </div>
 
-      <div class="admin-only">
+      <div class="editor-or-admin">
         <div class="sidebar-section-title">ব্যবস্থাপনা</div>
         <div class="nav-item" data-route="employees" onclick="navigate('employees')">
           <span class="nav-item-left"><i class="fa-solid fa-users"></i> কর্মী</span>
         </div>
+      </div>
+      <div class="admin-only">
         <div class="nav-item" data-route="reports" onclick="navigate('reports')">
           <span class="nav-item-left"><i class="fa-solid fa-chart-line"></i> রিপোর্ট</span>
         </div>
@@ -593,13 +604,16 @@ const App = {
   user: null,
   profile: null,
   isAdmin: false,
+  isEditor: false,    // can edit notices, leaves, etc. but not settings
+  role: 'employee',   // admin | editor | employee
   currentPage: 'dashboard',
   employeeTypes: [
     { id: 1, code: 'admin',  name_bn: 'অ্যাডমিন',     is_admin: true },
     { id: 2, code: 'type_1', name_bn: 'কর্মী টাইপ ১', is_admin: false },
     { id: 3, code: 'type_2', name_bn: 'কর্মী টাইপ ২', is_admin: false }
   ],
-  // Demo data (for now — Phase 2 will replace with Supabase)
+  departments: [],
+  myOfficeTime: null,   // cached for the live clock comparison
   notices: [],
   leaves: [],
   attendance: {},
@@ -728,7 +742,7 @@ async function doRegister() {
   const fullName   = document.getElementById('regName').value.trim();
   const phone      = document.getElementById('regPhone').value.trim();
   const designation = document.getElementById('regDesignation').value.trim();
-  const typeCode   = document.getElementById('regType').value;
+  const typeCode   = 'type_1';
 
   if (!email || !password || !fullName) {
     showToast('সব প্রয়োজনীয় ফিল্ড পূরণ করুন', 'error');
@@ -959,27 +973,37 @@ async function loadUserAndStart() {
   };
 
   // Determine admin (admin email OR registered as admin type)
-  App.isAdmin = (meta.employee_type === 'admin') || ADMIN_EMAILS.includes((user.email||'').toLowerCase());
+  App.isAdmin  = (meta.employee_type === 'admin') || ADMIN_EMAILS.includes((user.email||'').toLowerCase());
+  App.isEditor = false;
+  App.role     = App.isAdmin ? 'admin' : 'employee';
 
   // Try to load profile from DB (won't block — fail-safe)
-  sb.from('profiles').select('*').eq('id', user.id).maybeSingle()
-    .then(({ data: p, error }) => {
-      if (!error && p) {
-        App.profile = { ...App.profile, ...p };
-        // Re-render current page if profile fields differ
-        if (App.currentPage) navigate(App.currentPage);
+  try {
+    const { data: p, error } = await sb.from('profiles').select('*, employee_types(name_bn, code, is_admin)').eq('id', user.id).maybeSingle();
+    if (!error && p) {
+      App.profile = { ...App.profile, ...p };
+      App.role     = p.role || (p.is_admin ? 'admin' : 'employee');
+      App.isAdmin  = App.role === 'admin';
+      App.isEditor = App.role === 'editor';
+      // Also cache office_time for late detection
+      if (p.employee_type_id) {
+        sb.from('office_times').select('*').eq('employee_type_id', p.employee_type_id).maybeSingle()
+          .then(r => { App.myOfficeTime = r.data; });
       }
-    })
-    .catch(() => { /* ignore — table may not exist yet */ });
+    }
+  } catch (e) { console.warn('profile fetch:', e); }
 
   // Update UI
   document.body.classList.toggle('is-admin', App.isAdmin);
+  document.body.classList.toggle('is-editor', App.isEditor);
+  document.body.classList.toggle('is-employee', !App.isAdmin && !App.isEditor);
   const initialChar = initial(App.profile.full_name);
-  document.getElementById('sidebarAvatar').textContent = initialChar;
-  document.getElementById('topbarAvatar').textContent  = initialChar;
+  const photoHTML = App.profile.photo_url ? `<img src="${App.profile.photo_url}" style="width:100%;height:100%;object-fit:cover">` : initialChar;
+  document.getElementById('sidebarAvatar').innerHTML = photoHTML;
+  document.getElementById('topbarAvatar').innerHTML  = photoHTML;
   document.getElementById('sidebarUserName').textContent = App.profile.full_name;
   document.getElementById('topbarUserName').textContent  = App.profile.full_name.split(' ')[0];
-  document.getElementById('sidebarUserRole').textContent = App.isAdmin ? 'Admin' : 'Employee';
+  document.getElementById('sidebarUserRole').textContent = roleLabel(App.role);
 
   // Show app
   document.getElementById('authScreen').style.display = 'none';
@@ -990,6 +1014,10 @@ async function loadUserAndStart() {
 
   // Initial route
   navigate('dashboard');
+}
+
+function roleLabel(role) {
+  return role === 'admin' ? 'Admin' : role === 'editor' ? 'Editor' : 'Employee';
 }
 
 let _realtimeChannels = [];
@@ -1025,7 +1053,7 @@ const routes = {
   notices:    { title: 'নোটিশ বোর্ড',    subtitle: 'অফিসের সকল ঘোষণা',           renderFn: 'renderNotices' },
   leaves:     { title: 'ছুটির আবেদন',    subtitle: 'আপনার ছুটি ব্যবস্থাপনা',     renderFn: 'renderLeaves' },
   profile:    { title: 'আমার প্রোফাইল',  subtitle: 'ব্যক্তিগত ও কাজের তথ্য',     renderFn: 'renderProfile' },
-  employees:  { title: 'কর্মী ডিরেক্টরি', subtitle: 'সকল কর্মীর তালিকা',           renderFn: 'renderEmployees', admin: true },
+  employees:  { title: 'কর্মী ডিরেক্টরি', subtitle: 'সকল কর্মীর তালিকা',           renderFn: 'renderEmployees', editorOrAdmin: true },
   reports:    { title: 'রিপোর্ট',        subtitle: 'বিশ্লেষণ ও সারাংশ',          renderFn: 'renderReports', admin: true },
   import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     renderFn: 'renderImport', admin: true },
   settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         renderFn: 'renderSettings', admin: true }
@@ -1037,10 +1065,9 @@ function navigate(route) {
     console.warn('Unknown route:', route);
     return;
   }
-  if (r.admin && !App.isAdmin) {
-    showToast('শুধু অ্যাডমিনদের জন্য', 'error');
-    return;
-  }
+  // Access control
+  if (r.admin && !App.isAdmin) { showToast('শুধু অ্যাডমিনদের জন্য', 'error'); return; }
+  if (r.editorOrAdmin && !(App.isAdmin || App.isEditor)) { showToast('শুধু অ্যাডমিন/এডিটরদের জন্য', 'error'); return; }
   App.currentPage = route;
 
   // Update sidebar active state
@@ -1072,6 +1099,7 @@ function navigate(route) {
     if (route === 'notices') refreshNoticesList();
     if (route === 'leaves') refreshLeavesList();
     if (route === 'employees') refreshEmployeesList();
+    if (route === 'settings') loadOfficeTimes();
 
     // Update today status if attendance is rendered
     refreshTodayClockStatus();
@@ -1147,16 +1175,27 @@ async function renderDashboard() {
     `;
   }
 
-  // Employee dashboard — clock + my stats
+  // Employee dashboard — clock + my stats + my notices + my leaves + motivational
+  const motivationalQuotes = [
+    'প্রত্যেক দিন নতুন সুযোগ নিয়ে আসে।',
+    'আজকের পরিশ্রম আগামীকালের সাফল্য।',
+    'সময়ের কাজ সময়ে করুন।',
+    'টিমওয়ার্কেই বড় সাফল্য আসে।',
+    'ছোট ছোট প্রচেষ্টাই বড় অর্জনে রূপ নেয়।'
+  ];
+  const quote = motivationalQuotes[new Date().getDate() % motivationalQuotes.length];
+  const ot = App.myOfficeTime;
+  const officeTimeText = ot ? `${formatBnTime('2000-01-01T'+ot.check_in_time)} - ${formatBnTime('2000-01-01T'+ot.check_out_time)}` : '—';
+
   return `
     <div class="welcome-banner">
-      <h1>👋 স্বাগতম, ${name}!</h1>
-      <p>${dayName(today())}, ${formatBnDate(today())}</p>
+      <h1>👋 আসসালামু আলাইকুম, ${name}!</h1>
+      <p>${dayName(today())}, ${formatBnDate(today())} · ${escapeHtml(quote)}</p>
     </div>
 
     <div class="clock-widget">
-      <div class="clock-display"><span id="liveClock">--:--:--</span> <span style="font-size:24px;color:var(--gray-500);font-weight:700" id="liveAmPm">AM</span></div>
-      <div class="clock-date">${dayName(today())} · ${formatBnDate(today())}</div>
+      <div class="clock-display"><span id="liveClock">--:--:--</span> <span style="font-size:18px;color:var(--gray-500);font-weight:700" id="liveAmPm">AM</span></div>
+      <div class="clock-date">${dayName(today())} · ${formatBnDate(today())} · অফিস টাইম <span class="num">${officeTimeText}</span></div>
       <div class="clock-actions">
         <button class="clock-btn in"   onclick="markAttendance('check_in')"  ><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু</small></button>
         <button class="clock-btn out"  onclick="markAttendance('check_out')" ><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ</small></button>
@@ -1167,15 +1206,28 @@ async function renderDashboard() {
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">${bnDigits(stats.myMonthPresent||0)}</h3><p>এই মাসে উপস্থিত</p></div>
+      <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">${bnDigits(stats.myMonthPresent||0)}</h3><p>এই মাসে উপস্থিত</p></div>
       <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">${bnDigits(stats.myMonthLate||0)}</h3><p>লেট</p></div>
-      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">${bnDigits(stats.myMonthLeave||0)}</h3><p>ছুটি</p></div>
-      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">${bnDigits(stats.myMonthHours||0)}</h3><p>মোট ঘন্টা</p></div>
+      <div class="stat-card" onclick="navigate('leaves')" style="cursor:pointer"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">${bnDigits(stats.myMonthLeave||0)}</h3><p>ছুটি (এ মাস)</p></div>
+      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">${bnDigits(stats.myMonthHours||0)}</h3><p>কাজের ঘন্টা</p></div>
     </div>
 
-    <div class="card">
-      <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
-      <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+    <div class="quick-actions">
+      <div class="quick-action" onclick="openLeaveModal()"><div class="qa-icon pink"><i class="fa-solid fa-calendar-plus"></i></div><span>ছুটির আবেদন</span></div>
+      <div class="quick-action" onclick="navigate('attendance')"><div class="qa-icon"><i class="fa-solid fa-history"></i></div><span>আমার এটেন্ডেন্স</span></div>
+      <div class="quick-action" onclick="navigate('notices')"><div class="qa-icon emerald"><i class="fa-solid fa-bullhorn"></i></div><span>নোটিশ দেখুন</span></div>
+      <div class="quick-action" onclick="navigate('profile')"><div class="qa-icon amber"><i class="fa-solid fa-user-pen"></i></div><span>প্রোফাইল আপডেট</span></div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
+        <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-calendar-check"></i> আমার সাম্প্রতিক ছুটি</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
+        <div id="dashMyLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
     </div>
   `;
 }
@@ -1202,7 +1254,7 @@ async function loadDashboardLists() {
     }
   } catch (e) { console.warn(e); }
 
-  // Pending leaves (admin only)
+  // Pending leaves (admin) OR my recent leaves (employee)
   if (App.isAdmin) {
     try {
       const { data: leaves } = await sb.from('leaves').select('*, profiles!user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(3);
@@ -1221,6 +1273,25 @@ async function loadDashboardLists() {
                 <button class="btn btn-success btn-sm" onclick="event.stopPropagation();reviewLeave(${l.id},'approved')"><i class="fa-solid fa-check"></i> অনুমোদন</button>
                 <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();reviewLeave(${l.id},'rejected')"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
               </div>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (e) { console.warn(e); }
+  } else {
+    // Employee: show my recent leaves
+    try {
+      const { data: leaves } = await sb.from('leaves').select('*').eq('user_id', App.user.id).order('created_at', { ascending: false }).limit(3);
+      const el = document.getElementById('dashMyLeaves');
+      if (el) {
+        if (!leaves || leaves.length === 0) {
+          el.innerHTML = `<div class="empty-state" style="padding:30px 20px"><i class="fa-solid fa-calendar-check"></i><h3>কোনো ছুটির আবেদন নেই</h3><button class="btn btn-primary btn-sm" style="margin-top:12px;width:auto" onclick="openLeaveModal()"><i class="fa-solid fa-plus"></i> নতুন আবেদন</button></div>`;
+        } else {
+          el.innerHTML = leaves.map(l => `
+            <div class="leave-card ${l.status}">
+              <span class="leave-status ${l.status}">${statusIcon(l.status)} ${statusLabel(l.status)}</span>
+              <h4>${leaveTypeLabel(l.leave_type)}</h4>
+              <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</span> <span class="num">(${bnDigits(l.total_days)} দিন)</span></div>
             </div>
           `).join('');
         }
@@ -1268,7 +1339,7 @@ async function getDashboardStats() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// LIVE CLOCK
+// LIVE CLOCK + LATE INDICATOR
 // ═══════════════════════════════════════════════════════════
 setInterval(() => {
   const el = document.getElementById('liveClock');
@@ -1282,6 +1353,18 @@ setInterval(() => {
   el.textContent = bnDigits(`${h}:${m}:${s}`);
   const ampmEl = document.getElementById('liveAmPm');
   if (ampmEl) ampmEl.textContent = ampm;
+
+  // Color the clock based on whether we're past office start time
+  const ot = App.myOfficeTime;
+  if (ot && ot.check_in_time) {
+    const [oh, om] = ot.check_in_time.split(':').map(Number);
+    const officeStart = new Date(now); officeStart.setHours(oh, om + (ot.grace_minutes||0), 0, 0);
+    const isLate = now.getTime() > officeStart.getTime();
+    el.classList.toggle('late', isLate);
+    el.classList.toggle('ok', !isLate);
+  } else {
+    el.classList.remove('late', 'ok');
+  }
 }, 1000);
 
 // ═══════════════════════════════════════════════════════════
@@ -1347,9 +1430,11 @@ async function markAttendance(type) {
 }
 
 async function getMyOfficeTime() {
+  if (App.myOfficeTime) return App.myOfficeTime;
   if (!App.profile?.employee_type_id) return null;
   try {
     const { data } = await sb.from('office_times').select('*').eq('employee_type_id', App.profile.employee_type_id).maybeSingle();
+    App.myOfficeTime = data;
     return data;
   } catch { return null; }
 }
@@ -1365,8 +1450,12 @@ async function refreshTodayClockStatus() {
     if (data.lunch_out) parts.push(`লাঞ্চ আউট ${formatBnTime(data.lunch_out)}`);
     if (data.lunch_in)  parts.push(`লাঞ্চ ইন ${formatBnTime(data.lunch_in)}`);
     if (data.check_out) parts.push(`চেক-আউট ${formatBnTime(data.check_out)}`);
+
+    const isLate = (data.late_minutes||0) > 0;
     el.style.display = 'inline-flex';
-    el.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${parts.join(' · ')}`;
+    el.className = 'clock-status ' + (isLate ? 'late' : 'ok');
+    const lateText = isLate ? ` · ⚠️ ${bnDigits(data.late_minutes)} মিনিট লেট` : '';
+    el.innerHTML = `<i class="fa-solid fa-${isLate?'triangle-exclamation':'circle-check'}"></i> ${parts.join(' · ')}${lateText}`;
   } catch (e) { /* ignore */ }
 }
 
@@ -1931,15 +2020,16 @@ async function renderProfile() {
     <div class="profile-banner">
       <div class="profile-photo" id="profilePhoto" style="cursor:pointer" onclick="openPhotoUpdate()" title="ছবি পরিবর্তন">
         ${photoUrl ? `<img src="${photoUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : i}
-        <div style="position:absolute;bottom:0;right:0;background:white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--purple-700);box-shadow:var(--shadow-md);border:2px solid var(--purple-100)"><i class="fa-solid fa-camera"></i></div>
+        <div style="position:absolute;bottom:4px;right:4px;background:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--purple-700);box-shadow:var(--shadow-md);border:2px solid var(--purple-100);font-size:13px"><i class="fa-solid fa-camera"></i></div>
       </div>
       <div class="profile-info">
         <h2>${escapeHtml(p.full_name || '—')}</h2>
-        <p>${escapeHtml(p.designation || 'কর্মী')} · ${App.isAdmin ? 'Admin' : 'Employee'}</p>
+        <p>${escapeHtml(p.position_title || p.designation || 'কর্মী')}${p.department?` · <i class="fa-solid fa-building" style="opacity:.7"></i> ${escapeHtml(p.department)}`:''}</p>
         <div class="badges">
-          <span class="verify-badge"><i class="fa-solid fa-circle-check"></i> ইমেইল ভেরিফাইড</span>
-          ${App.isAdmin ? '<span class="verify-badge" style="background:var(--purple-100);color:var(--purple-700)"><i class="fa-solid fa-shield-halved"></i> অ্যাডমিন</span>' : ''}
-          ${p.employee_types?.name_bn ? `<span class="verify-badge" style="background:var(--blue-100);color:var(--blue-500)"><i class="fa-solid fa-id-badge"></i> ${escapeHtml(p.employee_types.name_bn)}</span>` : ''}
+          <span class="verify-badge"><i class="fa-solid fa-circle-check"></i> ভেরিফাইড</span>
+          ${App.isAdmin ? '<span class="verify-badge" style="background:var(--purple-100);color:var(--purple-700)"><i class="fa-solid fa-shield-halved"></i> Admin</span>' : App.isEditor ? '<span class="verify-badge" style="background:var(--blue-100);color:var(--blue-500)"><i class="fa-solid fa-pen"></i> Editor</span>' : '<span class="verify-badge" style="background:var(--gray-100);color:var(--gray-700)"><i class="fa-solid fa-user"></i> Employee</span>'}
+          ${p.employee_types?.name_bn ? `<span class="verify-badge" style="background:var(--amber-100);color:var(--amber-500)"><i class="fa-solid fa-id-badge"></i> ${escapeHtml(p.employee_types.name_bn)}</span>` : ''}
+          ${p.position_rank ? `<span class="verify-badge" style="background:var(--pink-100);color:var(--pink-600)"><i class="fa-solid fa-ranking-star"></i> র‍্যাঙ্ক ${bnDigits(p.position_rank)}</span>` : ''}
         </div>
       </div>
     </div>
@@ -1958,11 +2048,14 @@ async function renderProfile() {
 
       <div class="card">
         <div class="card-title"><span><i class="fa-solid fa-briefcase"></i> কাজের তথ্য</span></div>
-        <div class="info-row"><div class="info-label">পদবি</div><div class="info-value">${escapeHtml(p.designation||'—')}</div></div>
-        <div class="info-row"><div class="info-label">ভূমিকা</div><div class="info-value"><span class="type-badge">${escapeHtml(p.employee_types?.name_bn || 'কর্মী')}</span></div></div>
+        <div class="info-row"><div class="info-label">পদবি</div><div class="info-value">${escapeHtml(p.position_title || p.designation || '—')}</div></div>
+        <div class="info-row"><div class="info-label">ডিপার্টমেন্ট</div><div class="info-value">${p.department ? escapeHtml(p.department) : '<span style="color:var(--gray-400)">—</span>'}</div></div>
+        <div class="info-row"><div class="info-label">ভূমিকা</div><div class="info-value"><span class="type-badge" style="${App.isAdmin?'background:var(--purple-100);color:var(--purple-700)':App.isEditor?'background:var(--blue-100);color:var(--blue-500)':''}">${roleLabel(p.role||App.role)}</span></div></div>
+        <div class="info-row"><div class="info-label">কর্মী ধরন</div><div class="info-value">${escapeHtml(p.employee_types?.name_bn || '—')}</div></div>
+        <div class="info-row"><div class="info-label">র‍্যাঙ্কিং</div><div class="info-value num">${bnDigits(p.position_rank||5)}</div></div>
         <div class="info-row"><div class="info-label">যোগদান</div><div class="info-value">${p.joined_at ? formatBnDate(p.joined_at) : '<span style="color:var(--gray-400)">—</span>'}</div></div>
         ${p.salary ? `<div class="info-row"><div class="info-label">বেতন</div><div class="info-value"><span class="num" style="color:var(--purple-700);font-weight:800">৳ ${bnDigits(p.salary)}</span></div></div>` : ''}
-        <div class="info-row"><div class="info-label">ব্যাংক একাউন্ট</div><div class="info-value">${p.bank_account ? escapeHtml(p.bank_account) : '<span style="color:var(--gray-400)">—</span>'}</div></div>
+        <div class="info-row"><div class="info-label">ব্যাংক</div><div class="info-value">${p.bank_account ? escapeHtml(p.bank_account) : '<span style="color:var(--gray-400)">—</span>'}</div></div>
       </div>
     </div>
 
@@ -1977,15 +2070,58 @@ function openPhotoUpdate() {
   showModal(
     '<i class="fa-solid fa-camera" style="color:var(--purple-600)"></i> প্রোফাইল ছবি পরিবর্তন',
     `
+    <div style="text-align:center;margin-bottom:18px">
+      <div id="photoPreview" style="width:120px;height:120px;border-radius:50%;background:var(--gradient-brand);color:white;font-family:var(--font-en);font-size:42px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;border:4px solid var(--purple-100);overflow:hidden">
+        ${App.profile?.photo_url ? `<img src="${App.profile.photo_url}" style="width:100%;height:100%;object-fit:cover">` : initial(App.profile?.full_name)}
+      </div>
+    </div>
+
+    <label style="display:block;padding:14px;border:2px dashed var(--purple-300);border-radius:var(--r-md);text-align:center;cursor:pointer;transition:all .25s;margin-bottom:12px" onmouseover="this.style.borderColor='var(--purple-500)';this.style.background='var(--purple-50)'" onmouseout="this.style.borderColor='var(--purple-300)';this.style.background='transparent'">
+      <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px;color:var(--purple-500);display:block;margin-bottom:6px"></i>
+      <div style="font-weight:700;color:var(--gray-800)">ছবি আপলোড করুন</div>
+      <div style="font-size:12px;color:var(--gray-500)">JPG, PNG (সর্বোচ্চ ৫MB)</div>
+      <input type="file" accept="image/*" id="photoFile" style="display:none" onchange="handlePhotoFile(event)">
+    </label>
+
+    <div style="margin:16px 0;text-align:center;color:var(--gray-400);font-size:12px;font-weight:600">— অথবা —</div>
+
     <div class="form-group">
-      <label>ছবির URL (যেকোনো public link)</label>
+      <label>ছবির URL দিন</label>
       <input class="form-input en" id="photoUrl" placeholder="https://example.com/photo.jpg" value="${App.profile?.photo_url||''}">
     </div>
-    <p style="font-size:13px;color:var(--gray-500)">💡 আপনি Imgur, Google Drive (public), বা যেকোনো image hosting থেকে link পেস্ট করুন। File upload শীঘ্রই যোগ হবে।</p>
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
      <button class="btn btn-primary" id="phSaveBtn" onclick="savePhoto()"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
   );
+}
+
+async function handlePhotoFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) return showToast('ছবি ৫MB এর চেয়ে বড়', 'error');
+  if (!file.type.startsWith('image/')) return showToast('ছবি ফাইল দিন', 'error');
+
+  // Show local preview
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const prev = document.getElementById('photoPreview');
+    if (prev) prev.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to Supabase storage
+  showToast('আপলোড হচ্ছে...', 'info');
+  try {
+    const ext = file.name.split('.').pop();
+    const filename = `${App.user.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('avatars').upload(filename, file, { upsert: true });
+    if (upErr) throw upErr;
+    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(filename);
+    document.getElementById('photoUrl').value = urlData.publicUrl;
+    showToast('✅ আপলোড সফল! এখন সংরক্ষণ চাপুন', 'success');
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'আপলোড ব্যর্থ — Storage bucket এর জন্য SQL v2 চালান'), 'error');
+  }
 }
 
 async function savePhoto() {
@@ -1996,6 +2132,10 @@ async function savePhoto() {
     const { error } = await sb.from('profiles').update({ photo_url: url || null }).eq('id', App.user.id);
     if (error) throw error;
     App.profile.photo_url = url;
+    // Update sidebar/topbar avatars
+    const photoHTML = url ? `<img src="${url}" style="width:100%;height:100%;object-fit:cover">` : initial(App.profile.full_name);
+    document.getElementById('sidebarAvatar').innerHTML = photoHTML;
+    document.getElementById('topbarAvatar').innerHTML  = photoHTML;
     showToast('✅ ছবি আপডেট হয়েছে');
     closeModal();
     navigate('profile');
@@ -2138,16 +2278,23 @@ async function refreshEmployeesList() {
       return;
     }
 
-    card.innerHTML = `<div class="emp-grid">${filtered.map(e => `
+    card.innerHTML = `<div class="emp-grid">${filtered.map(e => {
+      const roleBadge = e.role === 'admin' ? `<span class="type-badge" style="background:var(--purple-100);color:var(--purple-700);font-size:10px"><i class="fa-solid fa-shield-halved"></i> Admin</span>` :
+                        e.role === 'editor' ? `<span class="type-badge" style="background:var(--blue-100);color:var(--blue-500);font-size:10px"><i class="fa-solid fa-pen"></i> Editor</span>` : '';
+      return `
       <div class="emp-card" onclick="viewEmployee('${e.id}')">
         ${e.is_active?'<span class="status-dot"></span>':''}
         <div class="avatar-lg">${e.photo_url ? `<img src="${e.photo_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : initial(e.full_name)}</div>
         <h4>${escapeHtml(e.full_name)}</h4>
-        <div class="emp-desg">${escapeHtml(e.designation || '—')}</div>
-        <span class="type-badge">${escapeHtml(e.employee_types?.name_bn || 'কর্মী')}</span>
+        <div class="emp-desg">${escapeHtml(e.position_title || e.designation || '—')}</div>
+        ${e.department ? `<div style="font-size:11px;color:var(--gray-400);margin-bottom:6px"><i class="fa-solid fa-building"></i> ${escapeHtml(e.department)}</div>` : ''}
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">
+          <span class="type-badge">${escapeHtml(e.employee_types?.name_bn || 'কর্মী')}</span>
+          ${roleBadge}
+        </div>
         ${App.isAdmin ? `<div style="margin-top:10px;display:flex;gap:6px;justify-content:center"><button class="icon-btn" onclick="event.stopPropagation();editEmployee('${e.id}')" title="এডিট"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" onclick="event.stopPropagation();deleteEmployee('${e.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button></div>` : ''}
-      </div>
-    `).join('')}</div>
+      </div>`;
+    }).join('')}</div>
     <div style="text-align:center;margin-top:18px;color:var(--gray-500);font-size:13px">মোট ${bnDigits(filtered.length)} জন</div>`;
   } catch (e) {
     card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড করতে সমস্যা</h3><p>${e.message}</p></div>`;
@@ -2172,27 +2319,44 @@ async function loadEmployeeTypes() {
 }
 
 function openEmployeeModal(emp = null) {
-  loadEmployeeTypes().then(() => {
+  Promise.all([loadEmployeeTypes(), loadDepartments()]).then(() => {
     const isEdit = !!emp;
     const types = App.employeeTypes.map(t => `<option value="${t.id}" ${isEdit && emp.employee_type_id===t.id?'selected':''}>${t.name_bn}</option>`).join('');
+    const depts = `<option value="">— নির্বাচন করুন —</option>` + App.departments.map(d => `<option value="${escapeHtml(d.name_bn)}" ${isEdit && emp.department===d.name_bn?'selected':''}>${escapeHtml(d.name_bn)}</option>`).join('');
+    const role = isEdit ? (emp.role || 'employee') : 'employee';
     showModal(
       `<i class="fa-solid fa-user-plus" style="color:var(--purple-600)"></i> ${isEdit ? 'কর্মী এডিট' : 'নতুন কর্মী যোগ'}`,
       `
       <div class="form-group"><label>পূর্ণ নাম *</label><input class="form-input" id="empName" placeholder="পূর্ণ নাম" value="${isEdit?escapeHtml(emp.full_name||''):''}"></div>
       <div class="form-grid">
-        <div class="form-group"><label>ইমেইল *</label><input class="form-input" type="email" id="empEmail" placeholder="email@example.com" value="${isEdit?escapeHtml(emp.email||''):''}" ${isEdit?'readonly':''}></div>
+        <div class="form-group"><label>ইমেইল *</label><input class="form-input en" type="email" id="empEmail" placeholder="email@example.com" value="${isEdit?escapeHtml(emp.email||''):''}" ${isEdit?'readonly':''}></div>
         <div class="form-group"><label>ফোন</label><input class="form-input" id="empPhone" placeholder="০১৭xxxxxxxx" value="${isEdit?escapeHtml(emp.phone||''):''}"></div>
       </div>
       <div class="form-grid">
-        <div class="form-group"><label>পদবি</label><input class="form-input" id="empDesignation" placeholder="পদবি" value="${isEdit?escapeHtml(emp.designation||''):''}"></div>
+        <div class="form-group"><label>ডিপার্টমেন্ট</label><select class="form-select" id="empDept">${depts}</select></div>
+        <div class="form-group"><label>পদবি / পদ</label><input class="form-input" id="empPosition" placeholder="যেমন: সিনিয়র ডেভেলপার" value="${isEdit?escapeHtml(emp.position_title||emp.designation||''):''}"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ভূমিকা (Role) *</label>
+          <select class="form-select" id="empRole">
+            <option value="admin"    ${role==='admin'?'selected':''}>👑 অ্যাডমিন (পূর্ণ অ্যাক্সেস)</option>
+            <option value="editor"   ${role==='editor'?'selected':''}>✍️ এডিটর (নোটিশ/ছুটি ম্যানেজ)</option>
+            <option value="employee" ${role==='employee'?'selected':''}>👤 সাধারণ কর্মী</option>
+          </select>
+        </div>
         <div class="form-group"><label>কর্মী ধরন</label><select class="form-select" id="empType">${types}</select></div>
       </div>
       <div class="form-grid">
+        <div class="form-group"><label>র‍্যাঙ্কিং (১=সর্বোচ্চ)</label><input class="form-input num" type="number" id="empRank" min="1" max="100" value="${isEdit?(emp.position_rank||5):5}"></div>
         <div class="form-group"><label>যোগদান তারিখ</label><input class="form-input" type="date" id="empJoined" value="${isEdit?(emp.joined_at||''):today()}"></div>
+      </div>
+      <div class="form-grid">
         <div class="form-group"><label>মাসিক বেতন (৳)</label><input class="form-input num" type="number" id="empSalary" placeholder="০" value="${isEdit?(emp.salary||''):''}"></div>
+        <div class="form-group"><label>ব্যাংক একাউন্ট</label><input class="form-input" id="empBank" placeholder="এক্স ব্যাংক · ১২৩৪৫৬" value="${isEdit?escapeHtml(emp.bank_account||''):''}"></div>
       </div>
       <div class="form-group"><label>ঠিকানা</label><textarea class="form-textarea" id="empAddress" style="min-height:60px">${isEdit?escapeHtml(emp.address||''):''}</textarea></div>
-      ${!isEdit?'<div class="note-banner" style="font-size:12px"><i class="fa-solid fa-info-circle"></i> নতুন কর্মীকে আলাদাভাবে রেজিস্ট্রেশন পেজ থেকে অ্যাকাউন্ট তৈরি করতে বলুন। এখানে শুধু তথ্য সংরক্ষিত হবে।</div>':''}
+      ${!isEdit?'<div class="note-banner" style="font-size:12px"><i class="fa-solid fa-info-circle"></i> নতুন কর্মীকে আলাদাভাবে রেজিস্ট্রেশন পেজ থেকে অ্যাকাউন্ট তৈরি করতে বলুন। এই অ্যাকাউন্ট দিয়ে তিনি login করলে এই profile-এর সাথে link হবে।</div>':''}
       `,
       `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
        <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee(${isEdit?`'${emp.id}'`:'null'})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
@@ -2205,11 +2369,17 @@ async function saveEmployee(id) {
     full_name:        document.getElementById('empName').value.trim(),
     email:            document.getElementById('empEmail').value.trim(),
     phone:            document.getElementById('empPhone').value.trim() || null,
-    designation:      document.getElementById('empDesignation').value.trim() || null,
+    department:       document.getElementById('empDept').value || null,
+    position_title:   document.getElementById('empPosition').value.trim() || null,
+    designation:      document.getElementById('empPosition').value.trim() || null,
+    role:             document.getElementById('empRole').value,
     employee_type_id: parseInt(document.getElementById('empType').value),
+    position_rank:    parseInt(document.getElementById('empRank').value) || 5,
     joined_at:        document.getElementById('empJoined').value || null,
     salary:           parseFloat(document.getElementById('empSalary').value) || null,
-    address:          document.getElementById('empAddress').value.trim() || null
+    bank_account:     document.getElementById('empBank').value.trim() || null,
+    address:          document.getElementById('empAddress').value.trim() || null,
+    is_admin:         document.getElementById('empRole').value === 'admin'
   };
   if (!data.full_name || !data.email) return showToast('নাম ও ইমেইল আবশ্যক', 'error');
 
@@ -2221,7 +2391,6 @@ async function saveEmployee(id) {
       if (error) throw error;
       showToast('✅ কর্মী আপডেট হয়েছে');
     } else {
-      // For new employee, we can't create auth user from client; just store profile placeholder
       const placeholder = { ...data, id: crypto.randomUUID(), is_active: true };
       const { error } = await sb.from('profiles').insert(placeholder);
       if (error) throw error;
@@ -2617,6 +2786,20 @@ async function renderSettings() {
     </div>
   `).join('');
 
+  // Departments
+  await loadDepartments();
+  const depts = App.departments.map(d => `
+    <div class="settings-row">
+      <div>
+        <h5>${escapeHtml(d.name_bn)} ${d.name_en?`<small style="color:var(--gray-400);font-weight:500">· ${escapeHtml(d.name_en)}</small>`:''}</h5>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="editDept(${d.id})"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-outline btn-sm" style="color:var(--red-500);border-color:var(--red-100)" onclick="deleteDept(${d.id})"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+
   return `
     <div class="card">
       <div class="card-title">
@@ -2629,42 +2812,111 @@ async function renderSettings() {
     </div>
 
     <div class="card">
-      <div class="card-title"><span><i class="fa-solid fa-clock"></i> অফিস টাইম সেটিংস</span></div>
-      <div id="officeTimesContainer" style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
+      <div class="card-title">
+        <span><i class="fa-solid fa-building"></i> ডিপার্টমেন্ট</span>
+        <button class="btn btn-primary" onclick="openDeptModal()" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন ডিপার্টমেন্ট</button>
+      </div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> কর্মীদের ডিপার্টমেন্ট হিসেবে অর্গানাইজ করুন (যেমন: প্রশাসন, IT, হিসাব)।</div>
+      ${depts || '<div class="empty-state" style="padding:20px"><i class="fa-solid fa-building"></i><p>কোনো ডিপার্টমেন্ট নেই</p></div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-clock"></i> অফিস টাইম সেটিংস (প্রতিটি কর্মী ধরনের জন্য)</span></div>
+      <div id="officeTimesContainer"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
     </div>
   `;
 }
 
-// Load office times after settings render
-setTimeout(loadOfficeTimes, 100);
-function loadOfficeTimes() {
+async function loadDepartments(force=false) {
+  if (!force && App.departments.length > 0) return;
+  try {
+    const { data } = await sb.from('departments').select('*').eq('is_active', true).order('name_bn');
+    App.departments = data || [];
+  } catch (e) { console.warn(e); }
+}
+
+function openDeptModal(d = null) {
+  const isEdit = !!d;
+  showModal(
+    `<i class="fa-solid fa-building" style="color:var(--purple-600)"></i> ${isEdit?'ডিপার্টমেন্ট এডিট':'নতুন ডিপার্টমেন্ট'}`,
+    `
+    <div class="form-group"><label>বাংলা নাম *</label><input class="form-input" id="dpNameBn" placeholder="যেমন: প্রশাসন" value="${isEdit?escapeHtml(d.name_bn):''}"></div>
+    <div class="form-group"><label>ইংরেজি নাম</label><input class="form-input en" id="dpNameEn" placeholder="Administration" value="${isEdit?escapeHtml(d.name_en||''):''}"></div>
+    <div class="form-group"><label>বিবরণ</label><textarea class="form-textarea" id="dpDesc" style="min-height:60px">${isEdit?escapeHtml(d.description||''):''}</textarea></div>
+    `,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="dpSaveBtn" onclick="saveDept(${isEdit?d.id:'null'})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
+  );
+}
+
+async function saveDept(id) {
+  const data = {
+    name_bn: document.getElementById('dpNameBn').value.trim(),
+    name_en: document.getElementById('dpNameEn').value.trim() || null,
+    description: document.getElementById('dpDesc').value.trim() || null
+  };
+  if (!data.name_bn) return showToast('নাম আবশ্যক', 'error');
+  const btn = document.getElementById('dpSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    if (id) {
+      const { error } = await sb.from('departments').update(data).eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('departments').insert(data);
+      if (error) throw error;
+    }
+    showToast('✅ সংরক্ষিত হয়েছে');
+    App.departments = [];
+    closeModal();
+    navigate('settings');
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally { setBtnLoading(btn, false); }
+}
+
+async function editDept(id) {
+  const { data } = await sb.from('departments').select('*').eq('id', id).maybeSingle();
+  if (data) openDeptModal(data);
+}
+
+async function deleteDept(id) {
+  if (!confirm('এই ডিপার্টমেন্ট ডিলিট করবেন?')) return;
+  const { error } = await sb.from('departments').update({ is_active: false }).eq('id', id);
+  if (error) return showToast('❌ ' + error.message, 'error');
+  App.departments = [];
+  showToast('✅ ডিলিট হয়েছে');
+  navigate('settings');
+}
+
+// Load office times — called from renderSettings; uses async/await properly
+async function loadOfficeTimes() {
   const c = document.getElementById('officeTimesContainer');
   if (!c) return;
-  sb.from('office_times').select('*, employee_types(name_bn, code)').then(({ data, error }) => {
-    if (!c) return;
-    if (error || !data) {
-      c.innerHTML = `<div class="empty-state" style="padding:20px"><p>ডাটা লোড করতে সমস্যা${error?': '+error.message:''}</p></div>`;
-      return;
-    }
-    if (data.length === 0) {
-      c.innerHTML = '<p style="color:var(--gray-500)">কোনো টাইপের অফিস টাইম সেট নেই।</p>';
+  try {
+    const { data, error } = await sb.from('office_times').select('*, employee_types(name_bn, code)').order('id');
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      c.innerHTML = '<p style="color:var(--gray-500);padding:14px">কোনো টাইপের অফিস টাইম সেট নেই। প্রথমে উপরে কর্মী ধরন যোগ করুন।</p>';
       return;
     }
     c.innerHTML = data.map(o => `
       <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:14px">
-        <h5>${escapeHtml(o.employee_types?.name_bn || '—')}</h5>
+        <h5><i class="fa-solid fa-id-badge" style="color:var(--purple-500)"></i> ${escapeHtml(o.employee_types?.name_bn || '—')} <small style="color:var(--gray-400);font-weight:500">· ${escapeHtml(o.employee_types?.code||'')}</small></h5>
         <div class="form-grid">
           <div class="form-group" style="margin:0"><label>অফিস ইন</label><input class="form-input num" type="time" id="ot_${o.id}_in" value="${o.check_in_time}"></div>
           <div class="form-group" style="margin:0"><label>অফিস আউট</label><input class="form-input num" type="time" id="ot_${o.id}_out" value="${o.check_out_time}"></div>
           <div class="form-group" style="margin:0"><label>লাঞ্চ আউট</label><input class="form-input num" type="time" id="ot_${o.id}_lout" value="${o.lunch_start_time}"></div>
           <div class="form-group" style="margin:0"><label>লাঞ্চ ইন</label><input class="form-input num" type="time" id="ot_${o.id}_lin" value="${o.lunch_end_time}"></div>
-          <div class="form-group" style="margin:0"><label>গ্রেস (মিনিট)</label><input class="form-input num" type="number" id="ot_${o.id}_grace" value="${o.grace_minutes}"></div>
-          <div class="form-group" style="margin:0"><label>ব্রেক (মিনিট)</label><input class="form-input num" type="number" id="ot_${o.id}_break" value="${o.break_minutes}"></div>
+          <div class="form-group" style="margin:0"><label>গ্রেস (মিনিট)</label><input class="form-input num" type="number" id="ot_${o.id}_grace" value="${o.grace_minutes}" min="0"></div>
+          <div class="form-group" style="margin:0"><label>ব্রেক (মিনিট)</label><input class="form-input num" type="number" id="ot_${o.id}_break" value="${o.break_minutes}" min="0"></div>
         </div>
         <button class="btn btn-success" style="width:auto;align-self:flex-start" onclick="saveOfficeTime(${o.id})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>
       </div>
     `).join('');
-  });
+  } catch (e) {
+    c.innerHTML = `<div class="empty-state" style="padding:20px"><p>লোড করতে সমস্যা: ${e.message}</p></div>`;
+  }
 }
 
 async function saveOfficeTime(id) {
@@ -2679,6 +2931,9 @@ async function saveOfficeTime(id) {
   };
   const { error } = await sb.from('office_times').update(data).eq('id', id);
   if (error) return showToast('❌ ' + error.message, 'error');
+  // Invalidate cache so live clock picks up new times
+  App.myOfficeTime = null;
+  await getMyOfficeTime();
   showToast('✅ অফিস টাইম সংরক্ষিত');
 }
 
