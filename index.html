@@ -1610,6 +1610,18 @@ async function renderDashboard() {
         <div id="dashLeaveBalance"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
     </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-calendar-plus"></i> আমার ছুটির আবেদন</span><button class="btn btn-primary btn-sm" style="width:auto" onclick="openLeaveModal()"><i class="fa-solid fa-plus"></i> নতুন আবেদন</button></div>
+        <div id="dashMyLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
+        <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
+    </div>
   `;
 }
 
@@ -1758,6 +1770,26 @@ async function loadDashboardLists() {
             : '<span style="color:var(--gray-400)">এখনো চেক-ইন হয়নি</span>';
         } else {
           valEl.innerHTML = '<span style="color:var(--gray-400)">এখনো চেক-ইন হয়নি</span>';
+        }
+      }
+    } catch (e) { console.warn(e); }
+
+    // 4. Recent notices for employee
+    try {
+      const { data: notices } = await sb.from('notices').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(3);
+      const noticeEl = document.getElementById('dashRecentNotices');
+      if (noticeEl) {
+        if (!notices || notices.length === 0) {
+          noticeEl.innerHTML = `<div class="empty-state" style="padding:30px 20px"><i class="fa-solid fa-bullhorn"></i><h3>কোনো নোটিশ নেই</h3></div>`;
+        } else {
+          noticeEl.innerHTML = notices.map(n => `
+            <div class="notice-item" onclick="navigate('notices')">
+              <span class="priority-badge ${n.priority||'general'}">${priorityLabel(n.priority)}</span>
+              <h4>${escapeHtml(n.title)}</h4>
+              <p>${escapeHtml((n.content||'').slice(0,100))}${(n.content||'').length>100?'...':''}</p>
+              <div class="notice-meta"><span><i class="fa-regular fa-clock"></i> ${formatBnDate(n.created_at)}</span></div>
+            </div>
+          `).join('');
         }
       }
     } catch (e) { console.warn(e); }
