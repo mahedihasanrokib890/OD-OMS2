@@ -1027,10 +1027,32 @@ function navigate(route) {
 
   // Resolve render function at call time (works regardless of script order)
   const fn = window[r.renderFn];
-  const content = (typeof fn === 'function')
-    ? fn()
-    : `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>পেজ লোড হচ্ছে...</h3><p>এই পেজটি এখনো প্রস্তুত নয়।</p></div>`;
-  document.getElementById('pageContent').innerHTML = content;
+  const container = document.getElementById('pageContent');
+
+  if (typeof fn !== 'function') {
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>পেজ লোড হচ্ছে...</h3></div>`;
+    return;
+  }
+
+  // Show loading skeleton while async render runs
+  container.innerHTML = `<div style="padding:60px;text-align:center"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:14px;color:var(--gray-500);font-weight:600">লোড হচ্ছে...</p></div>`;
+
+  Promise.resolve(fn()).then(html => {
+    container.innerHTML = html;
+
+    // Page-specific post-render hooks
+    if (route === 'dashboard') loadDashboardLists();
+    if (route === 'attendance') refreshAttendanceList();
+    if (route === 'notices') refreshNoticesList();
+    if (route === 'leaves') refreshLeavesList();
+    if (route === 'employees') refreshEmployeesList();
+
+    // Update today status if attendance is rendered
+    refreshTodayClockStatus();
+  }).catch(err => {
+    console.error('render error:', err);
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>পেজ লোড করতে সমস্যা হয়েছে</h3><p>${err.message||''}</p><button class="btn btn-primary" style="margin-top:16px;width:auto" onclick="navigate('${route}')"><i class="fa-solid fa-rotate-right"></i> আবার চেষ্টা করুন</button></div>`;
+  });
 
   // Close mobile sidebar
   if (window.innerWidth < 1024) toggleSidebar(false);
@@ -1051,9 +1073,12 @@ function toggleSidebar(force) {
 // ═══════════════════════════════════════════════════════════
 // PAGE: DASHBOARD
 // ═══════════════════════════════════════════════════════════
-function renderDashboard() {
+async function renderDashboard() {
   const name = App.profile?.full_name?.split(' ')[0] || 'বন্ধু';
   const isAdmin = App.isAdmin;
+
+  // Fetch live stats
+  const stats = await getDashboardStats();
 
   if (isAdmin) {
     return `
@@ -1063,33 +1088,40 @@ function renderDashboard() {
       </div>
 
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-users"></i></div><h3 class="num">০</h3><p>মোট কর্মী</p><div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-circle-info"></i> কর্মী যোগ করুন</div></div>
-        <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-circle-check"></i></div><h3 class="num">০</h3><p>আজ উপস্থিত</p></div>
-        <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">০</h3><p>আজ ছুটিতে</p></div>
-        <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-clock-rotate-left"></i></div><h3 class="num">০</h3><p>অপেক্ষমাণ</p></div>
-      </div>
-
-      <div class="quick-actions">
-        <div class="quick-action" onclick="navigate('employees')"><div class="qa-icon"><i class="fa-solid fa-user-plus"></i></div><span>নতুন কর্মী যোগ</span></div>
-        <div class="quick-action" onclick="navigate('notices')"><div class="qa-icon pink"><i class="fa-solid fa-bullhorn"></i></div><span>নোটিশ পোস্ট</span></div>
-        <div class="quick-action" onclick="navigate('leaves')"><div class="qa-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><span>ছুটি অনুমোদন</span></div>
-        <div class="quick-action" onclick="navigate('import')"><div class="qa-icon amber"><i class="fa-solid fa-file-import"></i></div><span>ডাটা ইম্পোর্ট</span></div>
+        <div class="stat-card" onclick="navigate('employees')" style="cursor:pointer">
+          <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
+          <h3 class="num">${bnDigits(stats.totalEmp)}</h3><p>মোট কর্মী</p>
+          <div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত দেখুন</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon emerald"><i class="fa-solid fa-circle-check"></i></div>
+          <h3 class="num">${bnDigits(stats.todayPresent)}</h3><p>আজ উপস্থিত</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber"><i class="fa-solid fa-umbrella-beach"></i></div>
+          <h3 class="num">${bnDigits(stats.todayOnLeave)}</h3><p>আজ ছুটিতে</p>
+        </div>
+        <div class="stat-card" onclick="navigate('leaves')" style="cursor:pointer">
+          <div class="stat-icon pink"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          <h3 class="num">${bnDigits(stats.pendingLeaves)}</h3><p>অপেক্ষমাণ ছুটি</p>
+          <div class="stat-trend" style="color:var(--amber-500)"><i class="fa-solid fa-arrow-right"></i> অনুমোদন করুন</div>
+        </div>
       </div>
 
       <div class="card-grid">
         <div class="card">
           <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
-          <div class="empty-state" style="padding:30px 20px"><i class="fa-solid fa-bullhorn"></i><h3>এখনো কোনো নোটিশ নেই</h3><p>নতুন নোটিশ পোস্ট করুন</p></div>
+          <div id="dashRecentNotices"><div class="dot-loader" style="padding:20px;display:flex;justify-content:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--purple-400);animation:pulse 1.4s infinite"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--purple-400);animation:pulse 1.4s infinite .2s"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--purple-400);animation:pulse 1.4s infinite .4s"></span></div></div>
         </div>
         <div class="card">
           <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> অপেক্ষমাণ ছুটি</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
-          <div class="empty-state" style="padding:30px 20px"><i class="fa-solid fa-calendar-check"></i><h3>কোনো অপেক্ষমাণ আবেদন নেই</h3><p>সব আবেদন প্রসেস হয়েছে</p></div>
+          <div id="dashPendingLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
         </div>
       </div>
     `;
   }
 
-  // Employee dashboard
+  // Employee dashboard — clock + my stats
   return `
     <div class="welcome-banner">
       <h1>👋 স্বাগতম, ${name}!</h1>
@@ -1100,26 +1132,113 @@ function renderDashboard() {
       <div class="clock-display"><span id="liveClock">--:--:--</span> <span style="font-size:24px;color:var(--gray-500);font-weight:700" id="liveAmPm">AM</span></div>
       <div class="clock-date">${dayName(today())} · ${formatBnDate(today())}</div>
       <div class="clock-actions">
-        <button class="clock-btn in" onclick="markAttendance('check_in')"><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু</small></button>
-        <button class="clock-btn out" onclick="markAttendance('check_out')"><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ</small></button>
-        <button class="clock-btn lout" onclick="markAttendance('lunch_out')"><i class="fa-solid fa-utensils"></i><span>লাঞ্চ আউট</span><small>খেতে যাচ্ছেন</small></button>
-        <button class="clock-btn lin" onclick="markAttendance('lunch_in')"><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small>ফিরে এসেছেন</small></button>
+        <button class="clock-btn in"   onclick="markAttendance('check_in')"  ><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু</small></button>
+        <button class="clock-btn out"  onclick="markAttendance('check_out')" ><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ</small></button>
+        <button class="clock-btn lout" onclick="markAttendance('lunch_out')" ><i class="fa-solid fa-utensils"></i><span>লাঞ্চ আউট</span><small>খেতে যাচ্ছেন</small></button>
+        <button class="clock-btn lin"  onclick="markAttendance('lunch_in')"  ><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small>ফিরে এসেছেন</small></button>
       </div>
       <div class="clock-status" id="todayStatus" style="display:none"></div>
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">০</h3><p>এই মাসে উপস্থিত</p></div>
-      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">০</h3><p>লেট</p></div>
-      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">০</h3><p>ছুটি</p></div>
-      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">০</h3><p>মোট ঘন্টা</p></div>
+      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">${bnDigits(stats.myMonthPresent||0)}</h3><p>এই মাসে উপস্থিত</p></div>
+      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">${bnDigits(stats.myMonthLate||0)}</h3><p>লেট</p></div>
+      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">${bnDigits(stats.myMonthLeave||0)}</h3><p>ছুটি</p></div>
+      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">${bnDigits(stats.myMonthHours||0)}</h3><p>মোট ঘন্টা</p></div>
     </div>
 
     <div class="card">
       <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
-      <div class="empty-state" style="padding:30px 20px"><i class="fa-solid fa-bullhorn"></i><h3>এখনো কোনো নোটিশ নেই</h3></div>
+      <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
     </div>
   `;
+}
+
+// Helper: render dashboard recent notices and pending leaves async
+async function loadDashboardLists() {
+  // Recent notices (last 3)
+  try {
+    const { data: notices } = await sb.from('notices').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(3);
+    const el = document.getElementById('dashRecentNotices');
+    if (el) {
+      if (!notices || notices.length === 0) {
+        el.innerHTML = `<div class="empty-state" style="padding:30px 20px"><i class="fa-solid fa-bullhorn"></i><h3>এখনো কোনো নোটিশ নেই</h3></div>`;
+      } else {
+        el.innerHTML = notices.map(n => `
+          <div class="notice-item" onclick="navigate('notices')">
+            <span class="priority-badge ${n.priority||'general'}">${priorityLabel(n.priority)}</span>
+            <h4>${escapeHtml(n.title)}</h4>
+            <p>${escapeHtml((n.content||'').slice(0,120))}${(n.content||'').length>120?'...':''}</p>
+            <div class="notice-meta"><span><i class="fa-regular fa-clock"></i> ${formatBnDate(n.created_at)}</span></div>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (e) { console.warn(e); }
+
+  // Pending leaves (admin only)
+  if (App.isAdmin) {
+    try {
+      const { data: leaves } = await sb.from('leaves').select('*, profiles!user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(3);
+      const el = document.getElementById('dashPendingLeaves');
+      if (el) {
+        if (!leaves || leaves.length === 0) {
+          el.innerHTML = `<div class="empty-state" style="padding:30px 20px"><i class="fa-solid fa-calendar-check"></i><h3>কোনো অপেক্ষমাণ আবেদন নেই</h3></div>`;
+        } else {
+          el.innerHTML = leaves.map(l => `
+            <div class="leave-card pending">
+              <span class="leave-status pending"><i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ</span>
+              <h4>${escapeHtml(l.profiles?.full_name || 'কর্মী')}</h4>
+              <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</span> <span class="num">(${bnDigits(l.total_days)} দিন)</span></div>
+              <div class="leave-reason">${escapeHtml(l.reason)}</div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-success btn-sm" onclick="event.stopPropagation();reviewLeave(${l.id},'approved')"><i class="fa-solid fa-check"></i> অনুমোদন</button>
+                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();reviewLeave(${l.id},'rejected')"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (e) { console.warn(e); }
+  }
+}
+
+function priorityLabel(p) {
+  return p === 'urgent' ? '🔴 জরুরী' : p === 'important' ? '🟡 গুরুত্বপূর্ণ' : '🟢 সাধারণ';
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function getDashboardStats() {
+  const result = { totalEmp: 0, todayPresent: 0, todayOnLeave: 0, pendingLeaves: 0,
+                   myMonthPresent: 0, myMonthLate: 0, myMonthLeave: 0, myMonthHours: 0 };
+  try {
+    if (App.isAdmin) {
+      const [emp, att, lv] = await Promise.all([
+        sb.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        sb.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today()),
+        sb.from('leaves').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+      ]);
+      result.totalEmp      = emp.count || 0;
+      result.todayPresent  = att.count || 0;
+      result.pendingLeaves = lv.count || 0;
+      // today on leave
+      const { count: olCount } = await sb.from('leaves').select('id', { count:'exact', head:true })
+        .eq('status', 'approved').lte('start_date', today()).gte('end_date', today());
+      result.todayOnLeave = olCount || 0;
+    } else {
+      // Employee monthly stats
+      const start = today().slice(0,7) + '-01';
+      const { data: myAtt } = await sb.from('attendance').select('*').eq('user_id', App.user.id).gte('date', start);
+      const { count: myLeave } = await sb.from('leaves').select('id',{count:'exact',head:true}).eq('user_id', App.user.id).eq('status','approved').gte('start_date', start);
+      result.myMonthPresent = (myAtt||[]).filter(r => r.status === 'present' || r.status === 'late').length;
+      result.myMonthLate    = (myAtt||[]).filter(r => r.late_minutes > 0).length;
+      result.myMonthLeave   = myLeave || 0;
+      result.myMonthHours   = Math.round((myAtt||[]).reduce((s,r) => s + (r.total_hours||0), 0));
+    }
+  } catch (e) { console.warn('stats error:', e); }
+  return result;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1139,14 +1258,88 @@ setInterval(() => {
   if (ampmEl) ampmEl.textContent = ampm;
 }, 1000);
 
-function markAttendance(type) {
+// ═══════════════════════════════════════════════════════════
+// ATTENDANCE
+// ═══════════════════════════════════════════════════════════
+async function markAttendance(type) {
+  if (!App.user) return showToast('লগইন করুন', 'error');
   const labels = { check_in: 'অফিস ইন', check_out: 'অফিস আউট', lunch_out: 'লাঞ্চ আউট', lunch_in: 'লাঞ্চ ইন' };
-  showToast(`✅ ${labels[type]} সফল! (Phase 2 এ Supabase এ সংরক্ষিত হবে)`, 'success');
-  const status = document.getElementById('todayStatus');
-  if (status) {
-    status.style.display = 'inline-flex';
-    status.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${labels[type]} হয়েছে · ${formatBnTime(new Date())}`;
+  const fields = { check_in: 'check_in', check_out: 'check_out', lunch_out: 'lunch_out', lunch_in: 'lunch_in' };
+  const now = new Date().toISOString();
+
+  try {
+    // Get today's record
+    const { data: existing } = await sb.from('attendance').select('*').eq('user_id', App.user.id).eq('date', today()).maybeSingle();
+
+    let payload;
+    if (existing) {
+      payload = { ...existing, [fields[type]]: now, updated_at: now };
+      // calc total hours if check_out
+      if (type === 'check_out' && existing.check_in) {
+        let ms = new Date(now) - new Date(existing.check_in);
+        if (existing.lunch_out && existing.lunch_in) ms -= (new Date(existing.lunch_in) - new Date(existing.lunch_out));
+        payload.total_hours = Math.round((ms / 3600000) * 100) / 100;
+      }
+      const { error } = await sb.from('attendance').update(payload).eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      // First check-in of the day
+      payload = {
+        user_id: App.user.id,
+        date: today(),
+        [fields[type]]: now,
+        status: 'present',
+        late_minutes: 0
+      };
+      const { error } = await sb.from('attendance').insert(payload);
+      if (error) throw error;
+    }
+
+    showToast(`✅ ${labels[type]} সফল! · ${formatBnTime(now)}`);
+    refreshTodayClockStatus();
+    if (App.currentPage === 'attendance') refreshAttendanceList();
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'সেভ ব্যর্থ — SQL চালানো হয়েছে কি?'), 'error');
+    console.error(e);
   }
+}
+
+async function refreshTodayClockStatus() {
+  const el = document.getElementById('todayStatus');
+  if (!el || !App.user) return;
+  try {
+    const { data } = await sb.from('attendance').select('*').eq('user_id', App.user.id).eq('date', today()).maybeSingle();
+    if (!data) { el.style.display = 'none'; return; }
+    let parts = [];
+    if (data.check_in)  parts.push(`চেক-ইন ${formatBnTime(data.check_in)}`);
+    if (data.lunch_out) parts.push(`লাঞ্চ আউট ${formatBnTime(data.lunch_out)}`);
+    if (data.lunch_in)  parts.push(`লাঞ্চ ইন ${formatBnTime(data.lunch_in)}`);
+    if (data.check_out) parts.push(`চেক-আউট ${formatBnTime(data.check_out)}`);
+    el.style.display = 'inline-flex';
+    el.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${parts.join(' · ')}`;
+  } catch (e) { /* ignore */ }
+}
+
+async function refreshAttendanceList() {
+  const tbody = document.querySelector('#attendanceTable tbody');
+  if (!tbody || !App.user) return;
+  const start = today().slice(0,7) + '-01';
+  try {
+    const { data } = await sb.from('attendance').select('*').eq('user_id', App.user.id).gte('date', start).order('date', { ascending: false });
+    if (!data || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-database" style="font-size:32px;margin-bottom:8px;display:block"></i> এখনো কোনো রেকর্ড নেই</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${formatBnDate(r.date)}</td>
+        <td class="num">${r.check_in ? formatBnTime(r.check_in) : '—'}</td>
+        <td class="num">${r.check_out ? formatBnTime(r.check_out) : '—'}</td>
+        <td class="num">${r.total_hours ? bnDigits(r.total_hours) + ' ঘ' : '—'}</td>
+        <td><span class="leave-status ${r.late_minutes > 0 ? 'pending' : 'approved'}">${r.late_minutes > 0 ? 'লেট' : 'নিয়মিত'}</span></td>
+      </tr>
+    `).join('');
+  } catch (e) { console.warn(e); }
 }
 </script>
 
@@ -1169,20 +1362,12 @@ function renderAttendance() {
       <div class="clock-status" id="todayStatus" style="display:none"></div>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">০</h3><p>এই মাসে উপস্থিত</p></div>
-      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">০</h3><p>লেট</p></div>
-      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">০</h3><p>ছুটি</p></div>
-      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">০</h3><p>মোট ঘন্টা</p></div>
-    </div>
-
     <div class="card">
       <div class="card-title"><span><i class="fa-solid fa-history"></i> এই মাসের রেকর্ড</span></div>
-      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> Phase 2 এ Supabase database থেকে আসল রেকর্ড দেখানো হবে।</div>
-      <table class="data-table">
+      <table class="data-table" id="attendanceTable">
         <thead><tr><th>তারিখ</th><th>চেক-ইন</th><th>চেক-আউট</th><th>মোট</th><th>স্ট্যাটাস</th></tr></thead>
         <tbody>
-          <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-database" style="font-size:32px;margin-bottom:8px;display:block"></i> এখনো কোনো রেকর্ড নেই</td></tr>
+          <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</td></tr>
         </tbody>
       </table>
     </div>
@@ -1190,89 +1375,192 @@ function renderAttendance() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PAGE: NOTICES
+// NOTICES
 // ═══════════════════════════════════════════════════════════
 function renderNotices() {
   const adminBtn = App.isAdmin
-    ? `<button class="btn btn-primary" onclick="openNoticeModal()"><i class="fa-solid fa-plus"></i> নতুন নোটিশ</button>`
+    ? `<button class="btn btn-primary" onclick="openNoticeModal()" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন নোটিশ</button>`
     : '';
 
   return `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
       <div class="tabs" style="border:none;margin:0">
         <div class="tab active">সব নোটিশ</div>
-        <div class="tab">অপঠিত</div>
-        <div class="tab">জরুরী</div>
       </div>
       ${adminBtn}
     </div>
 
-    <div class="card">
-      <div class="empty-state">
-        <i class="fa-solid fa-bullhorn"></i>
-        <h3>এখনো কোনো নোটিশ নেই</h3>
-        <p>${App.isAdmin ? 'উপরের "নতুন নোটিশ" বাটন থেকে প্রথম নোটিশ পোস্ট করুন।' : 'অ্যাডমিন নোটিশ পোস্ট করলে এখানে দেখা যাবে।'}</p>
-      </div>
+    <div class="card" id="noticesCard">
+      <div style="padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
     </div>
   `;
 }
 
-function openNoticeModal() {
+async function refreshNoticesList() {
+  const card = document.getElementById('noticesCard');
+  if (!card) return;
+  try {
+    const { data, error } = await sb.from('notices').select('*, profiles!posted_by(full_name)').eq('is_active', true).order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-bullhorn"></i><h3>এখনো কোনো নোটিশ নেই</h3><p>${App.isAdmin ? 'উপরের "নতুন নোটিশ" বাটন থেকে প্রথম নোটিশ পোস্ট করুন।' : 'অ্যাডমিন নোটিশ পোস্ট করলে এখানে দেখা যাবে।'}</p></div>`;
+      return;
+    }
+    card.innerHTML = data.map(n => `
+      <div class="notice-item">
+        <span class="priority-badge ${n.priority||'general'}">${priorityLabel(n.priority)}</span>
+        ${App.isAdmin ? `<div style="float:right;display:flex;gap:6px"><button class="icon-btn" onclick="editNotice(${n.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" onclick="deleteNotice(${n.id})" title="ডিলিট"><i class="fa-solid fa-trash"></i></button></div>` : ''}
+        <h4>${escapeHtml(n.title)}</h4>
+        <p style="white-space:pre-wrap">${escapeHtml(n.content)}</p>
+        <div class="notice-meta">
+          <span><i class="fa-regular fa-user"></i> ${escapeHtml(n.profiles?.full_name || 'অ্যাডমিন')}</span>
+          <span><i class="fa-regular fa-clock"></i> ${formatBnDate(n.created_at)} · ${formatBnTime(n.created_at)}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড করতে সমস্যা</h3><p>${e.message}</p><p style="margin-top:8px;font-size:12px">SQL setup চালানো হয়েছে কি?</p></div>`;
+  }
+}
+
+function openNoticeModal(notice = null) {
+  const isEdit = !!notice;
   showModal(
-    '<i class="fa-solid fa-bullhorn" style="color:var(--purple-600)"></i> নতুন নোটিশ পোস্ট',
+    `<i class="fa-solid fa-bullhorn" style="color:var(--purple-600)"></i> ${isEdit ? 'নোটিশ এডিট' : 'নতুন নোটিশ পোস্ট'}`,
     `
-    <div class="form-group"><label>শিরোনাম</label><input class="form-input" id="ntTitle" placeholder="নোটিশের শিরোনাম"></div>
-    <div class="form-group"><label>বিস্তারিত</label><textarea class="form-textarea" id="ntContent" placeholder="নোটিশের বিস্তারিত লিখুন..."></textarea></div>
+    <div class="form-group"><label>শিরোনাম</label><input class="form-input" id="ntTitle" placeholder="নোটিশের শিরোনাম" value="${isEdit ? escapeHtml(notice.title) : ''}"></div>
+    <div class="form-group"><label>বিস্তারিত</label><textarea class="form-textarea" id="ntContent" placeholder="নোটিশের বিস্তারিত লিখুন..." style="min-height:140px">${isEdit ? escapeHtml(notice.content) : ''}</textarea></div>
     <div class="form-group"><label>প্রাধান্য</label>
       <select class="form-select" id="ntPriority">
-        <option value="general">🟢 সাধারণ</option>
-        <option value="important">🟡 গুরুত্বপূর্ণ</option>
-        <option value="urgent">🔴 জরুরী</option>
+        <option value="general"   ${isEdit && notice.priority==='general'?'selected':''}>🟢 সাধারণ</option>
+        <option value="important" ${isEdit && notice.priority==='important'?'selected':''}>🟡 গুরুত্বপূর্ণ</option>
+        <option value="urgent"    ${isEdit && notice.priority==='urgent'?'selected':''}>🔴 জরুরী</option>
       </select>
     </div>
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-     <button class="btn btn-primary" onclick="postNotice()"><i class="fa-solid fa-paper-plane"></i> পোস্ট করুন</button>`
+     <button class="btn btn-primary" id="ntSaveBtn" onclick="saveNotice(${isEdit ? notice.id : 'null'})"><i class="fa-solid fa-paper-plane"></i> ${isEdit ? 'সংরক্ষণ' : 'পোস্ট করুন'}</button>`
   );
 }
 
-function postNotice() {
+async function saveNotice(id) {
   const title = document.getElementById('ntTitle').value.trim();
-  if (!title) return showToast('শিরোনাম লিখুন', 'error');
-  showToast('✅ নোটিশ পোস্ট হয়েছে! (Phase 2 এ Supabase এ সেভ হবে)');
-  closeModal();
+  const content = document.getElementById('ntContent').value.trim();
+  const priority = document.getElementById('ntPriority').value;
+  if (!title || !content) return showToast('শিরোনাম ও বিস্তারিত দুটোই লিখুন', 'error');
+
+  const btn = document.getElementById('ntSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    if (id) {
+      const { error } = await sb.from('notices').update({ title, content, priority, updated_at: new Date().toISOString() }).eq('id', id);
+      if (error) throw error;
+      showToast('✅ নোটিশ আপডেট হয়েছে');
+    } else {
+      const { error } = await sb.from('notices').insert({ title, content, priority, posted_by: App.user.id });
+      if (error) throw error;
+      showToast('✅ নোটিশ পোস্ট হয়েছে!');
+    }
+    closeModal();
+    refreshNoticesList();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function editNotice(id) {
+  const { data } = await sb.from('notices').select('*').eq('id', id).maybeSingle();
+  if (data) openNoticeModal(data);
+}
+
+async function deleteNotice(id) {
+  if (!confirm('এই নোটিশটি ডিলিট করবেন?')) return;
+  const { error } = await sb.from('notices').delete().eq('id', id);
+  if (error) return showToast('❌ ' + error.message, 'error');
+  showToast('✅ নোটিশ ডিলিট হয়েছে');
+  refreshNoticesList();
 }
 
 // ═══════════════════════════════════════════════════════════
-// PAGE: LEAVES
+// LEAVES
 // ═══════════════════════════════════════════════════════════
 function renderLeaves() {
   return `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-      <div class="tabs" style="border:none;margin:0">
-        <div class="tab active">আমার ছুটি</div>
-        ${App.isAdmin ? '<div class="tab">অপেক্ষমাণ অনুমোদন</div><div class="tab">সকল আবেদন</div>' : ''}
+      <div class="tabs" style="border:none;margin:0" id="leaveTabs">
+        <div class="tab active" data-tab="my">আমার ছুটি</div>
+        ${App.isAdmin ? '<div class="tab" data-tab="pending">অপেক্ষমাণ অনুমোদন</div><div class="tab" data-tab="all">সকল আবেদন</div>' : ''}
       </div>
-      <button class="btn btn-primary" onclick="openLeaveModal()"><i class="fa-solid fa-plus"></i> নতুন আবেদন</button>
+      <button class="btn btn-primary" style="width:auto" onclick="openLeaveModal()"><i class="fa-solid fa-plus"></i> নতুন আবেদন</button>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-calendar"></i></div><h3 class="num">২০</h3><p>মোট ছুটি (বার্ষিক)</p></div>
-      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-calendar-day"></i></div><h3 class="num">০</h3><p>ব্যবহৃত</p></div>
-      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-plus"></i></div><h3 class="num">২০</h3><p>অবশিষ্ট</p></div>
-      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-hourglass-half"></i></div><h3 class="num">০</h3><p>অপেক্ষমাণ</p></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><span><i class="fa-solid fa-list"></i> আমার আবেদনসমূহ</span></div>
-      <div class="empty-state">
-        <i class="fa-solid fa-calendar-check"></i>
-        <h3>এখনো কোনো ছুটির আবেদন করেননি</h3>
-        <p>উপরের "নতুন আবেদন" বাটন দিয়ে আবেদন করুন।</p>
-      </div>
+    <div class="card" id="leavesCard">
+      <div style="padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
     </div>
   `;
 }
+
+let _leavesTab = 'my';
+async function refreshLeavesList() {
+  // Wire tabs
+  document.querySelectorAll('#leaveTabs .tab').forEach(t => {
+    t.onclick = () => {
+      document.querySelectorAll('#leaveTabs .tab').forEach(x => x.classList.toggle('active', x === t));
+      _leavesTab = t.dataset.tab;
+      _renderLeavesContent();
+    };
+  });
+  await _renderLeavesContent();
+}
+
+async function _renderLeavesContent() {
+  const card = document.getElementById('leavesCard');
+  if (!card) return;
+  try {
+    let q = sb.from('leaves').select('*, profiles!user_id(full_name)').order('created_at', { ascending: false });
+    if (_leavesTab === 'my')           q = q.eq('user_id', App.user.id);
+    else if (_leavesTab === 'pending') q = q.eq('status', 'pending');
+    // 'all' = no filter (admin only)
+
+    const { data, error } = await q;
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-calendar-check"></i><h3>${_leavesTab==='my'?'আপনি এখনো আবেদন করেননি':'কোনো আবেদন নেই'}</h3></div>`;
+      return;
+    }
+    card.innerHTML = data.map(l => `
+      <div class="leave-card ${l.status}">
+        <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px">
+          <span class="leave-status ${l.status}">${statusIcon(l.status)} ${statusLabel(l.status)}</span>
+          ${(_leavesTab !== 'my' || App.isAdmin) ? `<small style="color:var(--gray-500);font-weight:600">${escapeHtml(l.profiles?.full_name||'')}</small>` : ''}
+        </div>
+        <h4>${leaveTypeLabel(l.leave_type)}</h4>
+        <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</span> <span class="num">(${bnDigits(l.total_days)} দিন)</span></div>
+        <div class="leave-reason">"${escapeHtml(l.reason)}"</div>
+        ${l.review_comment ? `<div style="margin-top:8px;font-size:12px;background:var(--gray-50);padding:8px 12px;border-radius:8px"><b>মন্তব্য:</b> ${escapeHtml(l.review_comment)}</div>` : ''}
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-400)"><i class="fa-regular fa-clock"></i> আবেদন: ${formatBnDate(l.created_at)}</div>
+        ${App.isAdmin && l.status === 'pending' ? `
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-success btn-sm" onclick="reviewLeave(${l.id},'approved')"><i class="fa-solid fa-check"></i> অনুমোদন</button>
+            <button class="btn btn-danger btn-sm" onclick="reviewLeave(${l.id},'rejected')"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
+          </div>
+        ` : ''}
+        ${l.user_id === App.user.id && l.status === 'pending' ? `
+          <div style="margin-top:8px"><button class="btn btn-outline btn-sm" onclick="cancelLeave(${l.id})">আবেদন বাতিল</button></div>
+        ` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড করতে সমস্যা</h3><p>${e.message}</p></div>`;
+  }
+}
+
+function statusIcon(s) { return s==='pending'?'<i class="fa-solid fa-hourglass-half"></i>':s==='approved'?'<i class="fa-solid fa-check"></i>':s==='rejected'?'<i class="fa-solid fa-xmark"></i>':'<i class="fa-solid fa-ban"></i>'; }
+function statusLabel(s) { return s==='pending'?'অপেক্ষমাণ':s==='approved'?'অনুমোদিত':s==='rejected'?'প্রত্যাখ্যাত':'বাতিল'; }
+function leaveTypeLabel(t) { return ({casual:'নৈমিত্তিক ছুটি', sick:'অসুস্থতা ছুটি', annual:'বার্ষিক ছুটি', unpaid:'বিনা বেতনে ছুটি', maternity:'মাতৃত্ব ছুটি', hajj:'হজ্জ ছুটি'})[t] || t; }
 
 function openLeaveModal() {
   showModal(
@@ -1290,18 +1578,60 @@ function openLeaveModal() {
       <div class="form-group"><label>শুরুর তারিখ</label><input class="form-input" type="date" id="lvStart" value="${today()}"></div>
       <div class="form-group"><label>শেষ তারিখ</label><input class="form-input" type="date" id="lvEnd" value="${today()}"></div>
     </div>
-    <div class="form-group"><label>কারণ</label><textarea class="form-textarea" id="lvReason" placeholder="ছুটির কারণ লিখুন..."></textarea></div>
+    <div class="form-group"><label>কারণ</label><textarea class="form-textarea" id="lvReason" placeholder="ছুটির কারণ বিস্তারিত লিখুন..."></textarea></div>
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-     <button class="btn btn-primary" onclick="submitLeave()"><i class="fa-solid fa-paper-plane"></i> আবেদন জমা দিন</button>`
+     <button class="btn btn-primary" id="lvSaveBtn" onclick="submitLeave()"><i class="fa-solid fa-paper-plane"></i> আবেদন জমা দিন</button>`
   );
 }
 
-function submitLeave() {
-  const reason = document.getElementById('lvReason').value.trim();
-  if (!reason) return showToast('কারণ লিখুন', 'error');
-  showToast('✅ আবেদন জমা হয়েছে! (Phase 2 এ Supabase এ সেভ হবে)');
-  closeModal();
+async function submitLeave() {
+  const leave_type = document.getElementById('lvType').value;
+  const start_date = document.getElementById('lvStart').value;
+  const end_date   = document.getElementById('lvEnd').value;
+  const reason     = document.getElementById('lvReason').value.trim();
+  if (!start_date || !end_date || !reason) return showToast('সব ফিল্ড পূরণ করুন', 'error');
+  if (new Date(end_date) < new Date(start_date)) return showToast('শেষ তারিখ শুরুর তারিখের পর হতে হবে', 'error');
+
+  const btn = document.getElementById('lvSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    const { error } = await sb.from('leaves').insert({ user_id: App.user.id, leave_type, start_date, end_date, reason, status: 'pending' });
+    if (error) throw error;
+    showToast('✅ ছুটির আবেদন জমা হয়েছে!');
+    closeModal();
+    refreshLeavesList();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function reviewLeave(id, decision) {
+  const comment = prompt(decision === 'approved' ? 'মন্তব্য (ঐচ্ছিক):' : 'প্রত্যাখ্যানের কারণ:') || '';
+  try {
+    const { error } = await sb.from('leaves').update({
+      status: decision,
+      reviewed_by: App.user.id,
+      reviewed_at: new Date().toISOString(),
+      review_comment: comment
+    }).eq('id', id);
+    if (error) throw error;
+    showToast(decision === 'approved' ? '✅ ছুটি অনুমোদিত' : '❌ ছুটি প্রত্যাখ্যাত');
+    if (App.currentPage === 'leaves')    refreshLeavesList();
+    if (App.currentPage === 'dashboard') loadDashboardLists();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  }
+}
+
+async function cancelLeave(id) {
+  if (!confirm('আবেদন বাতিল করবেন?')) return;
+  const { error } = await sb.from('leaves').update({ status: 'cancelled' }).eq('id', id);
+  if (error) return showToast('❌ ' + error.message, 'error');
+  showToast('✅ আবেদন বাতিল হয়েছে');
+  refreshLeavesList();
 }
 </script>
 
@@ -1357,7 +1687,7 @@ function renderProfile() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PAGE: EMPLOYEES (admin)
+// EMPLOYEES (admin)
 // ═══════════════════════════════════════════════════════════
 function renderEmployees() {
   return `
@@ -1365,58 +1695,168 @@ function renderEmployees() {
       <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1">
         <div class="topbar-search" style="min-width:240px;background:white;border:1px solid var(--border)">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input placeholder="নাম, পদবি দিয়ে খুঁজুন...">
+          <input id="empSearch" placeholder="নাম, পদবি দিয়ে খুঁজুন..." oninput="refreshEmployeesList()">
         </div>
-        <select class="form-select" style="width:auto;min-width:140px">
-          <option>সকল ধরন</option><option>Admin</option><option>Type 1</option><option>Type 2</option>
+        <select class="form-select" style="width:auto;min-width:140px" id="empTypeFilter" onchange="refreshEmployeesList()">
+          <option value="">সকল ধরন</option>
         </select>
       </div>
-      <button class="btn btn-primary" onclick="openEmployeeModal()"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী</button>
+      <button class="btn btn-primary" onclick="openEmployeeModal()" style="width:auto"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী</button>
     </div>
 
-    <div class="card">
-      <div class="empty-state">
-        <i class="fa-solid fa-users"></i>
-        <h3>এখনো কোনো কর্মী যোগ হয়নি</h3>
-        <p>উপরের "নতুন কর্মী" বাটন থেকে কর্মী যোগ করুন, অথবা ডাটা ইম্পোর্ট করুন।</p>
-        <div style="margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="openEmployeeModal()"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী যোগ</button>
-          <button class="btn btn-outline" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট</button>
-        </div>
-      </div>
+    <div class="card" id="employeesCard">
+      <div style="padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
     </div>
   `;
 }
 
-function openEmployeeModal() {
-  const types = App.employeeTypes.map(t => `<option value="${t.code}">${t.name_bn}</option>`).join('');
-  showModal(
-    '<i class="fa-solid fa-user-plus" style="color:var(--purple-600)"></i> নতুন কর্মী যোগ করুন',
-    `
-    <div class="form-group"><label>পূর্ণ নাম</label><input class="form-input" id="empName" placeholder="পূর্ণ নাম"></div>
-    <div class="form-grid">
-      <div class="form-group"><label>ইমেইল</label><input class="form-input" type="email" id="empEmail" placeholder="email@example.com"></div>
-      <div class="form-group"><label>ফোন</label><input class="form-input" id="empPhone" placeholder="০১৭xxxxxxxx"></div>
-    </div>
-    <div class="form-grid">
-      <div class="form-group"><label>পদবি</label><input class="form-input" id="empDesignation" placeholder="পদবি"></div>
-      <div class="form-group"><label>কর্মী ধরন</label><select class="form-select" id="empType">${types}</select></div>
-    </div>
-    <div class="form-grid">
-      <div class="form-group"><label>যোগদান তারিখ</label><input class="form-input" type="date" id="empJoined"></div>
-      <div class="form-group"><label>মাসিক বেতন (৳)</label><input class="form-input num" type="number" id="empSalary" placeholder="০"></div>
-    </div>
-    `,
-    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-     <button class="btn btn-primary" onclick="saveEmployee()"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
-  );
+async function refreshEmployeesList() {
+  const card = document.getElementById('employeesCard');
+  if (!card) return;
+  // Populate type filter
+  await loadEmployeeTypes();
+  const typeSelect = document.getElementById('empTypeFilter');
+  if (typeSelect && typeSelect.children.length === 1) {
+    App.employeeTypes.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id; opt.textContent = t.name_bn;
+      typeSelect.appendChild(opt);
+    });
+  }
+  const search = (document.getElementById('empSearch')?.value || '').trim().toLowerCase();
+  const typeFilter = document.getElementById('empTypeFilter')?.value || '';
+
+  try {
+    let q = sb.from('profiles').select('*, employee_types(name_bn, code)').eq('is_active', true).order('full_name');
+    if (typeFilter) q = q.eq('employee_type_id', typeFilter);
+    const { data, error } = await q;
+    if (error) throw error;
+    let filtered = data || [];
+    if (search) filtered = filtered.filter(e => (e.full_name||'').toLowerCase().includes(search) || (e.designation||'').toLowerCase().includes(search) || (e.email||'').toLowerCase().includes(search));
+
+    if (filtered.length === 0) {
+      card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-users"></i><h3>কোনো কর্মী পাওয়া যায়নি</h3><p>"নতুন কর্মী" বাটন থেকে যোগ করুন।</p></div>`;
+      return;
+    }
+
+    card.innerHTML = `<div class="emp-grid">${filtered.map(e => `
+      <div class="emp-card" onclick="viewEmployee('${e.id}')">
+        ${e.is_active?'<span class="status-dot"></span>':''}
+        <div class="avatar-lg">${initial(e.full_name)}</div>
+        <h4>${escapeHtml(e.full_name)}</h4>
+        <div class="emp-desg">${escapeHtml(e.designation || '—')}</div>
+        <span class="type-badge">${escapeHtml(e.employee_types?.name_bn || 'কর্মী')}</span>
+        ${App.isAdmin ? `<div style="margin-top:10px;display:flex;gap:6px;justify-content:center"><button class="icon-btn" onclick="event.stopPropagation();editEmployee('${e.id}')"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" onclick="event.stopPropagation();deleteEmployee('${e.id}')"><i class="fa-solid fa-trash"></i></button></div>` : ''}
+      </div>
+    `).join('')}</div>
+    <div style="text-align:center;margin-top:18px;color:var(--gray-500);font-size:13px">মোট ${bnDigits(filtered.length)} জন</div>`;
+  } catch (e) {
+    card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড করতে সমস্যা</h3><p>${e.message}</p><p style="font-size:12px;margin-top:8px">SQL চালানো হয়েছে কি?</p></div>`;
+  }
 }
 
-function saveEmployee() {
-  const name = document.getElementById('empName').value.trim();
-  if (!name) return showToast('নাম লিখুন', 'error');
-  showToast('✅ কর্মী সংরক্ষিত! (Phase 2 এ Supabase এ সেভ হবে)');
-  closeModal();
+async function loadEmployeeTypes() {
+  if (App.employeeTypes && App.employeeTypes.length > 0 && App.employeeTypes[0].id) return;
+  try {
+    const { data } = await sb.from('employee_types').select('*').eq('is_active', true).order('display_order');
+    if (data && data.length) App.employeeTypes = data;
+  } catch (e) { /* keep defaults */ }
+}
+
+function openEmployeeModal(emp = null) {
+  loadEmployeeTypes().then(() => {
+    const isEdit = !!emp;
+    const types = App.employeeTypes.map(t => `<option value="${t.id}" ${isEdit && emp.employee_type_id===t.id?'selected':''}>${t.name_bn}</option>`).join('');
+    showModal(
+      `<i class="fa-solid fa-user-plus" style="color:var(--purple-600)"></i> ${isEdit ? 'কর্মী এডিট' : 'নতুন কর্মী যোগ'}`,
+      `
+      <div class="form-group"><label>পূর্ণ নাম *</label><input class="form-input" id="empName" placeholder="পূর্ণ নাম" value="${isEdit?escapeHtml(emp.full_name||''):''}"></div>
+      <div class="form-grid">
+        <div class="form-group"><label>ইমেইল *</label><input class="form-input" type="email" id="empEmail" placeholder="email@example.com" value="${isEdit?escapeHtml(emp.email||''):''}" ${isEdit?'readonly':''}></div>
+        <div class="form-group"><label>ফোন</label><input class="form-input" id="empPhone" placeholder="০১৭xxxxxxxx" value="${isEdit?escapeHtml(emp.phone||''):''}"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label>পদবি</label><input class="form-input" id="empDesignation" placeholder="পদবি" value="${isEdit?escapeHtml(emp.designation||''):''}"></div>
+        <div class="form-group"><label>কর্মী ধরন</label><select class="form-select" id="empType">${types}</select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label>যোগদান তারিখ</label><input class="form-input" type="date" id="empJoined" value="${isEdit?(emp.joined_at||''):today()}"></div>
+        <div class="form-group"><label>মাসিক বেতন (৳)</label><input class="form-input num" type="number" id="empSalary" placeholder="০" value="${isEdit?(emp.salary||''):''}"></div>
+      </div>
+      <div class="form-group"><label>ঠিকানা</label><textarea class="form-textarea" id="empAddress" style="min-height:60px">${isEdit?escapeHtml(emp.address||''):''}</textarea></div>
+      ${!isEdit?'<div class="note-banner" style="font-size:12px"><i class="fa-solid fa-info-circle"></i> নতুন কর্মীকে আলাদাভাবে রেজিস্ট্রেশন পেজ থেকে অ্যাকাউন্ট তৈরি করতে বলুন। এখানে শুধু তথ্য সংরক্ষিত হবে।</div>':''}
+      `,
+      `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+       <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee(${isEdit?`'${emp.id}'`:'null'})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
+    );
+  });
+}
+
+async function saveEmployee(id) {
+  const data = {
+    full_name:        document.getElementById('empName').value.trim(),
+    email:            document.getElementById('empEmail').value.trim(),
+    phone:            document.getElementById('empPhone').value.trim() || null,
+    designation:      document.getElementById('empDesignation').value.trim() || null,
+    employee_type_id: parseInt(document.getElementById('empType').value),
+    joined_at:        document.getElementById('empJoined').value || null,
+    salary:           parseFloat(document.getElementById('empSalary').value) || null,
+    address:          document.getElementById('empAddress').value.trim() || null
+  };
+  if (!data.full_name || !data.email) return showToast('নাম ও ইমেইল আবশ্যক', 'error');
+
+  const btn = document.getElementById('empSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    if (id) {
+      const { error } = await sb.from('profiles').update(data).eq('id', id);
+      if (error) throw error;
+      showToast('✅ কর্মী আপডেট হয়েছে');
+    } else {
+      // For new employee, we can't create auth user from client; just store profile placeholder
+      const placeholder = { ...data, id: crypto.randomUUID(), is_active: true };
+      const { error } = await sb.from('profiles').insert(placeholder);
+      if (error) throw error;
+      showToast('✅ কর্মী যোগ হয়েছে');
+    }
+    closeModal();
+    refreshEmployeesList();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function editEmployee(id) {
+  const { data } = await sb.from('profiles').select('*').eq('id', id).maybeSingle();
+  if (data) openEmployeeModal(data);
+}
+
+async function deleteEmployee(id) {
+  if (!confirm('এই কর্মীকে ডিলিট করবেন? (এটি অপরিবর্তনীয়)')) return;
+  // Soft delete: set is_active = false
+  const { error } = await sb.from('profiles').update({ is_active: false }).eq('id', id);
+  if (error) return showToast('❌ ' + error.message, 'error');
+  showToast('✅ কর্মী নিষ্ক্রিয় হয়েছে');
+  refreshEmployeesList();
+}
+
+async function viewEmployee(id) {
+  const { data } = await sb.from('profiles').select('*, employee_types(name_bn)').eq('id', id).maybeSingle();
+  if (!data) return;
+  showModal(
+    `<i class="fa-solid fa-user" style="color:var(--purple-600)"></i> ${escapeHtml(data.full_name)}`,
+    `
+    <div style="text-align:center;margin-bottom:16px"><div class="avatar-lg" style="margin:0 auto 10px">${initial(data.full_name)}</div><h3 style="font-weight:800">${escapeHtml(data.full_name)}</h3><p style="color:var(--gray-500)">${escapeHtml(data.designation||'কর্মী')}</p></div>
+    <div class="info-row"><div class="info-label">ইমেইল</div><div class="info-value en">${escapeHtml(data.email)}</div></div>
+    <div class="info-row"><div class="info-label">ফোন</div><div class="info-value num">${data.phone?bnDigits(data.phone):'—'}</div></div>
+    <div class="info-row"><div class="info-label">কর্মী ধরন</div><div class="info-value">${escapeHtml(data.employee_types?.name_bn||'—')}</div></div>
+    <div class="info-row"><div class="info-label">যোগদান</div><div class="info-value">${data.joined_at?formatBnDate(data.joined_at):'—'}</div></div>
+    <div class="info-row"><div class="info-label">ঠিকানা</div><div class="info-value">${escapeHtml(data.address||'—')}</div></div>
+    `,
+    `<button class="btn btn-outline" onclick="closeModal()">বন্ধ</button>${App.isAdmin?`<button class="btn btn-primary" onclick="closeModal();editEmployee('${data.id}')"><i class="fa-solid fa-pen"></i> এডিট</button>`:''}`
+  );
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1481,75 +1921,143 @@ function renderImport() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PAGE: SETTINGS (admin)
+// SETTINGS (admin)
 // ═══════════════════════════════════════════════════════════
-function renderSettings() {
+async function renderSettings() {
+  await loadEmployeeTypes();
   const types = App.employeeTypes.map(t => `
     <div class="settings-row">
       <div>
-        <h5><span class="type-badge ${t.is_admin?'':''}" style="${t.is_admin?'background:var(--purple-100);color:var(--purple-700)':''}">${t.code}</span> ${t.name_bn}</h5>
-        <p>অফিস: <span class="num">১০:০০ AM - ৬:০০ PM</span> · লাঞ্চ: <span class="num">১:৩০ - ২:৩০ PM</span></p>
+        <h5><span class="type-badge" style="${t.is_admin?'background:var(--purple-100);color:var(--purple-700)':''}">${escapeHtml(t.code)}</span> ${escapeHtml(t.name_bn)}</h5>
+        <p>${escapeHtml(t.name_en||'')}</p>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-outline btn-sm" onclick="showToast('Phase 3 এ এডিট যোগ হবে','info')"><i class="fa-solid fa-pen"></i></button>
-        ${t.is_admin ? '<span class="leave-status approved" style="font-size:11px"><i class="fa-solid fa-lock"></i> মূল</span>' : '<button class="btn btn-outline btn-sm" style="color:var(--red-500);border-color:var(--red-100)" onclick="showToast(\'Phase 3 এ যোগ হবে\',\'info\')"><i class="fa-solid fa-trash"></i></button>'}
+        <button class="btn btn-outline btn-sm" onclick="editType(${t.id})"><i class="fa-solid fa-pen"></i></button>
+        ${t.is_admin ? '<span class="leave-status approved" style="font-size:11px"><i class="fa-solid fa-lock"></i> মূল</span>' : `<button class="btn btn-outline btn-sm" style="color:var(--red-500);border-color:var(--red-100)" onclick="deleteType(${t.id})"><i class="fa-solid fa-trash"></i></button>`}
       </div>
     </div>
   `).join('');
 
   return `
-    <div class="tabs">
-      <div class="tab active">কর্মী ধরন</div>
-      <div class="tab">অফিস টাইম</div>
-      <div class="tab">ছুটির নীতি</div>
-      <div class="tab">কোম্পানি</div>
-    </div>
-
     <div class="card">
       <div class="card-title">
         <span><i class="fa-solid fa-users-gear"></i> কর্মী ধরন (Employee Types)</span>
-        <button class="btn btn-primary" onclick="openTypeModal()"><i class="fa-solid fa-plus"></i> নতুন ধরন</button>
+        <button class="btn btn-primary" onclick="openTypeModal()" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন ধরন</button>
       </div>
       <div class="note-banner"><i class="fa-solid fa-info-circle"></i> আপনি যত ইচ্ছা কর্মী ধরন যোগ করতে পারবেন। প্রতিটি ধরনের জন্য আলাদা অফিস টাইম সেট করা যায়।</div>
-      ${types}
+      ${types || '<div class="empty-state"><i class="fa-solid fa-users"></i><p>কোনো ধরন নেই</p></div>'}
       <button class="btn btn-outline" style="width:100%;margin-top:12px;padding:18px;border-style:dashed;color:var(--purple-700)" onclick="openTypeModal()"><i class="fa-solid fa-plus"></i> নতুন কর্মী ধরন যোগ করুন</button>
     </div>
 
     <div class="card">
       <div class="card-title"><span><i class="fa-solid fa-clock"></i> অফিস টাইম সেটিংস</span></div>
-      <div class="form-grid">
-        <div class="form-group"><label><i class="fa-solid fa-right-to-bracket"></i> অফিস ইন</label><input class="form-input num" type="time" value="10:00"></div>
-        <div class="form-group"><label><i class="fa-solid fa-right-from-bracket"></i> অফিস আউট</label><input class="form-input num" type="time" value="18:00"></div>
-        <div class="form-group"><label><i class="fa-solid fa-utensils"></i> লাঞ্চ আউট</label><input class="form-input num" type="time" value="13:30"></div>
-        <div class="form-group"><label><i class="fa-solid fa-mug-hot"></i> লাঞ্চ ইন</label><input class="form-input num" type="time" value="14:30"></div>
-        <div class="form-group"><label><i class="fa-solid fa-stopwatch"></i> গ্রেস টাইম (মিনিট)</label><input class="form-input num" type="number" value="15"></div>
-        <div class="form-group"><label><i class="fa-solid fa-coffee"></i> ব্রেক ডিউরেশন (মিনিট)</label><input class="form-input num" type="number" value="60"></div>
-      </div>
-      <button class="btn btn-success btn-block" style="margin-top:8px" onclick="showToast('✅ সেটিংস সংরক্ষিত হবে Phase 2 এ')"><i class="fa-solid fa-floppy-disk"></i> পরিবর্তন সংরক্ষণ করুন</button>
+      <div id="officeTimesContainer" style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
     </div>
   `;
 }
 
-function openTypeModal() {
+// Load office times after settings render
+setTimeout(loadOfficeTimes, 100);
+function loadOfficeTimes() {
+  const c = document.getElementById('officeTimesContainer');
+  if (!c) return;
+  sb.from('office_times').select('*, employee_types(name_bn, code)').then(({ data, error }) => {
+    if (!c) return;
+    if (error || !data) {
+      c.innerHTML = `<div class="empty-state" style="padding:20px"><p>ডাটা লোড করতে সমস্যা${error?': '+error.message:''}</p></div>`;
+      return;
+    }
+    if (data.length === 0) {
+      c.innerHTML = '<p style="color:var(--gray-500)">কোনো টাইপের অফিস টাইম সেট নেই।</p>';
+      return;
+    }
+    c.innerHTML = data.map(o => `
+      <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:14px">
+        <h5>${escapeHtml(o.employee_types?.name_bn || '—')}</h5>
+        <div class="form-grid">
+          <div class="form-group" style="margin:0"><label>অফিস ইন</label><input class="form-input num" type="time" id="ot_${o.id}_in" value="${o.check_in_time}"></div>
+          <div class="form-group" style="margin:0"><label>অফিস আউট</label><input class="form-input num" type="time" id="ot_${o.id}_out" value="${o.check_out_time}"></div>
+          <div class="form-group" style="margin:0"><label>লাঞ্চ আউট</label><input class="form-input num" type="time" id="ot_${o.id}_lout" value="${o.lunch_start_time}"></div>
+          <div class="form-group" style="margin:0"><label>লাঞ্চ ইন</label><input class="form-input num" type="time" id="ot_${o.id}_lin" value="${o.lunch_end_time}"></div>
+          <div class="form-group" style="margin:0"><label>গ্রেস (মিনিট)</label><input class="form-input num" type="number" id="ot_${o.id}_grace" value="${o.grace_minutes}"></div>
+          <div class="form-group" style="margin:0"><label>ব্রেক (মিনিট)</label><input class="form-input num" type="number" id="ot_${o.id}_break" value="${o.break_minutes}"></div>
+        </div>
+        <button class="btn btn-success" style="width:auto;align-self:flex-start" onclick="saveOfficeTime(${o.id})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>
+      </div>
+    `).join('');
+  });
+}
+
+async function saveOfficeTime(id) {
+  const data = {
+    check_in_time:    document.getElementById(`ot_${id}_in`).value,
+    check_out_time:   document.getElementById(`ot_${id}_out`).value,
+    lunch_start_time: document.getElementById(`ot_${id}_lout`).value,
+    lunch_end_time:   document.getElementById(`ot_${id}_lin`).value,
+    grace_minutes:    parseInt(document.getElementById(`ot_${id}_grace`).value) || 0,
+    break_minutes:    parseInt(document.getElementById(`ot_${id}_break`).value) || 0,
+    updated_at:       new Date().toISOString()
+  };
+  const { error } = await sb.from('office_times').update(data).eq('id', id);
+  if (error) return showToast('❌ ' + error.message, 'error');
+  showToast('✅ অফিস টাইম সংরক্ষিত');
+}
+
+function openTypeModal(type = null) {
+  const isEdit = !!type;
   showModal(
-    '<i class="fa-solid fa-plus" style="color:var(--purple-600)"></i> নতুন কর্মী ধরন',
+    `<i class="fa-solid fa-${isEdit?'pen':'plus'}" style="color:var(--purple-600)"></i> ${isEdit?'কর্মী ধরন এডিট':'নতুন কর্মী ধরন'}`,
     `
-    <div class="form-group"><label>কোড (ইংরেজি, যেমন type_3)</label><input class="form-input en" id="tpCode" placeholder="type_3"></div>
-    <div class="form-group"><label>বাংলা নাম</label><input class="form-input" id="tpNameBn" placeholder="যেমন: কর্মী টাইপ ৩"></div>
-    <div class="form-group"><label>ইংরেজি নাম</label><input class="form-input en" id="tpNameEn" placeholder="যেমন: Employee Type 3"></div>
+    <div class="form-group"><label>কোড (ইংরেজি, যেমন type_3) *</label><input class="form-input en" id="tpCode" placeholder="type_3" value="${isEdit?escapeHtml(type.code):''}" ${isEdit?'readonly':''}></div>
+    <div class="form-group"><label>বাংলা নাম *</label><input class="form-input" id="tpNameBn" placeholder="যেমন: কর্মী টাইপ ৩" value="${isEdit?escapeHtml(type.name_bn):''}"></div>
+    <div class="form-group"><label>ইংরেজি নাম *</label><input class="form-input en" id="tpNameEn" placeholder="যেমন: Employee Type 3" value="${isEdit?escapeHtml(type.name_en||''):''}"></div>
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-     <button class="btn btn-primary" onclick="saveType()"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
+     <button class="btn btn-primary" id="tpSaveBtn" onclick="saveType(${isEdit?type.id:'null'})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
   );
 }
 
-function saveType() {
-  const code = document.getElementById('tpCode').value.trim();
-  const nameBn = document.getElementById('tpNameBn').value.trim();
-  if (!code || !nameBn) return showToast('সব ফিল্ড পূরণ করুন', 'error');
-  App.employeeTypes.push({ id: App.employeeTypes.length+1, code, name_bn: nameBn, is_admin: false });
-  showToast('✅ নতুন ধরন যোগ হয়েছে! (Phase 2 এ Supabase এ সেভ হবে)');
-  closeModal();
+async function saveType(id) {
+  const code    = document.getElementById('tpCode').value.trim();
+  const name_bn = document.getElementById('tpNameBn').value.trim();
+  const name_en = document.getElementById('tpNameEn').value.trim();
+  if (!code || !name_bn || !name_en) return showToast('সব ফিল্ড পূরণ করুন', 'error');
+
+  const btn = document.getElementById('tpSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    if (id) {
+      const { error } = await sb.from('employee_types').update({ name_bn, name_en }).eq('id', id);
+      if (error) throw error;
+      showToast('✅ আপডেট হয়েছে');
+    } else {
+      const { data, error } = await sb.from('employee_types').insert({ code, name_bn, name_en, display_order: App.employeeTypes.length }).select().single();
+      if (error) throw error;
+      // Auto-create default office_times for the new type
+      await sb.from('office_times').insert({ employee_type_id: data.id });
+      showToast('✅ নতুন ধরন যোগ হয়েছে');
+    }
+    App.employeeTypes = []; // clear cache
+    closeModal();
+    navigate('settings');
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function editType(id) {
+  const { data } = await sb.from('employee_types').select('*').eq('id', id).maybeSingle();
+  if (data) openTypeModal(data);
+}
+
+async function deleteType(id) {
+  if (!confirm('এই ধরনটি ডিলিট করবেন? এর সাথে যুক্ত কর্মীদের ধরন রিসেট হবে।')) return;
+  const { error } = await sb.from('employee_types').delete().eq('id', id);
+  if (error) return showToast('❌ ' + error.message, 'error');
+  App.employeeTypes = [];
+  showToast('✅ ডিলিট হয়েছে');
   navigate('settings');
 }
 
