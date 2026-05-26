@@ -937,26 +937,63 @@ async function resendVerification(email, btn) {
 function openForgotPassword() {
   const prefilled = document.getElementById('loginEmail').value.trim();
   showModal(
-    '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড পুনরুদ্ধার',
+    '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড ভুলে গেছেন?',
     `<div style="padding:4px 0">
-      <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);padding:18px;border-radius:14px;margin-bottom:16px;border:1px solid var(--purple-200)">
-        <h4 style="font-weight:800;color:var(--purple-700);margin-bottom:10px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-shield-halved"></i> অ্যাডমিনের সাথে যোগাযোগ করুন</h4>
-        <p style="font-size:13px;color:var(--gray-600);line-height:1.6;margin-bottom:8px">পাসওয়ার্ড ভুলে গেলে অ্যাডমিনকে জানান — অ্যাডমিন সাথে সাথে আপনার পাসওয়ার্ড reset করতে পারবেন।</p>
-        <p style="font-size:12px;color:var(--gray-700);margin-top:8px"><b>📧 ইমেইল:</b> admin@ordhekdeen.com<br><b>📞 অথবা</b> WhatsApp এ HR ম্যানেজারকে জানান</p>
+      <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px;line-height:1.6">আপনার ইমেইল লিখুন। অ্যাডমিন কাছে নটিফিকেশন যাবে — তিনি আপনাকে নতুন পাসওয়ার্ড দিয়ে দিবেন।</p>
+      <div class="form-group">
+        <label><i class="fa-solid fa-envelope"></i> আপনার ইমেইল *</label>
+        <input class="form-input" type="email" id="forgotEmail" placeholder="apnar@example.com" value="${prefilled}">
       </div>
-      <details style="margin-top:8px">
-        <summary style="cursor:pointer;font-weight:700;color:var(--purple-600);font-size:13px;padding:6px 0">📨 অথবা ইমেইল রিসেট কোড চেষ্টা করুন</summary>
-        <div style="margin-top:10px">
-          <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:8px;border-radius:6px;font-weight:600;margin-bottom:10px">⚠️ ইমেইল service সাময়িক unavailable হতে পারে। সমস্যা হলে অ্যাডমিনকে জানান।</p>
-          <div class="form-group" style="margin-bottom:10px">
-            <input class="form-input" type="email" id="forgotEmail" placeholder="apnar@example.com" value="${prefilled}">
-          </div>
-          <button class="btn btn-primary btn-block" id="forgotBtn" onclick="sendResetEmail()"><i class="fa-solid fa-paper-plane"></i> ৬-অঙ্কের কোড পাঠান</button>
-        </div>
-      </details>
+      <div class="form-group">
+        <label><i class="fa-solid fa-comment"></i> মন্তব্য (ঐচ্ছিক)</label>
+        <textarea class="form-textarea" id="forgotReason" placeholder="পাসওয়ার্ড মনে নেই" style="min-height:60px"></textarea>
+      </div>
     </div>`,
-    `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="forgotBtn" onclick="submitResetRequest()"><i class="fa-solid fa-paper-plane"></i> অ্যাডমিনকে জানান</button>`
   );
+  setTimeout(() => document.getElementById('forgotEmail')?.focus(), 200);
+}
+
+async function submitResetRequest() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  const reason = document.getElementById('forgotReason').value.trim();
+  if (!email) return showToast('ইমেইল লিখুন', 'error');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('সঠিক ইমেইল লিখুন', 'error');
+
+  const btn = document.getElementById('forgotBtn');
+  setBtnLoading(btn, true);
+  try {
+    // 1. Save request to database (admin will see in notifications)
+    const { error: dbErr } = await sb.from('password_reset_requests').insert({
+      email, reason: reason || null, status: 'pending'
+    });
+    if (dbErr) {
+      console.warn('DB error (non-fatal):', dbErr);
+    }
+
+    // 2. Try to send Supabase OTP email (best-effort, may fail silently)
+    sb.auth.resetPasswordForEmail(email).catch(e => console.warn('Email reset failed:', e));
+
+    closeModal();
+    showModal(
+      '✅ অনুরোধ পাঠানো হয়েছে',
+      `<div style="text-align:center;padding:20px 0">
+        <div style="font-size:64px;margin-bottom:14px">📨</div>
+        <h3 style="font-weight:800;color:var(--gray-800);margin-bottom:10px">অ্যাডমিনকে জানানো হয়েছে</h3>
+        <p style="font-size:14px;color:var(--gray-600);line-height:1.7;margin-bottom:14px">আপনার পাসওয়ার্ড রিসেট অনুরোধ অ্যাডমিনের কাছে পৌঁছেছে।<br>খুব শীঘ্রই আপনাকে নতুন পাসওয়ার্ড দিয়ে দেওয়া হবে।</p>
+        <div style="background:var(--purple-50);padding:12px;border-radius:10px;border:1px solid var(--purple-200);font-size:12px;color:var(--gray-600);text-align:left">
+          <p style="margin-bottom:6px">📧 <b>ইমেইলে রিসেট কোড</b> ও পাঠানো হয়েছে — ইমেইল চেক করুন (Spam folder ও দেখুন)।</p>
+          <p>📞 দ্রুত সাড়া পেতে অ্যাডমিনকে WhatsApp এ জানান।</p>
+        </div>
+      </div>`,
+      `<button class="btn btn-primary" onclick="closeModal()">বুঝেছি</button>`
+    );
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
 }
 
 async function sendResetEmail() {
@@ -1308,7 +1345,7 @@ function setupRealtimeSync() {
     if (App.currentPage === 'employees' && table === 'profiles') refreshEmployeesList();
   };
 
-  ['notices','leaves','attendance','profiles','employee_types'].forEach(table => {
+  ['notices','leaves','attendance','profiles','employee_types','password_reset_requests'].forEach(table => {
     const ch = sb.channel('rt_'+table)
       .on('postgres_changes', { event: '*', schema: 'public', table }, refresh(table))
       .subscribe();
@@ -1352,6 +1389,22 @@ async function loadNotifications() {
         time: l.created_at,
         action: () => navigate('leaves')
       }));
+    }
+    if (App.isAdmin) {
+      // Password reset requests
+      try {
+        const { data: prr } = await sb.from('password_reset_requests').select('*').eq('status','pending').order('created_at', { ascending: false }).limit(10);
+        (prr||[]).forEach(r => items.push({
+          id: 'prr_' + r.id,
+          type: 'prr',
+          icon: 'key',
+          iconBg: 'background:var(--red-100);color:var(--red-500)',
+          title: `🔑 পাসওয়ার্ড রিসেট অনুরোধ · ${r.email}`,
+          desc: r.reason || 'কর্মী পাসওয়ার্ড ভুলে গেছেন',
+          time: r.created_at,
+          action: () => handleResetRequest(r.id, r.email)
+        }));
+      } catch (e) { /* table might not exist if v5 SQL not run */ }
     }
     if (!App.isAdmin) {
       const { data: myLeaves } = await sb.from('leaves').select('id, status, total_days, reviewed_at, leave_code').eq('user_id', App.user.id).in('status', ['approved','rejected']).order('reviewed_at', { ascending: false, nullsFirst: false }).limit(3);
@@ -1440,6 +1493,66 @@ function markAllNotifsRead() {
   setSeenNotifs(seen);
   renderNotifs();
   showToast('সব নটিফিকেশন পঠিত হিসেবে চিহ্নিত হয়েছে');
+}
+
+// Admin handles a password reset request
+async function handleResetRequest(reqId, email) {
+  document.getElementById('notifPanel')?.classList.remove('active');
+  // Generate temp password
+  const tempPass = 'OD' + Math.random().toString(36).slice(2, 8).toUpperCase() + '!';
+  showModal(
+    `<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড রিসেট অনুরোধ`,
+    `<div style="padding:8px 0">
+      <p style="font-size:14px;color:var(--gray-700);margin-bottom:14px"><b>${escapeHtml(email)}</b> কর্মী পাসওয়ার্ড ভুলে গেছেন।</p>
+
+      <div style="background:var(--amber-100);padding:12px;border-radius:10px;margin-bottom:14px;font-size:12px;color:var(--gray-700);line-height:1.6">
+        ⚠️ <b>গুরুত্বপূর্ণ:</b> Supabase এর security এর জন্য কোনো client-side থেকে directly password বদলানো যায় না। নিচের ২টা option:
+      </div>
+
+      <div style="background:var(--purple-50);padding:18px;border-radius:12px;border:2px dashed var(--purple-400);text-align:center;margin-bottom:14px">
+        <p style="font-size:11px;color:var(--gray-500);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Generated Temporary Password</p>
+        <div class="num en" style="font-size:22px;font-weight:900;color:var(--purple-700);letter-spacing:2px">${tempPass}</div>
+        <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="navigator.clipboard.writeText('${tempPass}');showToast('✅ Copied!')"><i class="fa-solid fa-copy"></i> কপি করুন</button>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);padding:14px;border-radius:10px;font-size:13px;color:var(--gray-700);line-height:1.7">
+        <h4 style="font-weight:800;margin-bottom:8px;color:var(--purple-700)">📋 Admin করণীয়:</h4>
+        <ol style="padding-left:20px;margin:0">
+          <li>উপরের temp password কপি করুন</li>
+          <li><a href="https://supabase.com/dashboard/project/dfdccqadrmyhgfkzgmqk/auth/users" target="_blank" style="color:var(--purple-700);font-weight:700">Supabase Users</a> এ যান</li>
+          <li><b>${escapeHtml(email)}</b> খুঁজে ⋯ menu → <b>"Send password recovery"</b> অথবা <b>"Reset password"</b> এ click করুন</li>
+          <li>নতুন password বসিয়ে দিন (উপরেরটা)</li>
+          <li>কর্মীকে SMS/WhatsApp এ password পাঠান</li>
+        </ol>
+      </div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="rejectResetRequest(${reqId})">প্রত্যাখ্যান</button>
+     <button class="btn btn-success" onclick="resolveResetRequest(${reqId},'${tempPass}')"><i class="fa-solid fa-check"></i> সমাধান হয়েছে</button>`
+  );
+}
+
+async function resolveResetRequest(reqId, tempPass) {
+  await sb.from('password_reset_requests').update({
+    status: 'resolved',
+    resolved_by: App.user.id,
+    resolved_at: new Date().toISOString(),
+    admin_note: 'Temp password generated: ' + tempPass
+  }).eq('id', reqId);
+  showToast('✅ অনুরোধ সমাধান হিসেবে চিহ্নিত হয়েছে');
+  closeModal();
+  loadNotifications();
+}
+
+async function rejectResetRequest(reqId) {
+  if (!confirm('এই অনুরোধ প্রত্যাখ্যান করবেন?')) return;
+  await sb.from('password_reset_requests').update({
+    status: 'rejected',
+    resolved_by: App.user.id,
+    resolved_at: new Date().toISOString()
+  }).eq('id', reqId);
+  showToast('অনুরোধ প্রত্যাখ্যাত');
+  closeModal();
+  loadNotifications();
 }
 
 document.addEventListener('click', (e) => {
