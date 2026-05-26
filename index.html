@@ -666,14 +666,24 @@ function switchAuthTab(tab) {
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
+  if (!email || !password) {
+    showToast('ইমেইল ও পাসওয়ার্ড দিন', 'error');
+    return;
+  }
   showToast('লগইন হচ্ছে...', 'info');
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
-    showToast('লগইন ব্যর্থ: ' + error.message, 'error');
+    let msg = error.message;
+    if (msg.includes('Invalid login credentials')) {
+      msg = 'ইমেইল বা পাসওয়ার্ড সঠিক নয়। নতুন ইউজার হলে রেজিস্টার করুন।';
+    } else if (msg.includes('Email not confirmed')) {
+      msg = 'প্রথমে আপনার ইমেইলে পাঠানো লিংকে ক্লিক করে ভেরিফাই করুন।';
+    }
+    showToast('❌ ' + msg, 'error');
     return;
   }
-  showToast('স্বাগতম, ' + (data.user?.user_metadata?.full_name || email) + '!');
+  showToast('🎉 স্বাগতম, ' + (data.user?.user_metadata?.full_name || email.split('@')[0]) + '!');
   await loadUserAndStart();
 }
 
@@ -684,6 +694,11 @@ async function doRegister() {
   const phone      = document.getElementById('regPhone').value.trim();
   const designation = document.getElementById('regDesignation').value.trim();
   const typeCode   = document.getElementById('regType').value;
+
+  if (!email || !password || !fullName) {
+    showToast('সব প্রয়োজনীয় ফিল্ড পূরণ করুন', 'error');
+    return;
+  }
 
   showToast('অ্যাকাউন্ট তৈরি হচ্ছে...', 'info');
 
@@ -696,14 +711,31 @@ async function doRegister() {
     return;
   }
 
+  // If session is returned immediately (email confirmation off in Supabase), log in directly
+  if (data.session) {
+    showToast('🎉 স্বাগতম, ' + fullName + '!', 'success');
+    await loadUserAndStart();
+    return;
+  }
+
+  // Otherwise, try direct sign-in (works if email confirmation is off in Supabase)
+  const signInResult = await sb.auth.signInWithPassword({ email, password });
+  if (!signInResult.error && signInResult.data.session) {
+    showToast('🎉 স্বাগতম, ' + fullName + '!', 'success');
+    await loadUserAndStart();
+    return;
+  }
+
+  // Email confirmation is required → show verification screen
   showModal(
     '✉️ ইমেইল ভেরিফাই করুন',
     `<div style="text-align:center;padding:20px 0">
       <div style="font-size:64px;margin-bottom:16px">📧</div>
       <p style="font-size:15px;color:var(--gray-700);margin-bottom:12px">আপনার অ্যাকাউন্ট তৈরি হয়েছে!</p>
-      <p style="font-size:14px;color:var(--gray-500)">আমরা <b>${email}</b> এ একটি ভেরিফিকেশন লিংক পাঠিয়েছি।<br>লিংকে ক্লিক করে অ্যাকাউন্ট সক্রিয় করুন এবং তারপর লগইন করুন।</p>
+      <p style="font-size:14px;color:var(--gray-500);margin-bottom:14px">আমরা <b>${email}</b> এ একটি ভেরিফিকেশন লিংক পাঠিয়েছি।<br>লিংকে ক্লিক করে অ্যাকাউন্ট সক্রিয় করুন এবং তারপর লগইন করুন।</p>
+      <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600">💡 ইমেইল না পেলে: Spam/Junk folder চেক করুন।</p>
     </div>`,
-    `<button class="btn btn-primary" onclick="closeModal(); switchAuthTab('login');">ঠিক আছে</button>`
+    `<button class="btn btn-primary" onclick="closeModal(); switchAuthTab('login'); document.getElementById('loginEmail').value='${email}';">ঠিক আছে</button>`
   );
 }
 
