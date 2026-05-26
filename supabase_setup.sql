@@ -249,8 +249,8 @@ ALTER TABLE public.app_settings    ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies (clean re-run)
 DO $$ DECLARE r RECORD; BEGIN
-  FOR r IN SELECT polname, tablename FROM pg_policies WHERE schemaname = 'public' LOOP
-    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', r.polname, r.tablename);
+  FOR r IN SELECT policyname, tablename FROM pg_policies WHERE schemaname = 'public' LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', r.policyname, r.tablename);
   END LOOP;
 END $$;
 
