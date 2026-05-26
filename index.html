@@ -361,13 +361,15 @@
   .data-table td{padding:14px 12px;border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700);font-weight:600}
   .data-table tr:last-child td{border-bottom:none}
   .data-table tr:hover{filter:brightness(.97)}
-  /* Late / On-time row indicators */
-  .data-table tr.row-late td   {background:rgba(239,68,68,.28) !important;color:var(--gray-800)}
-  .data-table tr.row-late td:first-child{box-shadow:inset 5px 0 0 #dc2626}
-  .data-table tr.row-ok td     {background:rgba(16,185,129,.16) !important;color:var(--gray-800)}
-  .data-table tr.row-ok td:first-child  {box-shadow:inset 5px 0 0 #059669}
-  .data-table tr.row-late:hover td{background:rgba(239,68,68,.36) !important}
-  .data-table tr.row-ok:hover td{background:rgba(16,185,129,.24) !important}
+  /* Late / On-time row indicators — strong, clearly visible */
+  .data-table tr.row-late td   {background:#fee2e2 !important;color:#7f1d1d}
+  .data-table tr.row-late td:first-child{box-shadow:inset 6px 0 0 #dc2626}
+  .data-table tr.row-late td .leave-status{background:#dc2626 !important;color:white !important}
+  .data-table tr.row-late:hover td{background:#fecaca !important}
+  .data-table tr.row-ok td     {background:#dcfce7 !important;color:#14532d}
+  .data-table tr.row-ok td:first-child  {box-shadow:inset 6px 0 0 #16a34a}
+  .data-table tr.row-ok td .leave-status{background:#16a34a !important;color:white !important}
+  .data-table tr.row-ok:hover td{background:#bbf7d0 !important}
 
   .note-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border-left:4px solid var(--amber-500);padding:14px 18px;border-radius:var(--r-md);margin:16px 0;font-size:13px;color:var(--gray-800);font-weight:600}
   .empty-state{padding:60px 20px;text-align:center;color:var(--gray-500)}
