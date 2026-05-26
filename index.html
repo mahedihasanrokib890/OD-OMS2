@@ -355,6 +355,28 @@
   .info-label{width:140px;color:var(--gray-500);font-weight:600;flex-shrink:0}
   .info-value{color:var(--gray-800);font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
+  /* Notification panel */
+  .notif-panel{
+    position:absolute;top:62px;right:60px;width:380px;max-width:calc(100vw - 32px);max-height:480px;overflow-y:auto;
+    background:white;border-radius:var(--r-xl);border:1px solid var(--border);
+    box-shadow:0 24px 56px -12px rgba(91,45,138,.25);
+    z-index:200;display:none;animation:fadeIn .25s ease;
+  }
+  .notif-panel.active{display:block}
+  .notif-panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,var(--purple-50) 0%,var(--pink-100) 100%);border-radius:var(--r-xl) var(--r-xl) 0 0}
+  .notif-panel-header h4{font-size:15px;font-weight:800;color:var(--purple-700)}
+  .notif-panel-header .clear-btn{font-size:11px;color:var(--purple-600);font-weight:700;cursor:pointer;background:none;border:none}
+  .notif-panel-header .clear-btn:hover{text-decoration:underline}
+  .notif-item{padding:12px 18px;border-bottom:1px solid var(--gray-100);display:flex;gap:12px;align-items:start;cursor:pointer;transition:background .2s}
+  .notif-item:hover{background:var(--purple-50)}
+  .notif-item.unread{background:rgba(139,92,246,.04);border-left:3px solid var(--purple-500)}
+  .notif-item-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .notif-item-text{flex:1;min-width:0}
+  .notif-item-text h5{font-size:13px;font-weight:800;color:var(--gray-800);margin-bottom:3px}
+  .notif-item-text p{font-size:12px;color:var(--gray-500);font-weight:500;line-height:1.5;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .notif-item-text time{font-size:11px;color:var(--gray-400);font-weight:600}
+  .notif-empty{padding:40px 20px;text-align:center;color:var(--gray-400)}
+  .notif-empty i{font-size:36px;color:var(--gray-300);margin-bottom:8px}
   /* Tables */
   .data-table{width:100%;border-collapse:separate;border-spacing:0;background:white;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--gray-100)}
   .data-table th{background:var(--gray-50);padding:12px;text-align:left;font-weight:800;font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--gray-100)}
@@ -538,9 +560,6 @@
         <span class="nav-item-left"><i class="fa-solid fa-calendar-check"></i> ছুটির আবেদন</span>
         <span class="nav-badge pink" id="leaveBadge" style="display:none">০</span>
       </div>
-      <div class="nav-item" data-route="profile" onclick="navigate('profile')">
-        <span class="nav-item-left"><i class="fa-solid fa-user"></i> আমার প্রোফাইল</span>
-      </div>
 
       <div class="editor-or-admin">
         <div class="sidebar-section-title">ব্যবস্থাপনা</div>
@@ -586,7 +605,16 @@
           <i class="fa-solid fa-magnifying-glass"></i>
           <input placeholder="খুঁজুন...">
         </div>
-        <button class="icon-btn-pill" onclick="navigate('notices')"><i class="fa-solid fa-bell"></i><span class="dot" id="notifDot" style="display:none"></span></button>
+        <div style="position:relative">
+          <button class="icon-btn-pill" onclick="toggleNotifPanel(event)"><i class="fa-solid fa-bell"></i><span class="dot" id="notifDot" style="display:none"></span><span class="nav-badge" id="notifCount" style="position:absolute;top:-2px;right:-2px;display:none;font-size:10px;min-width:18px;padding:2px 5px">০</span></button>
+          <div class="notif-panel" id="notifPanel" onclick="event.stopPropagation()">
+            <div class="notif-panel-header">
+              <h4><i class="fa-solid fa-bell"></i> নটিফিকেশন</h4>
+              <button class="clear-btn" onclick="markAllNotifsRead()">সব পঠিত</button>
+            </div>
+            <div id="notifList"><div class="notif-empty"><i class="fa-solid fa-bell-slash"></i><p>কোনো নটিফিকেশন নেই</p></div></div>
+          </div>
+        </div>
         <div class="topbar-user" onclick="navigate('profile')">
           <div class="avatar" id="topbarAvatar">আ</div>
           <span id="topbarUserName">ইউজার</span>
@@ -692,6 +720,15 @@ const formatBnTimeSec = (d) => {
 const dayName = (d) => ['রবিবার','সোমবার','মঙ্গলবার','বুধবার','বৃহস্পতিবার','শুক্রবার','শনিবার'][new Date(d).getDay()];
 
 const initial = (name) => (name||'').trim().charAt(0).toUpperCase() || 'আ';
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5)  return 'শুভ রাত্রি';
+  if (h < 12) return 'শুভ সকাল';
+  if (h < 17) return 'শুভ অপরাহ্ন';
+  if (h < 20) return 'শুভ সন্ধ্যা';
+  return 'শুভ রাত্রি';
+}
 
 // LocalStorage helpers
 const ls = {
@@ -1064,6 +1101,9 @@ async function loadUserAndStart() {
   // Subscribe to realtime updates
   setupRealtimeSync();
 
+  // Load notifications
+  loadNotifications();
+
   // Initial route
   navigate('dashboard');
 }
@@ -1079,6 +1119,8 @@ function setupRealtimeSync() {
   _realtimeChannels = [];
 
   const refresh = (table) => () => {
+    // Refresh notifications on relevant table changes
+    if (['notices','leaves'].includes(table)) loadNotifications();
     if (App.currentPage === 'dashboard') loadDashboardLists();
     if (App.currentPage === 'notices' && table === 'notices') refreshNoticesList();
     if (App.currentPage === 'leaves' && table === 'leaves') refreshLeavesList();
@@ -1093,6 +1135,141 @@ function setupRealtimeSync() {
     _realtimeChannels.push(ch);
   });
 }
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+const NOTIF_KEY = LS_PREFIX + 'notif_seen';
+function getSeenNotifs() { try { return new Set(JSON.parse(localStorage.getItem(NOTIF_KEY)||'[]')); } catch { return new Set(); } }
+function setSeenNotifs(set) { localStorage.setItem(NOTIF_KEY, JSON.stringify([...set])); }
+
+let _notifs = [];
+
+async function loadNotifications() {
+  if (!App.user) return;
+  const items = [];
+  try {
+    const { data: notices } = await sb.from('notices').select('id, title, content, created_at, priority').eq('is_active', true).order('created_at', { ascending: false }).limit(5);
+    (notices||[]).forEach(n => items.push({
+      id: 'notice_' + n.id,
+      type: 'notice',
+      icon: 'bullhorn',
+      iconBg: n.priority==='urgent'?'background:var(--red-100);color:var(--red-500)':'background:var(--purple-100);color:var(--purple-700)',
+      title: n.title,
+      desc: (n.content||'').slice(0,80),
+      time: n.created_at,
+      action: () => navigate('notices')
+    }));
+    if (App.isAdmin || App.isEditor) {
+      const { data: leaves } = await sb.from('leaves').select('id, reason, total_days, created_at, profiles!user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5);
+      (leaves||[]).forEach(l => items.push({
+        id: 'leave_' + l.id,
+        type: 'leave',
+        icon: 'calendar-plus',
+        iconBg: 'background:var(--amber-100);color:var(--amber-500)',
+        title: `নতুন ছুটির আবেদন · ${l.profiles?.full_name||'কর্মী'}`,
+        desc: `${bnDigits(l.total_days||1)} দিনের ছুটি — ${l.reason||''}`,
+        time: l.created_at,
+        action: () => navigate('leaves')
+      }));
+    }
+    if (!App.isAdmin) {
+      const { data: myLeaves } = await sb.from('leaves').select('id, status, total_days, reviewed_at, leave_code').eq('user_id', App.user.id).in('status', ['approved','rejected']).order('reviewed_at', { ascending: false, nullsFirst: false }).limit(3);
+      (myLeaves||[]).forEach(l => {
+        if (!l.reviewed_at) return;
+        items.push({
+          id: 'lr_' + l.id,
+          type: 'leave_result',
+          icon: l.status === 'approved' ? 'circle-check' : 'circle-xmark',
+          iconBg: l.status === 'approved' ? 'background:var(--emerald-100);color:var(--emerald-500)' : 'background:var(--red-100);color:var(--red-500)',
+          title: `আপনার ছুটি ${l.status==='approved'?'অনুমোদিত':'প্রত্যাখ্যাত'} হয়েছে`,
+          desc: `${bnDigits(l.total_days||1)} দিনের ছুটি — ${l.leave_code||''}`,
+          time: l.reviewed_at,
+          action: () => navigate('leaves')
+        });
+      });
+    }
+  } catch (e) { console.warn('notifs:', e); }
+
+  _notifs = items.sort((a,b) => new Date(b.time) - new Date(a.time));
+  renderNotifs();
+}
+
+function renderNotifs() {
+  const seen = getSeenNotifs();
+  const unread = _notifs.filter(n => !seen.has(n.id));
+  const cnt = document.getElementById('notifCount');
+  const dot = document.getElementById('notifDot');
+  if (cnt && dot) {
+    if (unread.length > 0) { cnt.textContent = bnDigits(unread.length); cnt.style.display = ''; dot.style.display = 'none'; }
+    else { cnt.style.display = 'none'; dot.style.display = 'none'; }
+  }
+  const leaveBadge = document.getElementById('leaveBadge');
+  if (leaveBadge) {
+    const pendingLeaves = _notifs.filter(n => n.type === 'leave' && !seen.has(n.id));
+    if (pendingLeaves.length > 0) { leaveBadge.textContent = bnDigits(pendingLeaves.length); leaveBadge.style.display = ''; }
+    else leaveBadge.style.display = 'none';
+  }
+  const noticeBadge = document.getElementById('noticeBadge');
+  if (noticeBadge) {
+    const unreadNotices = _notifs.filter(n => n.type === 'notice' && !seen.has(n.id));
+    if (unreadNotices.length > 0) { noticeBadge.textContent = bnDigits(unreadNotices.length); noticeBadge.style.display = ''; }
+    else noticeBadge.style.display = 'none';
+  }
+  const list = document.getElementById('notifList');
+  if (!list) return;
+  if (_notifs.length === 0) {
+    list.innerHTML = `<div class="notif-empty"><i class="fa-solid fa-bell-slash"></i><p>কোনো নটিফিকেশন নেই</p></div>`;
+    return;
+  }
+  list.innerHTML = _notifs.slice(0, 10).map(n => {
+    const isUnread = !seen.has(n.id);
+    return `
+      <div class="notif-item ${isUnread?'unread':''}" data-nid="${n.id}" onclick="handleNotifClick('${n.id}')">
+        <div class="notif-item-icon" style="${n.iconBg}"><i class="fa-solid fa-${n.icon}"></i></div>
+        <div class="notif-item-text">
+          <h5>${escapeHtml(n.title)}</h5>
+          <p>${escapeHtml(n.desc||'')}</p>
+          <time>${formatBnDate(n.time)} · ${formatBnTime(n.time)}</time>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function handleNotifClick(id) {
+  const n = _notifs.find(x => x.id === id);
+  if (!n) return;
+  const seen = getSeenNotifs();
+  seen.add(id);
+  setSeenNotifs(seen);
+  document.getElementById('notifPanel').classList.remove('active');
+  renderNotifs();
+  if (n.action) n.action();
+}
+
+function toggleNotifPanel(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('notifPanel');
+  panel.classList.toggle('active');
+}
+
+function markAllNotifsRead() {
+  const seen = getSeenNotifs();
+  _notifs.forEach(n => seen.add(n.id));
+  setSeenNotifs(seen);
+  renderNotifs();
+  showToast('সব নটিফিকেশন পঠিত হিসেবে চিহ্নিত হয়েছে');
+}
+
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('notifPanel');
+  if (panel && panel.classList.contains('active') && !panel.contains(e.target) && !e.target.closest('.icon-btn-pill')) {
+    panel.classList.remove('active');
+  }
+});
+
+setInterval(() => { if (App.user) loadNotifications(); }, 30000);
 
 // ═══════════════════════════════════════════════════════════
 // ROUTER
@@ -1189,7 +1366,7 @@ async function renderDashboard() {
   if (isAdmin) {
     return `
       <div class="welcome-banner">
-        <h1>🌅 শুভ সকাল, ${name}! 👋</h1>
+        <h1>🌅 ${greeting()}, ${name}! 👋</h1>
         <p>আজ ${dayName(today())}, ${formatBnDate(today())}। আপনার HR ড্যাশবোর্ডে স্বাগতম।</p>
       </div>
 
@@ -1199,9 +1376,10 @@ async function renderDashboard() {
           <h3 class="num">${bnDigits(stats.totalEmp)}</h3><p>মোট কর্মী</p>
           <div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত দেখুন</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer">
           <div class="stat-icon emerald"><i class="fa-solid fa-circle-check"></i></div>
           <h3 class="num">${bnDigits(stats.todayPresent)}</h3><p>আজ উপস্থিত</p>
+          <div class="stat-trend"><i class="fa-solid fa-arrow-up"></i> ${stats.totalEmp ? bnDigits(Math.round((stats.todayPresent/stats.totalEmp)*100)) : '০'}% হাজিরা</div>
         </div>
         <div class="stat-card">
           <div class="stat-icon amber"><i class="fa-solid fa-umbrella-beach"></i></div>
@@ -1214,15 +1392,38 @@ async function renderDashboard() {
         </div>
       </div>
 
+      <div class="quick-actions">
+        <div class="quick-action" onclick="openMarkOthersAttendance()"><div class="qa-icon emerald"><i class="fa-solid fa-clipboard-check"></i></div><span>সবার এটেন্ডেন্স</span></div>
+        <div class="quick-action" onclick="openEmployeeModal()"><div class="qa-icon"><i class="fa-solid fa-user-plus"></i></div><span>নতুন কর্মী</span></div>
+        <div class="quick-action" onclick="openNoticeModal()"><div class="qa-icon pink"><i class="fa-solid fa-bullhorn"></i></div><span>নতুন নোটিশ</span></div>
+        <div class="quick-action" onclick="navigate('reports')"><div class="qa-icon amber"><i class="fa-solid fa-chart-line"></i></div><span>রিপোর্ট</span></div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> আজকের হাজিরা ওভারভিউ</span></div>
+          <div style="position:relative;height:240px"><canvas id="dashTodayChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span><i class="fa-solid fa-chart-line"></i> এই সপ্তাহের ট্রেন্ড</span></div>
+          <div style="position:relative;height:240px"><canvas id="dashWeekChart"></canvas></div>
+        </div>
+      </div>
+
       <div class="card-grid">
         <div class="card">
           <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
-          <div id="dashRecentNotices"><div class="dot-loader" style="padding:20px;display:flex;justify-content:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--purple-400);animation:pulse 1.4s infinite"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--purple-400);animation:pulse 1.4s infinite .2s"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--purple-400);animation:pulse 1.4s infinite .4s"></span></div></div>
+          <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
         </div>
         <div class="card">
           <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> অপেক্ষমাণ ছুটি</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
           <div id="dashPendingLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-fire"></i> সাম্প্রতিক কর্মকাণ্ড</span></div>
+        <div id="dashActivity"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
     `;
   }
@@ -1319,6 +1520,36 @@ async function loadDashboardLists() {
         }
       }
     } catch (e) { console.warn(e); }
+
+    // Charts
+    drawAdminDashCharts();
+
+    // Activity feed
+    try {
+      const [{ data: recentAtt }, { data: recentLeaves }, { data: recentNotices }] = await Promise.all([
+        sb.from('attendance').select('*, profiles!user_id(full_name)').order('created_at', { ascending: false }).limit(5),
+        sb.from('leaves').select('*, profiles!user_id(full_name)').order('created_at', { ascending: false }).limit(5),
+        sb.from('notices').select('*, profiles!posted_by(full_name)').order('created_at', { ascending: false }).limit(3)
+      ]);
+      const acts = [];
+      (recentAtt||[]).forEach(a => acts.push({ time: a.created_at, icon: 'right-to-bracket', color: 'var(--emerald-500)', text: `<b>${escapeHtml(a.profiles?.full_name||'কর্মী')}</b> এটেন্ডেন্স দিয়েছেন` }));
+      (recentLeaves||[]).forEach(l => acts.push({ time: l.created_at, icon: 'calendar-plus', color: 'var(--amber-500)', text: `<b>${escapeHtml(l.profiles?.full_name||'কর্মী')}</b> ${bnDigits(l.total_days)} দিনের ছুটির আবেদন করেছেন` }));
+      (recentNotices||[]).forEach(n => acts.push({ time: n.created_at, icon: 'bullhorn', color: 'var(--purple-600)', text: `<b>${escapeHtml(n.profiles?.full_name||'অ্যাডমিন')}</b> নতুন নোটিশ পোস্ট করেছেন: <i>${escapeHtml(n.title)}</i>` }));
+      acts.sort((a,b) => new Date(b.time) - new Date(a.time));
+      const actEl = document.getElementById('dashActivity');
+      if (actEl) {
+        if (acts.length === 0) actEl.innerHTML = `<div class="empty-state" style="padding:30px"><i class="fa-solid fa-clock-rotate-left"></i><h3>কোনো কর্মকাণ্ড নেই</h3></div>`;
+        else actEl.innerHTML = acts.slice(0, 8).map(a => `
+          <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+            <div style="width:32px;height:32px;border-radius:8px;background:${a.color}15;color:${a.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px"><i class="fa-solid fa-${a.icon}"></i></div>
+            <div style="flex:1">
+              <div style="font-size:13px;color:var(--gray-700)">${a.text}</div>
+              <div style="font-size:11px;color:var(--gray-400);margin-top:2px;font-weight:600">${formatBnDate(a.time)} · ${formatBnTime(a.time)}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (e) { console.warn(e); }
   } else {
     // Employee dashboard extras
     // 1. My recent leaves
@@ -1399,6 +1630,69 @@ function priorityLabel(p) {
 }
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN DASHBOARD CHARTS
+// ═══════════════════════════════════════════════════════════
+let _dashCharts = {};
+async function drawAdminDashCharts() {
+  if (typeof Chart === 'undefined') return;
+  try { Object.values(_dashCharts).forEach(c => { try { c.destroy(); } catch{} }); } catch{}
+  _dashCharts = {};
+
+  // Today overview: present / late / on-leave / absent
+  try {
+    const { count: total }   = await sb.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true);
+    const { data: todayAtt } = await sb.from('attendance').select('status, late_minutes').eq('date', today());
+    const { count: onLeave } = await sb.from('leaves').select('id', { count:'exact', head:true }).eq('status', 'approved').lte('start_date', today()).gte('end_date', today());
+    const present = (todayAtt||[]).filter(a => a.late_minutes === 0 || !a.late_minutes).length;
+    const late    = (todayAtt||[]).filter(a => a.late_minutes > 0).length;
+    const absent  = Math.max(0, (total||0) - present - late - (onLeave||0));
+    const c1 = document.getElementById('dashTodayChart');
+    if (c1) {
+      _dashCharts.today = new Chart(c1, {
+        type: 'doughnut',
+        data: {
+          labels: ['উপস্থিত','লেট','ছুটিতে','অনুপস্থিত'],
+          datasets: [{ data: [present, late, onLeave||0, absent], backgroundColor: ['#10b981','#f59e0b','#a78bfa','#ef4444'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'Hind Siliguri'" } } } } }
+      });
+    }
+  } catch (e) { console.warn(e); }
+
+  // Last 7 days trend
+  try {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      days.push(d.toISOString().slice(0,10));
+    }
+    const { data: weekData } = await sb.from('attendance').select('date, late_minutes').gte('date', days[0]).lte('date', days[6]);
+    const map = {};
+    days.forEach(d => map[d] = { present: 0, late: 0 });
+    (weekData||[]).forEach(r => {
+      if (!map[r.date]) return;
+      if (r.late_minutes > 0) map[r.date].late++;
+      else map[r.date].present++;
+    });
+    const labels = days.map(d => formatBnDate(d).split(' ').slice(0,2).join(' '));
+    const c2 = document.getElementById('dashWeekChart');
+    if (c2) {
+      _dashCharts.week = new Chart(c2, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'উপস্থিত', data: days.map(d => map[d].present), backgroundColor: '#10b981', borderRadius: 6 },
+            { label: 'লেট',     data: days.map(d => map[d].late),    backgroundColor: '#ef4444', borderRadius: 6 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'Hind Siliguri'" } } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      });
+    }
+  } catch (e) { console.warn(e); }
 }
 
 async function getDashboardStats() {
@@ -1590,7 +1884,8 @@ async function refreshAttendanceList() {
     }
     tbody.innerHTML = data.map(r => {
       const isLate = r.late_minutes > 0;
-      const rowClass = isLate ? 'row-late' : 'row-ok';
+      const isLeave = r.status === 'leave' || r.status === 'absent' || r.status === 'holiday';
+      const rowClass = isLeave ? '' : (isLate ? 'row-late' : 'row-ok');
       const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
       const empCell = App.isAdmin ? `
         <td><div style="display:flex;align-items:center;gap:8px">
@@ -1598,6 +1893,16 @@ async function refreshAttendanceList() {
           <span style="font-weight:700">${escapeHtml(r.profiles?.full_name||'—')}</span>
         </div></td>` : '';
       const actionCell = App.isAdmin ? `<td><button class="icon-btn" onclick="editAttendance(${r.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button></td>` : '';
+      let statusCell;
+      if (isLeave) {
+        const codeColors = { CL:'#3b82f6', SL:'#ef4444', EL:'#10b981', CoL:'#a78bfa', ML:'#ec4899', PH:'#f59e0b', UL:'#94a3b8', IL:'#dc2626' };
+        const cc = codeColors[r.leave_code] || '#94a3b8';
+        statusCell = `<span class="leave-status" style="background:${cc}22;color:${cc}">🏖️ ${r.leave_code || (r.status==='holiday'?'PH':'—')}</span>`;
+      } else if (isLate) {
+        statusCell = `<span class="leave-status pending">⚠️ লেট ${bnDigits(r.late_minutes)}মি</span>`;
+      } else {
+        statusCell = `<span class="leave-status approved">✓ নিয়মিত</span>`;
+      }
       return `
         <tr class="${rowClass}">
           ${empCell}
@@ -1609,9 +1914,7 @@ async function refreshAttendanceList() {
           <td class="num" style="font-size:12px">${fmtT(r.personal_in)}</td>
           <td class="num" style="font-size:12px">${fmtT(r.check_out)}</td>
           <td class="num" style="font-weight:800">${r.total_hours ? bnDigits(r.total_hours) + ' ঘ' : '—'}</td>
-          <td>${isLate
-            ? `<span class="leave-status pending">⚠️ লেট ${bnDigits(r.late_minutes)}মি</span>`
-            : `<span class="leave-status approved">✓ নিয়মিত</span>`}</td>
+          <td>${statusCell}</td>
           ${actionCell}
         </tr>
       `;
@@ -1644,14 +1947,28 @@ async function editAttendance(id) {
     <div class="form-grid">
       <div class="form-group"><label>লেট (মিনিট)</label><input class="form-input num" type="number" id="atLate" value="${data.late_minutes||0}" min="0"></div>
       <div class="form-group"><label>স্ট্যাটাস</label>
-        <select class="form-select" id="atStatus">
-          <option value="present" ${data.status==='present'?'selected':''}>নিয়মিত</option>
-          <option value="late"    ${data.status==='late'?'selected':''}>লেট</option>
-          <option value="absent"  ${data.status==='absent'?'selected':''}>অনুপস্থিত</option>
-          <option value="leave"   ${data.status==='leave'?'selected':''}>ছুটি</option>
-          <option value="holiday" ${data.status==='holiday'?'selected':''}>সরকারি ছুটি</option>
+        <select class="form-select" id="atStatus" onchange="toggleLeaveCodeRow()">
+          <option value="present" ${data.status==='present'?'selected':''}>নিয়মিত (Present)</option>
+          <option value="late"    ${data.status==='late'?'selected':''}>লেট (Late)</option>
+          <option value="absent"  ${data.status==='absent'?'selected':''}>অনুপস্থিত (Absent)</option>
+          <option value="leave"   ${data.status==='leave'?'selected':''}>ছুটি (Leave)</option>
+          <option value="holiday" ${data.status==='holiday'?'selected':''}>সরকারি ছুটি (Holiday)</option>
         </select>
       </div>
+    </div>
+    <div class="form-group" id="leaveCodeRow" style="display:${(data.status==='leave'||data.status==='absent')?'block':'none'}">
+      <label>ছুটির কোড / কারণ (যদি ছুটি বা অনুপস্থিত)</label>
+      <select class="form-select" id="atLeaveCode">
+        <option value="">— নির্বাচন করুন —</option>
+        <option value="CL"  ${data.leave_code==='CL' ?'selected':''}>CL · নৈমিত্তিক ছুটি (Casual Leave)</option>
+        <option value="SL"  ${data.leave_code==='SL' ?'selected':''}>SL · অসুস্থতা ছুটি (Sick Leave)</option>
+        <option value="EL"  ${data.leave_code==='EL' ?'selected':''}>EL · অর্জিত ছুটি (Earn Leave)</option>
+        <option value="CoL" ${data.leave_code==='CoL'?'selected':''}>CoL · সমবেদনা ছুটি (Compassionate)</option>
+        <option value="ML"  ${data.leave_code==='ML' ?'selected':''}>ML · বিবাহ ছুটি (Marriage)</option>
+        <option value="PH"  ${data.leave_code==='PH' ?'selected':''}>PH · সরকারি ছুটি (Public Holiday)</option>
+        <option value="UL"  ${data.leave_code==='UL' ?'selected':''}>UL · অননুমোদিত ছুটি (Unnotice)</option>
+        <option value="IL"  ${data.leave_code==='IL' ?'selected':''}>IL · দায়িত্বহীন ছুটি (Irresponsible)</option>
+      </select>
     </div>
     <div class="form-group"><label>মন্তব্য</label><textarea class="form-textarea" id="atNotes" style="min-height:60px">${escapeHtml(data.notes||'')}</textarea></div>
     `,
@@ -1673,6 +1990,7 @@ async function saveAttendance(id) {
     personal_in:  fromLocal(document.getElementById('atPin').value),
     late_minutes: parseInt(document.getElementById('atLate').value) || 0,
     status:       document.getElementById('atStatus').value,
+    leave_code:   document.getElementById('atLeaveCode')?.value || null,
     notes:        document.getElementById('atNotes').value.trim() || null,
     updated_at:   new Date().toISOString()
   };
@@ -1703,6 +2021,104 @@ async function deleteAttendance(id) {
   showToast('✅ ডিলিট হয়েছে');
   closeModal();
   refreshAttendanceList();
+}
+
+function toggleLeaveCodeRow() {
+  const status = document.getElementById('atStatus')?.value;
+  const row = document.getElementById('leaveCodeRow');
+  if (row) row.style.display = (status === 'leave' || status === 'absent') ? 'block' : 'none';
+}
+
+// Admin: bulk-mark attendance for any employee
+async function openMarkOthersAttendance() {
+  if (!App.isAdmin) return;
+  const { data: employees } = await sb.from('profiles').select('id, full_name, email').eq('is_active', true).order('full_name');
+  if (!employees || employees.length === 0) return showToast('কোনো কর্মী নেই', 'warning');
+  const empOptions = employees.map(e => `<option value="${e.id}">${escapeHtml(e.full_name)} · ${escapeHtml(e.email)}</option>`).join('');
+
+  showModal(
+    '<i class="fa-solid fa-clipboard-check" style="color:var(--purple-600)"></i> অন্য কর্মীর এটেন্ডেন্স দিন',
+    `
+    <div class="form-group"><label>কর্মী নির্বাচন করুন</label>
+      <select class="form-select" id="moaEmp">${empOptions}</select>
+    </div>
+    <div class="form-group"><label>তারিখ</label>
+      <input class="form-input" type="date" id="moaDate" value="${today()}">
+    </div>
+    <div class="form-group"><label>স্ট্যাটাস</label>
+      <select class="form-select" id="moaStatus" onchange="toggleMoaCode()">
+        <option value="present">✅ নিয়মিত উপস্থিত</option>
+        <option value="late">⏰ লেট</option>
+        <option value="absent">❌ অনুপস্থিত</option>
+        <option value="leave">🏖️ ছুটি</option>
+        <option value="holiday">🎉 সরকারি ছুটি</option>
+      </select>
+    </div>
+    <div class="form-group" id="moaCodeRow" style="display:none">
+      <label>ছুটির কোড</label>
+      <select class="form-select" id="moaCode">
+        <option value="CL">CL · নৈমিত্তিক ছুটি</option>
+        <option value="SL">SL · অসুস্থতা ছুটি</option>
+        <option value="EL">EL · অর্জিত ছুটি</option>
+        <option value="CoL">CoL · সমবেদনা ছুটি</option>
+        <option value="ML">ML · বিবাহ ছুটি</option>
+        <option value="PH">PH · সরকারি ছুটি</option>
+        <option value="UL">UL · অননুমোদিত ছুটি</option>
+        <option value="IL">IL · দায়িত্বহীন ছুটি</option>
+      </select>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>চেক-ইন (ঐচ্ছিক)</label><input class="form-input" type="time" id="moaIn"></div>
+      <div class="form-group"><label>চেক-আউট (ঐচ্ছিক)</label><input class="form-input" type="time" id="moaOut"></div>
+    </div>
+    <div class="form-group"><label>মন্তব্য</label><textarea class="form-textarea" id="moaNotes" style="min-height:60px"></textarea></div>
+    `,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="moaSaveBtn" onclick="saveOthersAttendance()"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
+  );
+}
+
+function toggleMoaCode() {
+  const s = document.getElementById('moaStatus')?.value;
+  const r = document.getElementById('moaCodeRow');
+  if (r) r.style.display = (s === 'leave' || s === 'absent' || s === 'holiday') ? 'block' : 'none';
+}
+
+async function saveOthersAttendance() {
+  const user_id = document.getElementById('moaEmp').value;
+  const date    = document.getElementById('moaDate').value;
+  const status  = document.getElementById('moaStatus').value;
+  const code    = document.getElementById('moaCode').value;
+  const inTime  = document.getElementById('moaIn').value;
+  const outTime = document.getElementById('moaOut').value;
+  const notes   = document.getElementById('moaNotes').value.trim() || null;
+
+  const payload = {
+    user_id, date, status, notes,
+    leave_code: (status==='leave'||status==='absent'||status==='holiday') ? code : null,
+    check_in:  inTime  ? new Date(`${date}T${inTime}:00`).toISOString()  : null,
+    check_out: outTime ? new Date(`${date}T${outTime}:00`).toISOString() : null,
+    late_minutes: status === 'late' ? 1 : 0,
+    updated_at: new Date().toISOString()
+  };
+  // total_hours
+  if (payload.check_in && payload.check_out) {
+    const ms = new Date(payload.check_out) - new Date(payload.check_in);
+    payload.total_hours = Math.round((ms / 3600000) * 100) / 100;
+  }
+
+  const btn = document.getElementById('moaSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    const { error } = await sb.from('attendance').upsert(payload, { onConflict: 'user_id,date' });
+    if (error) throw error;
+    showToast('✅ এটেন্ডেন্স সংরক্ষিত হয়েছে');
+    closeModal();
+    if (App.currentPage === 'attendance') refreshAttendanceList();
+    if (App.currentPage === 'dashboard') loadDashboardLists();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally { setBtnLoading(btn, false); }
 }
 
 async function exportAttendance() {
