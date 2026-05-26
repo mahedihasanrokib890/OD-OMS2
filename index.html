@@ -663,6 +663,27 @@ function switchAuthTab(tab) {
   document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
 }
 
+// Helper: set button to loading state and reset on completion / timeout
+function setBtnLoading(btn, loading, originalHTML) {
+  if (!btn) return;
+  if (loading) {
+    btn._origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2.5px"></div> অপেক্ষা করুন...`;
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = btn._origHTML || originalHTML;
+  }
+}
+
+// Wrapper that auto-rejects after a timeout to avoid forever-spinning UI
+function withTimeout(promise, ms = 15000, errorMsg = 'নেটওয়ার্ক টাইমআউট') {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(errorMsg)), ms))
+  ]);
+}
+
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
@@ -670,21 +691,28 @@ async function doLogin() {
     showToast('ইমেইল ও পাসওয়ার্ড দিন', 'error');
     return;
   }
-  showToast('লগইন হচ্ছে...', 'info');
+  const btn = document.querySelector('#loginForm button[type="submit"]');
+  setBtnLoading(btn, true);
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) {
-    let msg = error.message;
-    if (msg.includes('Invalid login credentials')) {
-      msg = 'ইমেইল বা পাসওয়ার্ড সঠিক নয়। নতুন ইউজার হলে রেজিস্টার করুন।';
-    } else if (msg.includes('Email not confirmed')) {
-      msg = 'প্রথমে আপনার ইমেইলে পাঠানো লিংকে ক্লিক করে ভেরিফাই করুন।';
+  try {
+    const { data, error } = await withTimeout(
+      sb.auth.signInWithPassword({ email, password }), 15000
+    );
+    if (error) {
+      let msg = error.message;
+      if (msg.includes('Invalid login credentials')) msg = 'ইমেইল বা পাসওয়ার্ড সঠিক নয়। নতুন ইউজার হলে রেজিস্টার করুন।';
+      else if (msg.includes('Email not confirmed')) msg = 'প্রথমে ইমেইলে পাঠানো লিংকে ক্লিক করে ভেরিফাই করুন।';
+      showToast('❌ ' + msg, 'error');
+      return;
     }
-    showToast('❌ ' + msg, 'error');
-    return;
+    showToast('🎉 স্বাগতম, ' + (data.user?.user_metadata?.full_name || email.split('@')[0]) + '!');
+    await loadUserAndStart();
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+    console.error(e);
+  } finally {
+    setBtnLoading(btn, false);
   }
-  showToast('🎉 স্বাগতম, ' + (data.user?.user_metadata?.full_name || email.split('@')[0]) + '!');
-  await loadUserAndStart();
 }
 
 async function doRegister() {
@@ -699,44 +727,64 @@ async function doRegister() {
     showToast('সব প্রয়োজনীয় ফিল্ড পূরণ করুন', 'error');
     return;
   }
-
-  showToast('অ্যাকাউন্ট তৈরি হচ্ছে...', 'info');
-
-  const { data, error } = await sb.auth.signUp({
-    email, password,
-    options: { data: { full_name: fullName, phone, designation, employee_type: typeCode } }
-  });
-  if (error) {
-    showToast('রেজিস্ট্রেশন ব্যর্থ: ' + error.message, 'error');
+  if (password.length < 6) {
+    showToast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে', 'error');
     return;
   }
 
-  // If session is returned immediately (email confirmation off in Supabase), log in directly
-  if (data.session) {
-    showToast('🎉 স্বাগতম, ' + fullName + '!', 'success');
-    await loadUserAndStart();
-    return;
-  }
+  const btn = document.querySelector('#registerForm button[type="submit"]');
+  setBtnLoading(btn, true);
 
-  // Otherwise, try direct sign-in (works if email confirmation is off in Supabase)
-  const signInResult = await sb.auth.signInWithPassword({ email, password });
-  if (!signInResult.error && signInResult.data.session) {
-    showToast('🎉 স্বাগতম, ' + fullName + '!', 'success');
-    await loadUserAndStart();
-    return;
-  }
+  try {
+    const { data, error } = await withTimeout(
+      sb.auth.signUp({
+        email, password,
+        options: { data: { full_name: fullName, phone, designation, employee_type: typeCode } }
+      }), 20000
+    );
+    if (error) {
+      let msg = error.message;
+      if (msg.includes('User already registered') || msg.includes('already been registered')) {
+        msg = 'এই ইমেইল ইতিমধ্যে রেজিস্টার্ড। লগইন করুন অথবা অন্য ইমেইল ব্যবহার করুন।';
+      }
+      showToast('❌ ' + msg, 'error');
+      return;
+    }
 
-  // Email confirmation is required → show verification screen
-  showModal(
-    '✉️ ইমেইল ভেরিফাই করুন',
-    `<div style="text-align:center;padding:20px 0">
-      <div style="font-size:64px;margin-bottom:16px">📧</div>
-      <p style="font-size:15px;color:var(--gray-700);margin-bottom:12px">আপনার অ্যাকাউন্ট তৈরি হয়েছে!</p>
-      <p style="font-size:14px;color:var(--gray-500);margin-bottom:14px">আমরা <b>${email}</b> এ একটি ভেরিফিকেশন লিংক পাঠিয়েছি।<br>লিংকে ক্লিক করে অ্যাকাউন্ট সক্রিয় করুন এবং তারপর লগইন করুন।</p>
-      <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600">💡 ইমেইল না পেলে: Spam/Junk folder চেক করুন।</p>
-    </div>`,
-    `<button class="btn btn-primary" onclick="closeModal(); switchAuthTab('login'); document.getElementById('loginEmail').value='${email}';">ঠিক আছে</button>`
-  );
+    // Case 1: session immediately returned (email confirmation off)
+    if (data.session) {
+      showToast('🎉 স্বাগতম, ' + fullName + '!');
+      await loadUserAndStart();
+      return;
+    }
+
+    // Case 2: try sign-in (works if confirmation off but signUp didn't return session)
+    try {
+      const r = await withTimeout(sb.auth.signInWithPassword({ email, password }), 8000);
+      if (!r.error && r.data.session) {
+        showToast('🎉 স্বাগতম, ' + fullName + '!');
+        await loadUserAndStart();
+        return;
+      }
+    } catch (_) { /* fall through to verification screen */ }
+
+    // Case 3: email verification required
+    showModal(
+      '✉️ ইমেইল ভেরিফাই করুন',
+      `<div style="text-align:center;padding:20px 0">
+        <div style="font-size:64px;margin-bottom:16px">📧</div>
+        <p style="font-size:15px;color:var(--gray-700);margin-bottom:12px">আপনার অ্যাকাউন্ট তৈরি হয়েছে!</p>
+        <p style="font-size:14px;color:var(--gray-500);margin-bottom:14px">আমরা <b>${email}</b> এ একটি ভেরিফিকেশন লিংক পাঠিয়েছি।<br>লিংকে ক্লিক করে অ্যাকাউন্ট সক্রিয় করুন এবং তারপর লগইন করুন।</p>
+        <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600">💡 ইমেইল না পেলে: Spam/Junk folder চেক করুন।</p>
+      </div>`,
+      `<button class="btn btn-primary" onclick="closeModal(); switchAuthTab('login'); document.getElementById('loginEmail').value='${email}';">ঠিক আছে</button>`
+    );
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+    console.error(e);
+  } finally {
+    setBtnLoading(btn, false);
+  }
 }
 
 async function doLogout() {
@@ -754,28 +802,31 @@ async function loadUserAndStart() {
   if (!user) return;
   App.user = user;
 
-  // Try to load profile (might fail if profiles table not yet created)
-  try {
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
-    App.profile = profile || {
-      id: user.id,
-      email: user.email,
-      full_name: user.user_metadata?.full_name || user.email.split('@')[0],
-      phone: user.user_metadata?.phone || '',
-      designation: user.user_metadata?.designation || '',
-      employee_type_id: 2
-    };
-    // Determine admin role
-    const typeCode = user.user_metadata?.employee_type || (App.profile?.employee_type_id === 1 ? 'admin' : 'type_1');
-    App.isAdmin = (typeCode === 'admin') || user.email === 'admin@ordhekdeen.com';
-  } catch (e) {
-    console.warn('Profile load failed:', e);
-    App.profile = {
-      email: user.email,
-      full_name: user.user_metadata?.full_name || user.email.split('@')[0]
-    };
-    App.isAdmin = user.email === 'admin@ordhekdeen.com';
-  }
+  // Phase 0: build profile entirely from auth user_metadata (no DB dependency yet)
+  const meta = user.user_metadata || {};
+  App.profile = {
+    id: user.id,
+    email: user.email,
+    full_name: meta.full_name || user.email.split('@')[0],
+    phone: meta.phone || '',
+    designation: meta.designation || 'কর্মী',
+    employee_type: meta.employee_type || 'type_1',
+    joined_at: user.created_at
+  };
+
+  // Determine admin (admin email OR registered as admin type)
+  App.isAdmin = (meta.employee_type === 'admin') || user.email === 'admin@ordhekdeen.com';
+
+  // Try to load profile from DB (won't block — fail-safe)
+  sb.from('profiles').select('*').eq('id', user.id).maybeSingle()
+    .then(({ data: p, error }) => {
+      if (!error && p) {
+        App.profile = { ...App.profile, ...p };
+        // Re-render current page if profile fields differ
+        if (App.currentPage) navigate(App.currentPage);
+      }
+    })
+    .catch(() => { /* ignore — table may not exist yet */ });
 
   // Update UI
   document.body.classList.toggle('is-admin', App.isAdmin);
@@ -1354,14 +1405,21 @@ function saveType() {
 // INIT
 // ═══════════════════════════════════════════════════════════
 (async function init() {
-  // Check existing session
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    await loadUserAndStart();
+  try {
+    // Check existing session (with 8s timeout to avoid stuck on bad network)
+    const sessionPromise = sb.auth.getSession();
+    const timeoutPromise = new Promise(res => setTimeout(() => res({ data: { session: null }}), 8000));
+    const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+
+    if (session) {
+      await loadUserAndStart();
+    }
+  } catch (e) {
+    console.warn('Init error (non-fatal):', e);
   }
 
   // Listen for auth changes
-  sb.auth.onAuthStateChange((event, sess) => {
+  sb.auth.onAuthStateChange((event) => {
     if (event === 'SIGNED_OUT') {
       App.user = null;
       document.getElementById('appContainer').classList.remove('active');
