@@ -406,7 +406,7 @@
       </div>
       <div class="form-row">
         <label><input type="checkbox" id="rememberMe" checked> মনে রাখুন</label>
-        <a onclick="alert('পাসওয়ার্ড রিসেট ফিচার শীঘ্রই যোগ হবে')">পাসওয়ার্ড ভুলে গেছেন?</a>
+        <a onclick="openForgotPassword()">পাসওয়ার্ড ভুলে গেছেন?</a>
       </div>
       <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-arrow-right-to-bracket"></i> লগইন করুন</button>
       <div class="auth-footer">নতুন ইউজার? <a onclick="switchAuthTab('register')">এখানে রেজিস্টার করুন</a></div>
@@ -571,6 +571,12 @@
 const SUPA_URL = 'https://dfdccqadrmyhgfkzgmqk.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZGNjcWFkcm15aGdma3pnbXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjQ0MzAsImV4cCI6MjA5NTM0MDQzMH0.dmtb6Ubl5HFZRJT8kb7oh3q7WjSAJ898BnMg7DxbgLA';
 const LS_PREFIX = 'odhrms_v1_';
+
+// Admin email allow-list — these users automatically get admin role
+const ADMIN_EMAILS = [
+  'admin@ordhekdeen.com',
+  'mahedihasanrokib83@gmail.com'
+];
 
 // Cleanup old caches
 try { Object.keys(localStorage).forEach(k => { if (k.startsWith('odms_v') && !k.startsWith(LS_PREFIX)) localStorage.removeItem(k); }); } catch(e){}
@@ -775,7 +781,8 @@ async function doRegister() {
         <div style="font-size:64px;margin-bottom:16px">📧</div>
         <p style="font-size:15px;color:var(--gray-700);margin-bottom:12px">আপনার অ্যাকাউন্ট তৈরি হয়েছে!</p>
         <p style="font-size:14px;color:var(--gray-500);margin-bottom:14px">আমরা <b>${email}</b> এ একটি ভেরিফিকেশন লিংক পাঠিয়েছি।<br>লিংকে ক্লিক করে অ্যাকাউন্ট সক্রিয় করুন এবং তারপর লগইন করুন।</p>
-        <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600">💡 ইমেইল না পেলে: Spam/Junk folder চেক করুন।</p>
+        <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600;margin-bottom:10px">💡 ইমেইল না পেলে: Spam/Junk folder চেক করুন।</p>
+        <button class="btn btn-outline btn-sm" onclick="resendVerification('${email}', this)" id="resendBtn"><i class="fa-solid fa-rotate-right"></i> আবার পাঠান</button>
       </div>`,
       `<button class="btn btn-primary" onclick="closeModal(); switchAuthTab('login'); document.getElementById('loginEmail').value='${email}';">ঠিক আছে</button>`
     );
@@ -797,6 +804,142 @@ async function doLogout() {
   showToast('লগআউট হয়েছে');
 }
 
+// ═══════════════════════════════════════════════════════════
+// FORGOT PASSWORD
+// ═══════════════════════════════════════════════════════════
+
+// Resend verification email
+async function resendVerification(email, btn) {
+  setBtnLoading(btn, true);
+  try {
+    const { error } = await withTimeout(
+      sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin } }),
+      15000
+    );
+    if (error) {
+      showToast('❌ ' + error.message, 'error');
+      return;
+    }
+    showToast('✅ ভেরিফিকেশন ইমেইল আবার পাঠানো হয়েছে!');
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'পাঠাতে ব্যর্থ'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+function openForgotPassword() {
+  const prefilled = document.getElementById('loginEmail').value.trim();
+  showModal(
+    '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড রিসেট',
+    `<div style="padding:8px 0">
+      <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">আপনার ইমেইল লিখুন। আমরা আপনাকে একটি পাসওয়ার্ড রিসেট লিংক পাঠাব।</p>
+      <div class="form-group">
+        <label><i class="fa-solid fa-envelope"></i> ইমেইল</label>
+        <input class="form-input" type="email" id="forgotEmail" placeholder="apnar@example.com" value="${prefilled}">
+      </div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="forgotBtn" onclick="sendResetEmail()"><i class="fa-solid fa-paper-plane"></i> রিসেট লিংক পাঠান</button>`
+  );
+  setTimeout(() => document.getElementById('forgotEmail')?.focus(), 200);
+}
+
+async function sendResetEmail() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) return showToast('ইমেইল লিখুন', 'error');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('সঠিক ইমেইল লিখুন', 'error');
+
+  const btn = document.getElementById('forgotBtn');
+  setBtnLoading(btn, true);
+
+  try {
+    const { error } = await withTimeout(
+      sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/?reset=1'
+      }),
+      15000
+    );
+    if (error) {
+      showToast('❌ ' + error.message, 'error');
+      return;
+    }
+    showModal(
+      '✅ ইমেইল পাঠানো হয়েছে',
+      `<div style="text-align:center;padding:20px 0">
+        <div style="font-size:64px;margin-bottom:16px">📬</div>
+        <p style="font-size:15px;color:var(--gray-700);margin-bottom:12px">পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে!</p>
+        <p style="font-size:14px;color:var(--gray-500);margin-bottom:14px"><b>${email}</b> এ চেক করুন। লিংকে ক্লিক করে নতুন পাসওয়ার্ড সেট করুন।</p>
+        <p style="font-size:12px;color:var(--amber-500);background:var(--amber-100);padding:10px;border-radius:8px;font-weight:600">💡 ইমেইল না পেলে Spam/Junk folder চেক করুন।</p>
+      </div>`,
+      `<button class="btn btn-primary" onclick="closeModal()">ঠিক আছে</button>`
+    );
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PASSWORD RESET FLOW (when user clicks link in email)
+// Supabase redirects with #access_token=...&type=recovery
+// ═══════════════════════════════════════════════════════════
+function checkPasswordResetRedirect() {
+  const hash = window.location.hash;
+  const search = window.location.search;
+  const isRecovery = hash.includes('type=recovery') || search.includes('reset=1');
+  if (!isRecovery) return false;
+
+  // Show new password form
+  setTimeout(() => openSetNewPassword(), 500);
+  return true;
+}
+
+function openSetNewPassword() {
+  showModal(
+    '<i class="fa-solid fa-lock" style="color:var(--purple-600)"></i> নতুন পাসওয়ার্ড সেট করুন',
+    `<div style="padding:8px 0">
+      <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">আপনার নতুন পাসওয়ার্ড লিখুন (কমপক্ষে ৬ অক্ষর)।</p>
+      <div class="form-group">
+        <label><i class="fa-solid fa-lock"></i> নতুন পাসওয়ার্ড</label>
+        <input class="form-input" type="password" id="newPass1" minlength="6" placeholder="********">
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-lock"></i> পাসওয়ার্ড নিশ্চিত করুন</label>
+        <input class="form-input" type="password" id="newPass2" minlength="6" placeholder="********">
+      </div>
+    </div>`,
+    `<button class="btn btn-primary" id="resetBtn" onclick="confirmNewPassword()"><i class="fa-solid fa-floppy-disk"></i> পাসওয়ার্ড সেট করুন</button>`
+  );
+}
+
+async function confirmNewPassword() {
+  const p1 = document.getElementById('newPass1').value;
+  const p2 = document.getElementById('newPass2').value;
+  if (p1.length < 6) return showToast('কমপক্ষে ৬ অক্ষর', 'error');
+  if (p1 !== p2) return showToast('পাসওয়ার্ড মিলছে না', 'error');
+
+  const btn = document.getElementById('resetBtn');
+  setBtnLoading(btn, true);
+  try {
+    const { error } = await withTimeout(sb.auth.updateUser({ password: p1 }), 15000);
+    if (error) {
+      showToast('❌ ' + error.message, 'error');
+      return;
+    }
+    closeModal();
+    // Clean URL
+    history.replaceState(null, '', window.location.pathname);
+    showToast('✅ পাসওয়ার্ড পরিবর্তিত হয়েছে! দয়া করে লগইন করুন।');
+    await sb.auth.signOut();
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
 async function loadUserAndStart() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return;
@@ -815,7 +958,7 @@ async function loadUserAndStart() {
   };
 
   // Determine admin (admin email OR registered as admin type)
-  App.isAdmin = (meta.employee_type === 'admin') || user.email === 'admin@ordhekdeen.com';
+  App.isAdmin = (meta.employee_type === 'admin') || ADMIN_EMAILS.includes((user.email||'').toLowerCase());
 
   // Try to load profile from DB (won't block — fail-safe)
   sb.from('profiles').select('*').eq('id', user.id).maybeSingle()
@@ -1415,12 +1558,16 @@ function saveType() {
 // ═══════════════════════════════════════════════════════════
 (async function init() {
   try {
+    // If returning from password reset email link, show the "set new password" modal
+    const isPasswordReset = checkPasswordResetRedirect();
+
     // Check existing session (with 8s timeout to avoid stuck on bad network)
     const sessionPromise = sb.auth.getSession();
     const timeoutPromise = new Promise(res => setTimeout(() => res({ data: { session: null }}), 8000));
     const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
 
-    if (session) {
+    // Don't auto-enter app if user is in password reset flow
+    if (session && !isPasswordReset) {
       await loadUserAndStart();
     }
   } catch (e) {
@@ -1433,6 +1580,9 @@ function saveType() {
       App.user = null;
       document.getElementById('appContainer').classList.remove('active');
       document.getElementById('authScreen').style.display = 'flex';
+    } else if (event === 'PASSWORD_RECOVERY') {
+      // Supabase fires this when user clicks the reset link
+      openSetNewPassword();
     }
   });
 })();
