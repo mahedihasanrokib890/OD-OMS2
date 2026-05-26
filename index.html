@@ -848,21 +848,26 @@ async function loadUserAndStart() {
 // ═══════════════════════════════════════════════════════════
 // ROUTER
 // ═══════════════════════════════════════════════════════════
+// Note: render functions are referenced by NAME (string) so this script
+// doesn't depend on render functions being defined yet (they live in later <script> blocks).
 const routes = {
-  dashboard:  { title: 'ড্যাশবোর্ড',     subtitle: '',                           render: renderDashboard },
-  attendance: { title: 'এটেন্ডেন্স',     subtitle: '',                           render: renderAttendance },
-  notices:    { title: 'নোটিশ বোর্ড',    subtitle: 'অফিসের সকল ঘোষণা',           render: renderNotices },
-  leaves:     { title: 'ছুটির আবেদন',    subtitle: 'আপনার ছুটি ব্যবস্থাপনা',     render: renderLeaves },
-  profile:    { title: 'আমার প্রোফাইল',  subtitle: 'ব্যক্তিগত ও কাজের তথ্য',     render: renderProfile },
-  employees:  { title: 'কর্মী ডিরেক্টরি', subtitle: 'সকল কর্মীর তালিকা',           render: renderEmployees, admin: true },
-  reports:    { title: 'রিপোর্ট',        subtitle: 'বিশ্লেষণ ও সারাংশ',          render: renderReports, admin: true },
-  import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     render: renderImport, admin: true },
-  settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         render: renderSettings, admin: true }
+  dashboard:  { title: 'ড্যাশবোর্ড',     subtitle: '',                           renderFn: 'renderDashboard' },
+  attendance: { title: 'এটেন্ডেন্স',     subtitle: '',                           renderFn: 'renderAttendance' },
+  notices:    { title: 'নোটিশ বোর্ড',    subtitle: 'অফিসের সকল ঘোষণা',           renderFn: 'renderNotices' },
+  leaves:     { title: 'ছুটির আবেদন',    subtitle: 'আপনার ছুটি ব্যবস্থাপনা',     renderFn: 'renderLeaves' },
+  profile:    { title: 'আমার প্রোফাইল',  subtitle: 'ব্যক্তিগত ও কাজের তথ্য',     renderFn: 'renderProfile' },
+  employees:  { title: 'কর্মী ডিরেক্টরি', subtitle: 'সকল কর্মীর তালিকা',           renderFn: 'renderEmployees', admin: true },
+  reports:    { title: 'রিপোর্ট',        subtitle: 'বিশ্লেষণ ও সারাংশ',          renderFn: 'renderReports', admin: true },
+  import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     renderFn: 'renderImport', admin: true },
+  settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         renderFn: 'renderSettings', admin: true }
 };
 
 function navigate(route) {
   const r = routes[route];
-  if (!r) return;
+  if (!r) {
+    console.warn('Unknown route:', route);
+    return;
+  }
   if (r.admin && !App.isAdmin) {
     showToast('শুধু অ্যাডমিনদের জন্য', 'error');
     return;
@@ -877,8 +882,12 @@ function navigate(route) {
   const subtitle = r.subtitle || `স্বাগতম, ${App.profile?.full_name?.split(' ')[0] || ''}!`;
   document.getElementById('pageSubtitle').textContent = subtitle;
 
-  // Render content
-  document.getElementById('pageContent').innerHTML = r.render();
+  // Resolve render function at call time (works regardless of script order)
+  const fn = window[r.renderFn];
+  const content = (typeof fn === 'function')
+    ? fn()
+    : `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>পেজ লোড হচ্ছে...</h3><p>এই পেজটি এখনো প্রস্তুত নয়।</p></div>`;
+  document.getElementById('pageContent').innerHTML = content;
 
   // Close mobile sidebar
   if (window.innerWidth < 1024) toggleSidebar(false);
