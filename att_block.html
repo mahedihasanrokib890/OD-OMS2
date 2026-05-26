@@ -1,0 +1,255 @@
+<div class="page-section" id="page-attendance">
+
+          <!-- Welcome Banner (employee only, hidden for admin) -->
+          <div class="emp-hero-banner emp-only" id="attHeroBanner">
+            <div class="emp-hero-left">
+              <img src="" id="attDashAvatar" class="emp-dash-avatar">
+              <div>
+                <div class="emp-dash-greeting" id="attDashGreeting">স্বাগতম!</div>
+                <h2 class="emp-dash-name" id="attDashName">লোড হচ্ছে...</h2>
+                <div class="emp-dash-role" id="attDashRole"></div>
+              </div>
+            </div>
+            <div class="emp-hero-right">
+              <div class="emp-dash-clock" id="attClock">00:00:00</div>
+              <div class="emp-dash-date" id="attDate"></div>
+            </div>
+          </div>
+
+          <!-- Today's Status Strip -->
+          <div class="emp-att-strip emp-only">
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(16,185,129,0.12)"><i class="fa-solid fa-right-to-bracket" style="color:#10b981"></i></div>
+              <div>
+                <div class="emp-att-label">অফিস ইন</div>
+                <div class="emp-att-val" id="todayIn">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(245,158,11,0.12)"><i class="fa-solid fa-utensils" style="color:#f59e0b"></i></div>
+              <div>
+                <div class="emp-att-label">লাঞ্চ আউট</div>
+                <div class="emp-att-val" id="todayLOut">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(59,130,246,0.12)"><i class="fa-solid fa-mug-hot" style="color:#3b82f6"></i></div>
+              <div>
+                <div class="emp-att-label">লাঞ্চ ইন</div>
+                <div class="emp-att-val" id="todayLIn">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(236,72,153,0.12)"><i class="fa-solid fa-right-from-bracket" style="color:#ec4899"></i></div>
+              <div>
+                <div class="emp-att-label">অফিস আউট</div>
+                <div class="emp-att-val" id="todayOut">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(99,42,126,0.12)"><i class="fa-solid fa-hourglass-half" style="color:var(--purple-600)"></i></div>
+              <div>
+                <div class="emp-att-label">কাজের সময়</div>
+                <div class="emp-att-val" id="todayWork">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(239,68,68,0.12)"><i class="fa-solid fa-triangle-exclamation" style="color:#ef4444"></i></div>
+              <div>
+                <div class="emp-att-label">লেট / ব্রেক</div>
+                <div class="emp-att-val" id="todayLate" style="color:#ef4444">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="att-actions-pro emp-only">
+            <button class="att-btn-pro att-in" onclick="markAttendance('check_in')">
+              <div class="att-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">অফিস ইন</span><span class="att-btn-sub">কাজ শুরু করুন</span></div>
+            </button>
+            <button class="att-btn-pro att-out" onclick="markAttendance('check_out')">
+              <div class="att-btn-icon"><i class="fa-solid fa-right-from-bracket"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">অফিস আউট</span><span class="att-btn-sub">দিন শেষ করুন</span></div>
+            </button>
+            <button class="att-btn-pro att-lunchout" onclick="markAttendance('lunch_out')">
+              <div class="att-btn-icon"><i class="fa-solid fa-utensils"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">লাঞ্চ আউট</span><span class="att-btn-sub">খেতে যাচ্ছেন</span></div>
+            </button>
+            <button class="att-btn-pro att-lunchin" onclick="markAttendance('lunch_in')">
+              <div class="att-btn-icon"><i class="fa-solid fa-mug-hot"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">লাঞ্চ ইন</span><span class="att-btn-sub">ফিরে এলেন</span></div>
+            </button>
+          </div>
+
+          <!-- Stats & Info Row -->
+          <div class="att-info-grid emp-only">
+
+            <!-- Monthly Summary -->
+            <div class="card">
+              <div class="card-title"><span><i class="fa-solid fa-chart-column"></i> এই মাসের রিপোর্ট</span></div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding-top:8px">
+                <div class="att-mini-card" style="--mc:var(--emerald-500);--mcbg:var(--emerald-100)">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <div class="att-mini-val" id="mStat1">—</div>
+                  <div class="att-mini-label">উপস্থিত</div>
+                </div>
+                <div class="att-mini-card" style="--mc:#f59e0b;--mcbg:var(--amber-100)">
+                  <i class="fa-solid fa-clock"></i>
+                  <div class="att-mini-val" id="mStat2">—</div>
+                  <div class="att-mini-label">লেট দিন</div>
+                </div>
+                <div class="att-mini-card" style="--mc:#3b82f6;--mcbg:var(--blue-100)">
+                  <i class="fa-solid fa-umbrella-beach"></i>
+                  <div class="att-mini-val" id="mStat3">—</div>
+                  <div class="att-mini-label">ছুটি</div>
+                </div>
+                <div class="att-mini-card" style="--mc:var(--purple-600);--mcbg:var(--purple-100)">
+                  <i class="fa-solid fa-briefcase"></i>
+                  <div class="att-mini-val" id="mStat4">—</div>
+                  <div class="att-mini-label">ঘণ্টা</div>
+                </div>
+              </div>
+              <div style="margin-top:14px">
+                <div style="font-size:12px;color:var(--slate-400);font-weight:700;margin-bottom:8px">গত ৭ দিনের অ্যাটেনডেন্স</div>
+                <div id="miniAttChart" style="display:flex;align-items:flex-end;gap:6px;height:60px"></div>
+              </div>
+            </div>
+
+            <!-- Leave Status -->
+            <div class="card">
+              <div class="card-title">
+                <span><i class="fa-solid fa-plane-departure"></i> ছুটির অবস্থা</span>
+                <button class="btn btn-primary btn-sm" onclick="navigate('leave')" style="font-size:11px;padding:5px 12px"><i class="fa-solid fa-plus"></i> আবেদন</button>
+              </div>
+              <div id="attLeaveStatus" style="padding-top:4px"></div>
+            </div>
+
+            <!-- Latest Notices -->
+            <div class="card">
+              <div class="card-title">
+                <span><i class="fa-solid fa-bullhorn"></i> নোটিশ বোর্ড</span>
+                <button class="btn btn-outline btn-sm" onclick="navigate('notices')" style="font-size:11px;padding:5px 12px">সব দেখুন</button>
+              </div>
+              <div id="attLatestNotices" style="padding-top:4px"></div>
+            </div>
+
+          </div>
+
+          <!-- Attendance History Table -->
+          <div class="card" style="margin-top:20px">
+            <div class="card-title">
+              <span><i class="fa-solid fa-table-list"></i> উপস্থিতির ইতিহাস</span>
+              <input type="date" id="attDateFilter" class="form-input" style="width:auto;padding:7px 12px;font-size:13px" onchange="loadAttendance()">
+            </div>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>নাম</th><th>অফিস ইন</th><th>লাঞ্চ আউট</th><th>লাঞ্চ ইন</th><th>অফিস আউট</th><th>কাজের সময়</th><th>ব্রেক</th><th>লেট</th><th>স্ট্যাটাস</th>
+                  </tr>
+                </thead>
+                <tbody id="attTableBody">
+                  <tr><td colspan="9" style="text-align:center;color:var(--slate-400)">ডাটা লোড হচ্ছে...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ═══ NOTICE BOARD ═══ -->
+        <div class="page-section" id="page-notices">
+          <div class="card">
+            <div class="card-title">
+              <span><i class="fa-solid fa-bullhorn"></i> নোটিশ বোর্ড</span>
+              <button class="btn btn-primary btn-sm admin-only" onclick="showAddNoticeModal()" style="display:none">
+                <i class="fa-solid fa-plus"></i> নোটিশ যোগ করুন
+              </button>
+            </div>
+            <div id="noticesList">
+              <div class="empty-state">
+                <i class="fa-solid fa-megaphone"></i>
+                <h3>কোনো নোটিশ নেই</h3>
+                <p>নতুন নোটিশ এখানে দেখা যাবে</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ LEAVE MANAGEMENT ═══ -->
+        <div class="page-section" id="page-leave">
+          <div class="card">
+            <div class="card-title">
+              <span><i class="fa-solid fa-calendar-check"></i> ছুটির আবেদন</span>
+              <button class="btn btn-primary btn-sm" onclick="showAddLeaveModal()">
+                <i class="fa-solid fa-plus"></i> আবেদন করুন
+              </button>
+            </div>
+            <div id="leaveList">
+              <div class="empty-state">
+                <i class="fa-solid fa-umbrella-beach"></i>
+                <h3>কোনো আবেদন নেই</h3>
+                <p>নতুন ছুটির আবেদন করুন</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ EMPLOYEE DIRECTORY ═══ -->
+        <div class="page-section" id="page-employees">
+          <div class="card">
+            <div class="card-title">
+              <span><i class="fa-solid fa-users"></i> এমপ্লয়ী ডিরেক্টরি</span>
+              <button class="btn btn-primary btn-sm admin-only" onclick="showAddEmployeeModal()" style="display:none">
+                <i class="fa-solid fa-user-plus"></i> নতুন এমপ্লয়ী
+              </button>
+            </div>
+
+            <!-- Employee Types -->
+            <div class="emp-type-list" id="empTypeList"></div>
+
+            <div class="employee-grid" id="employeeGrid">
+              <div class="empty-state" style="grid-column:1/-1">
+                <i class="fa-solid fa-user-group"></i>
+                <h3>কোনো এমপ্লয়ী নেই</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ ACCOUNTS ═══ -->
+        <div class="page-section" id="page-accounts">
+          <div class="card">
+            <div class="card-title">
+              <span><i class="fa-solid fa-calculator"></i> হিসাব-নিকাশ</span>
+              <button class="btn btn-primary btn-sm admin-only" onclick="showAddAccountModal()" style="display:none">
+                <i class="fa-solid fa-plus"></i> এন্ট্রি যোগ করুন
+              </button>
+            </div>
+            <div class="stats-grid" style="margin-bottom:20px">
+              <div class="stat-card">
+                <div class="stat-icon emerald"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                <div class="stat-info"><h3 id="accIncome">৳0</h3><p>মোট আয়</p></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon pink"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                <div class="stat-info"><h3 id="accExpense">৳0</h3><p>মোট ব্যয়</p></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon blue"><i class="fa-solid fa-wallet"></i></div>
+                <div class="stat-info"><h3 id="accBalance">৳0</h3><p>ব্যালেন্স</p></div>
+              </div>
+            </div>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>তারিখ</th><th>বিবরণ</th><th>ক্যাটাগরি</th><th>ধরন</th><th>পরিমাণ</th></tr></thead>
+                <tbody id="accTableBody">
+                  <tr><td colspan="5" style="text-align:center;color:var(--slate-400)">কোনো এন্ট্রি নেই</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        

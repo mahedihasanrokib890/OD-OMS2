@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="OD-OMS Logo">
+  <!-- Left head: purple, leaf-like rounded shape (sharper at outer-bottom, rounded at inner-bottom) -->
+  <path d="M60 26 C46 26 38 36 38 50 L38 76 C38 90 46 96 60 96 L88 96 C100 96 108 88 108 76 L108 46 C108 32 98 26 86 26 Z" fill="#5b2d8a"/>
+  <!-- Right head: pink, mirror leaf shape (sharper at outer-bottom, rounded at inner-bottom) -->
+  <path d="M154 26 C142 26 132 32 132 46 L132 76 C132 88 140 96 152 96 L180 96 C194 96 202 90 202 76 L202 50 C202 36 194 26 180 26 Z" fill="#e91e63"/>
+
+  <!-- Heart base (purple): full heart shape -->
+  <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#5b2d8a"/>
+
+  <!-- Pink overlay: top-right portion via clip-path (diagonal split from top-left to bottom-right of heart) -->
+  <defs>
+    <clipPath id="pinkOverlay">
+      <polygon points="120,110 240,40 240,130 150,220" />
+    </clipPath>
+  </defs>
+  <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#e91e63" clip-path="url(#pinkOverlay)"/>
+</svg>

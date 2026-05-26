@@ -1,0 +1,91 @@
+<div class="page-section" id="page-attendance">
+          <!-- Today's Status Strip -->
+          <div class="emp-att-strip emp-only">
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(16,185,129,0.12)"><i class="fa-solid fa-right-to-bracket" style="color:#10b981"></i></div>
+              <div>
+                <div class="emp-att-label">অফিস ইন</div>
+                <div class="emp-att-val" id="todayIn">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(245,158,11,0.12)"><i class="fa-solid fa-utensils" style="color:#f59e0b"></i></div>
+              <div>
+                <div class="emp-att-label">লাঞ্চ আউট</div>
+                <div class="emp-att-val" id="todayLOut">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(59,130,246,0.12)"><i class="fa-solid fa-mug-hot" style="color:#3b82f6"></i></div>
+              <div>
+                <div class="emp-att-label">লাঞ্চ ইন</div>
+                <div class="emp-att-val" id="todayLIn">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(236,72,153,0.12)"><i class="fa-solid fa-right-from-bracket" style="color:#ec4899"></i></div>
+              <div>
+                <div class="emp-att-label">অফিস আউট</div>
+                <div class="emp-att-val" id="todayOut">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(99,42,126,0.12)"><i class="fa-solid fa-hourglass-half" style="color:var(--purple-600)"></i></div>
+              <div>
+                <div class="emp-att-label">কাজের সময়</div>
+                <div class="emp-att-val" id="todayWork">—</div>
+              </div>
+            </div>
+            <div class="emp-att-item">
+              <div class="emp-att-icon" style="background:rgba(239,68,68,0.12)"><i class="fa-solid fa-triangle-exclamation" style="color:#ef4444"></i></div>
+              <div>
+                <div class="emp-att-label">লেট / ব্রেক</div>
+                <div class="emp-att-val" id="todayLate" style="color:#ef4444">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="att-actions-pro emp-only">
+            <button class="att-btn-pro att-in" onclick="markAttendance('check_in')">
+              <div class="att-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">অফিস ইন</span><span class="att-btn-sub">কাজ শুরু করুন</span></div>
+            </button>
+            <button class="att-btn-pro att-out" onclick="markAttendance('check_out')">
+              <div class="att-btn-icon"><i class="fa-solid fa-right-from-bracket"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">অফিস আউট</span><span class="att-btn-sub">দিন শেষ করুন</span></div>
+            </button>
+            <button class="att-btn-pro att-lunchout" onclick="markAttendance('lunch_out')">
+              <div class="att-btn-icon"><i class="fa-solid fa-utensils"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">লাঞ্চ আউট</span><span class="att-btn-sub">খেতে যাচ্ছেন</span></div>
+            </button>
+            <button class="att-btn-pro att-lunchin" onclick="markAttendance('lunch_in')">
+              <div class="att-btn-icon"><i class="fa-solid fa-mug-hot"></i></div>
+              <div class="att-btn-text"><span class="att-btn-label">লাঞ্চ ইন</span><span class="att-btn-sub">ফিরে এলেন</span></div>
+            </button>
+          </div>
+
+          
+          <!-- Attendance History Table -->
+          <div class="card" style="margin-top:20px">
+            <div class="card-title">
+              <span><i class="fa-solid fa-table-list"></i> উপস্থিতির ইতিহাস</span>
+              <input type="date" id="attDateFilter" class="form-input" style="width:auto;padding:7px 12px;font-size:13px" onchange="loadAttendance()">
+            </div>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>নাম</th><th>অফিস ইন</th><th>লাঞ্চ আউট</th><th>লাঞ্চ ইন</th><th>অফিস আউট</th><th>কাজের সময়</th><th>ব্রেক</th><th>লেট</th><th>স্ট্যাটাস</th>
+                  </tr>
+                </thead>
+                <tbody id="attTableBody">
+                  <tr><td colspan="9" style="text-align:center;color:var(--slate-400)">ডাটা লোড হচ্ছে...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        
