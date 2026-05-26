@@ -962,7 +962,16 @@ async function sendResetEmail() {
     console.log('🔑 Reset response:', result);
     if (result.error) {
       console.error('🔑 Reset error:', result.error);
-      showToast('❌ ' + result.error.message, 'error');
+      const msg = result.error.message;
+      let friendly = msg;
+      if (msg.toLowerCase().includes('sending recovery') || msg.toLowerCase().includes('email')) {
+        friendly = 'ইমেইল পাঠাতে সমস্যা — এই ইমেইল কি registered? অথবা Brevo SMTP setup চেক করুন';
+      } else if (msg.toLowerCase().includes('rate')) {
+        friendly = 'বেশি বার চেষ্টা করা হয়েছে — ১ মিনিট পর আবার চেষ্টা করুন';
+      } else if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('user')) {
+        friendly = 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই — সঠিক ইমেইল লিখুন';
+      }
+      showToast('❌ ' + friendly, 'error');
       return;
     }
     closeModal();
