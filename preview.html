@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#5b2d8a">
+<title>OD-HRMS Preview · অর্ধেকদ্বীন HR ডিজাইন প্রিভিউ</title>
+<link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cpath d='M60 26 C46 26 38 36 38 50 L38 76 C38 90 46 96 60 96 L88 96 C100 96 108 88 108 76 L108 46 C108 32 98 26 86 26 Z' fill='%235b2d8a'/%3E%3Cpath d='M154 26 C142 26 132 32 132 46 L132 76 C132 88 140 96 152 96 L180 96 C194 96 202 90 202 76 L202 50 C202 36 194 26 180 26 Z' fill='%23e91e63'/%3E%3Cpath d='M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z' fill='%235b2d8a'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+  :root {
+    --purple-950:#2a1340; --purple-900:#3b1c5c; --purple-800:#4a2374; --purple-700:#5b2d8a;
+    --purple-600:#6d39a3; --purple-500:#8b5cf6; --purple-400:#a78bfa; --purple-300:#c4b5fd;
+    --purple-200:#e4d6f8; --purple-100:#f3ebff; --purple-50:#faf5ff;
+    --pink-700:#be185d; --pink-600:#db2777; --pink-500:#e91e63; --pink-400:#f472b6;
+    --pink-300:#f9a8d4; --pink-200:#fbcfe8; --pink-100:#fce7f3;
+    --emerald-500:#10b981; --emerald-100:#d1fae5;
+    --amber-500:#f59e0b; --amber-100:#fef3c7;
+    --red-500:#ef4444; --red-100:#fee2e2;
+    --blue-500:#3b82f6; --blue-100:#dbeafe;
+    --gray-900:#0f172a; --gray-800:#1e293b; --gray-700:#334155; --gray-600:#475569;
+    --gray-500:#64748b; --gray-400:#94a3b8; --gray-300:#cbd5e1; --gray-200:#e2e8f0;
+    --gray-100:#f1f5f9; --gray-50:#f8fafc;
+    --bg-page:#faf5ff; --bg-card:#fff; --border:#f3e8ff;
+    --gradient-brand: linear-gradient(135deg,#5b2d8a 0%,#8b5cf6 50%,#e91e63 100%);
+    --gradient-soft: linear-gradient(135deg,#faf5ff 0%,#fce7f3 100%);
+    --gradient-auth: linear-gradient(135deg,#0f0520 0%,#2d0a4e 50%,#5b2d8a 100%);
+    --shadow-sm:0 2px 4px rgba(91,45,138,.06),0 1px 2px rgba(91,45,138,.04);
+    --shadow-md:0 8px 16px -4px rgba(91,45,138,.08),0 4px 8px -2px rgba(91,45,138,.04);
+    --shadow-lg:0 20px 40px -8px rgba(91,45,138,.12),0 8px 16px -4px rgba(91,45,138,.06);
+    --shadow-xl:0 32px 64px -12px rgba(91,45,138,.18);
+    --r-md:12px; --r-lg:16px; --r-xl:24px; --r-2xl:32px;
+    --font-bn:'Hind Siliguri',system-ui,sans-serif;
+    --font-en:'Inter',system-ui,sans-serif;
+    --sidebar-w:280px; --topbar-h:72px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{font-family:var(--font-bn);background:var(--bg-page);color:var(--gray-800);min-height:100vh;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .num,.en{font-family:var(--font-en);font-feature-settings:'tnum'}
+  ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--purple-300);border-radius:10px}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  @keyframes floatSlow{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(5deg)}}
+  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.85}}
+  @keyframes ringPulse{0%{box-shadow:0 0 0 0 rgba(233,30,99,.4)}100%{box-shadow:0 0 0 16px rgba(233,30,99,0)}}
+  @keyframes slideInRight{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+  /* ═══ DEMO TAB SWITCHER ═══ */
+  .demo-tabs{position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:6px;overflow-x:auto;box-shadow:var(--shadow-sm)}
+  .demo-tab{padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:var(--r-md);font-family:var(--font-bn);font-weight:700;font-size:13px;color:var(--gray-600);cursor:pointer;white-space:nowrap;transition:all .25s}
+  .demo-tab:hover{background:var(--purple-50);color:var(--purple-700);border-color:var(--purple-200)}
+  .demo-tab.active{background:var(--gradient-brand);color:white;border-color:transparent;box-shadow:var(--shadow-md)}
+  .demo-tab-label{font-family:var(--font-en);font-size:11px;font-weight:800;color:var(--purple-700);padding:8px 12px;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:6px;border-right:2px solid var(--border);margin-right:6px}
+  .demo-tab-label i{color:var(--pink-500)}
+  .demo-screen{display:none;animation:fadeIn .5s ease}
+  .demo-screen.active{display:block}
+  body{padding-top:60px}
+
+  /* ═══════════════════════════════════════════════════════════
+     SCREEN 1: LOGIN
+  ═══════════════════════════════════════════════════════════ */
+  .auth-screen{min-height:calc(100vh - 60px);background:var(--gradient-auth);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:20px}
+  .auth-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 80%,rgba(139,92,246,.25) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(233,30,99,.15) 0%,transparent 50%)}
+  .auth-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .auth-particle{position:absolute;border-radius:50%;background:rgba(255,255,255,.04);backdrop-filter:blur(2px);border:1px solid rgba(255,255,255,.08)}
+  .auth-particle:nth-child(1){width:380px;height:380px;top:-130px;right:-100px;animation:floatSlow 8s ease-in-out infinite}
+  .auth-particle:nth-child(2){width:280px;height:280px;bottom:-70px;left:-70px;animation:floatSlow 10s ease-in-out infinite 2s;background:rgba(233,30,99,.06)}
+  .auth-particle:nth-child(3){width:200px;height:200px;top:40%;left:25%;animation:floatSlow 7s ease-in-out infinite 4s}
+  .auth-particle:nth-child(4){width:120px;height:120px;top:15%;right:18%;animation:floatSlow 6s ease-in-out infinite 1s;background:rgba(139,92,246,.06)}
+  .auth-particle:nth-child(5){width:160px;height:160px;bottom:18%;right:25%;animation:floatSlow 9s ease-in-out infinite 3s}
+  .auth-card{position:relative;z-index:2;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border-radius:var(--r-2xl);padding:44px 40px;width:460px;max-width:95vw;box-shadow:0 32px 80px rgba(0,0,0,.4),0 0 100px rgba(91,45,138,.2),inset 0 1px 0 rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.3);animation:scaleIn .6s cubic-bezier(.16,1,.3,1)}
+  .auth-logo{text-align:center;margin-bottom:28px}
+  .auth-logo-mark{width:96px;height:96px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;filter:drop-shadow(0 16px 32px rgba(91,45,138,.3));animation:float 4s ease-in-out infinite}
+  .auth-logo h1{font-family:var(--font-en);font-size:30px;font-weight:900;background:linear-gradient(135deg,#5b2d8a 0%,#e91e63 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;line-height:1}
+  .auth-logo h1 span{color:#e91e63;-webkit-text-fill-color:#e91e63}
+  .auth-logo .auth-bn{color:var(--gray-700);font-family:var(--font-bn);font-size:16px;font-weight:700;margin-top:8px}
+  .auth-logo p{color:var(--gray-400);font-size:10px;margin-top:6px;font-weight:800;letter-spacing:3px;text-transform:uppercase}
+  .auth-tabs{display:flex;background:var(--gray-100);border-radius:14px;padding:4px;margin-bottom:24px}
+  .auth-tab{flex:1;padding:11px;text-align:center;cursor:pointer;font-weight:700;font-size:14px;color:var(--gray-500);border-radius:11px;transition:all .3s}
+  .auth-tab.active{background:white;color:var(--purple-700);box-shadow:0 2px 8px rgba(91,45,138,.1)}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;color:var(--gray-700);margin-bottom:6px}
+  .form-group label i{color:var(--purple-500);font-size:13px}
+  .form-input{width:100%;padding:13px 16px;border:2px solid #e9d5ff;border-radius:14px;font-family:var(--font-bn);font-size:14px;font-weight:600;color:var(--gray-800);outline:none;transition:all .3s;background:white;min-height:46px}
+  .form-input:focus{border-color:var(--purple-500);box-shadow:0 0 0 4px rgba(139,92,246,.12);background:#fdfaff}
+  .form-input::placeholder{color:var(--gray-400);font-weight:500}
+  .form-row{display:flex;gap:12px;align-items:center;justify-content:space-between;font-size:13px;margin:6px 0 16px}
+  .form-row label{display:flex;align-items:center;gap:6px;color:var(--gray-600);font-weight:600;cursor:pointer}
+  .form-row label input{accent-color:var(--purple-600);width:16px;height:16px}
+  .form-row a{color:var(--purple-600);font-weight:700;text-decoration:none}
+  .form-row a:hover{text-decoration:underline}
+  .btn{padding:13px 24px;border-radius:14px;cursor:pointer;font-family:var(--font-bn);font-weight:700;border:none;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;min-height:46px;letter-spacing:.2px}
+  .btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);transition:left .6s}
+  .btn:hover::before{left:100%}
+  .btn-primary{background:var(--gradient-brand);background-size:200% 200%;color:white;box-shadow:0 8px 16px -6px rgba(91,45,138,.5),inset 0 1px 0 rgba(255,255,255,.2);width:100%}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 28px -6px rgba(91,45,138,.55);background-position:100% 100%}
+  .btn-primary:active{transform:translateY(0)}
+  .auth-footer{text-align:center;margin-top:20px;font-size:13px;color:var(--gray-500)}
+  .auth-footer a{color:var(--purple-600);font-weight:700;text-decoration:none}
+  .auth-divider{display:flex;align-items:center;gap:14px;margin:18px 0;color:var(--gray-400);font-size:12px;font-weight:600}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--gray-200)}
+
+
+  /* ═══════════════════════════════════════════════════════════
+     SCREEN 2-7: APP LAYOUT (Sidebar + Topbar + Content)
+  ═══════════════════════════════════════════════════════════ */
+  .app-layout{display:flex;min-height:calc(100vh - 60px);background:var(--bg-page)}
+  .app-layout::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 0% 0%,rgba(168,85,247,.08) 0%,transparent 40%),radial-gradient(circle at 100% 0%,rgba(236,72,153,.06) 0%,transparent 40%)}
+
+  /* Sidebar */
+  .sidebar{width:var(--sidebar-w);background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(253,250,255,.95) 100%);backdrop-filter:saturate(180%) blur(24px);border-right:1px solid rgba(243,232,255,.6);display:flex;flex-direction:column;position:sticky;top:60px;height:calc(100vh - 60px);box-shadow:2px 0 32px rgba(91,45,138,.04);overflow-y:auto;flex-shrink:0}
+  .sidebar-brand{padding:22px 20px;text-align:center;border-bottom:1px solid var(--border)}
+  .sidebar-brand-logo{width:72px;height:72px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;filter:drop-shadow(0 8px 18px rgba(91,45,138,.22))}
+  .sidebar-brand h2{font-family:var(--font-en);font-size:22px;font-weight:900;background:linear-gradient(135deg,#5b2d8a 0%,#e91e63 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px;line-height:1}
+  .sidebar-brand h2 span{color:#e91e63;-webkit-text-fill-color:#e91e63}
+  .sidebar-brand .brand-bn{font-size:12px;color:var(--gray-600);font-weight:700;margin-top:6px}
+  .sidebar-brand p{font-size:9px;color:var(--gray-400);font-weight:800;margin-top:4px;letter-spacing:3px;text-transform:uppercase}
+  .sidebar-nav{flex:1;padding:14px 12px}
+  .sidebar-section-title{font-size:10px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:2px;padding:14px 16px 8px}
+  .nav-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin:3px 0;border-radius:14px;cursor:pointer;color:var(--gray-600);font-weight:700;font-size:14px;transition:all .3s;position:relative;border:1px solid transparent}
+  .nav-item::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%) scaleY(0);width:4px;height:60%;background:linear-gradient(180deg,var(--purple-500),var(--pink-500));border-radius:0 4px 4px 0;transition:transform .3s}
+  .nav-item:hover{background:linear-gradient(135deg,rgba(168,85,247,.06),rgba(236,72,153,.04));color:var(--purple-700);transform:translateX(4px);border-color:rgba(168,85,247,.12)}
+  .nav-item:hover::before{transform:translateY(-50%) scaleY(1)}
+  .nav-item.active{background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(236,72,153,.08));color:var(--purple-700);font-weight:800;border-color:rgba(168,85,247,.18);box-shadow:0 4px 12px rgba(91,45,138,.08)}
+  .nav-item.active::before{transform:translateY(-50%) scaleY(1)}
+  .nav-item-left{display:flex;align-items:center;gap:12px}
+  .nav-item-left i{width:22px;text-align:center;font-size:16px;transition:transform .3s}
+  .nav-item:hover .nav-item-left i{transform:scale(1.15)}
+  .nav-badge{background:linear-gradient(135deg,#ef4444,#dc2626);color:white;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:800;min-width:22px;text-align:center;box-shadow:0 2px 6px rgba(239,68,68,.3)}
+  .nav-badge.pink{background:linear-gradient(135deg,var(--pink-500),var(--pink-400));box-shadow:0 2px 6px rgba(233,30,99,.3)}
+  .sidebar-user{padding:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(250,245,255,.8))}
+  .sidebar-user .avatar{width:42px;height:42px;border-radius:12px;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-family:var(--font-en);border:2px solid var(--purple-300)}
+  .sidebar-user-info{flex:1;min-width:0}
+  .sidebar-user-info h4{font-size:14px;font-weight:800;color:var(--gray-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sidebar-user-info p{font-size:11px;font-weight:700;color:var(--pink-500);text-transform:uppercase;letter-spacing:.5px}
+  .sidebar-user .icon-btn{width:36px;height:36px;border-radius:10px;background:transparent;border:none;color:var(--red-500);cursor:pointer;transition:all .25s}
+  .sidebar-user .icon-btn:hover{background:var(--red-100)}
+
+  /* Main content */
+  .main-content{flex:1;min-width:0}
+  .topbar{height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(255,255,255,.78);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(243,232,255,.6);position:sticky;top:60px;z-index:50;box-shadow:0 1px 16px rgba(91,45,138,.04)}
+  .topbar-left h2{font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--purple-700) 0%,var(--pink-500) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.3px}
+  .topbar-left p{font-size:12px;color:var(--gray-500);font-weight:600}
+  .topbar-right{display:flex;align-items:center;gap:12px}
+  .topbar-search{display:flex;align-items:center;gap:10px;background:rgba(248,250,252,.8);border-radius:14px;padding:10px 16px;border:1px solid transparent;transition:all .3s;min-width:280px}
+  .topbar-search:focus-within{border-color:var(--purple-300);background:white;box-shadow:0 0 0 4px rgba(139,92,246,.1)}
+  .topbar-search input{border:none;outline:none;background:transparent;font-family:var(--font-bn);font-size:13px;font-weight:600;color:var(--gray-700);width:100%}
+  .topbar-search i{color:var(--gray-400)}
+  .icon-btn-pill{position:relative;background:rgba(248,250,252,.8);border:1px solid transparent;width:42px;height:42px;border-radius:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;color:var(--gray-600)}
+  .icon-btn-pill:hover{background:white;color:var(--purple-700);border-color:var(--purple-200);box-shadow:0 6px 16px rgba(91,45,138,.08);transform:translateY(-1px)}
+  .icon-btn-pill .dot{position:absolute;top:8px;right:8px;width:9px;height:9px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;border:2px solid white;animation:pulse 2s ease infinite}
+  .topbar-user{display:flex;align-items:center;gap:10px;cursor:pointer;background:white;padding:5px 14px 5px 5px;border-radius:13px;border:1px solid var(--border);transition:all .3s}
+  .topbar-user:hover{box-shadow:0 8px 20px rgba(91,45,138,.1);border-color:var(--purple-300);transform:translateY(-1px)}
+  .topbar-user .avatar{width:34px;height:34px;border-radius:9px;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:13px;font-family:var(--font-en)}
+  .topbar-user span{font-weight:700;font-size:14px;color:var(--gray-800)}
+
+  .page-content{padding:28px;max-width:1400px;margin:0 auto}
+
+  /* Welcome Banner */
+  .welcome-banner{background:var(--gradient-brand);background-size:200% 200%;animation:gradientShift 12s ease infinite;color:white;padding:32px 36px;border-radius:var(--r-xl);margin-bottom:24px;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .welcome-banner::before{content:'';position:absolute;top:-30%;right:-10%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.15) 0%,transparent 70%)}
+  .welcome-banner::after{content:'';position:absolute;bottom:-50%;left:-10%;width:250px;height:250px;background:radial-gradient(circle,rgba(233,30,99,.3) 0%,transparent 70%)}
+  .welcome-banner h1{font-size:28px;font-weight:800;margin-bottom:6px;position:relative;z-index:1}
+  .welcome-banner p{opacity:.95;font-size:15px;font-weight:500;position:relative;z-index:1}
+
+  /* Stats Grid */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:24px}
+  .stat-card{background:white;padding:24px;border-radius:var(--r-xl);border:1px solid var(--border);box-shadow:var(--shadow-sm);transition:all .35s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+  .stat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--purple-200)}
+  .stat-icon{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;margin-bottom:14px;box-shadow:var(--shadow-md)}
+  .stat-icon.purple{background:linear-gradient(135deg,#8b5cf6,#5b2d8a)}
+  .stat-icon.pink{background:linear-gradient(135deg,#f472b6,#db2777)}
+  .stat-icon.emerald{background:linear-gradient(135deg,#34d399,#059669)}
+  .stat-icon.amber{background:linear-gradient(135deg,#fbbf24,#d97706)}
+  .stat-card h3{font-family:var(--font-en);font-size:32px;font-weight:800;color:var(--gray-900);line-height:1;margin-bottom:4px}
+  .stat-card p{font-size:14px;color:var(--gray-500);font-weight:600}
+  .stat-trend{margin-top:10px;font-size:12px;color:var(--emerald-500);font-weight:700;display:flex;align-items:center;gap:4px}
+
+  /* Quick Actions */
+  .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+  .quick-action{background:white;padding:18px;border-radius:var(--r-lg);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .3s;position:relative;overflow:hidden}
+  .quick-action::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gradient-brand);transform:scaleY(0);transform-origin:center;transition:transform .3s}
+  .quick-action:hover{transform:translateX(4px) translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--purple-200)}
+  .quick-action:hover::before{transform:scaleY(1)}
+  .quick-action .qa-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--purple-50);color:var(--purple-700)}
+  .quick-action .qa-icon.pink{background:var(--pink-100);color:var(--pink-600)}
+  .quick-action .qa-icon.emerald{background:var(--emerald-100);color:var(--emerald-500)}
+  .quick-action .qa-icon.amber{background:var(--amber-100);color:var(--amber-500)}
+  .quick-action span{font-weight:700;color:var(--gray-700);font-size:14px}
+
+  /* Cards */
+  .card{background:white;border-radius:var(--r-xl);border:1px solid var(--border);box-shadow:var(--shadow-sm);padding:24px;margin-bottom:18px}
+  .card-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--gray-100)}
+  .card-title span{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;color:var(--gray-800)}
+  .card-title span i{color:var(--purple-600);font-size:18px}
+  .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:768px){.card-grid{grid-template-columns:1fr}}
+
+  /* Notice items */
+  .notice-item{padding:16px;border:1px solid var(--gray-100);border-radius:var(--r-md);margin-bottom:10px;cursor:pointer;transition:all .3s;position:relative}
+  .notice-item:hover{border-color:var(--purple-300);transform:translateX(4px);box-shadow:var(--shadow-sm)}
+  .notice-item.unread{border-left:4px solid var(--pink-500);background:rgba(252,231,243,.3)}
+  .notice-item h4{font-size:14px;font-weight:800;color:var(--gray-800);margin-bottom:4px}
+  .notice-item p{font-size:13px;color:var(--gray-600);line-height:1.6}
+  .notice-meta{display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--gray-400);font-weight:600}
+  .priority-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .priority-badge.urgent{background:var(--red-100);color:var(--red-500)}
+  .priority-badge.important{background:var(--amber-100);color:var(--amber-500)}
+  .priority-badge.general{background:var(--emerald-100);color:var(--emerald-500)}
+
+  /* ═══ Attendance Clock Widget ═══ */
+  .clock-widget{background:white;padding:36px;border-radius:var(--r-2xl);box-shadow:var(--shadow-lg);text-align:center;margin-bottom:24px;border:1px solid var(--border);position:relative;overflow:hidden}
+  .clock-widget::before{content:'';position:absolute;top:-100px;right:-100px;width:300px;height:300px;background:radial-gradient(circle,rgba(139,92,246,.08) 0%,transparent 70%)}
+  .clock-display{font-family:var(--font-en);font-size:64px;font-weight:900;background:linear-gradient(135deg,#5b2d8a 0%,#e91e63 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-2px;line-height:1;margin-bottom:8px;font-feature-settings:'tnum'}
+  .clock-date{font-size:15px;color:var(--gray-600);font-weight:600;margin-bottom:24px}
+  .clock-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:520px;margin:0 auto}
+  .clock-btn{padding:18px;border-radius:var(--r-lg);border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;color:white;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .3s;box-shadow:var(--shadow-md);min-height:90px;justify-content:center}
+  .clock-btn:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .clock-btn i{font-size:22px}
+  .clock-btn.in{background:linear-gradient(135deg,#10b981,#059669)}
+  .clock-btn.out{background:linear-gradient(135deg,#ef4444,#dc2626)}
+  .clock-btn.lout{background:linear-gradient(135deg,#f59e0b,#d97706)}
+  .clock-btn.lin{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+  .clock-status{margin-top:18px;padding:12px 18px;background:var(--emerald-100);color:var(--emerald-500);border-radius:var(--r-md);font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:8px}
+
+  /* Leave Cards */
+  .leave-card{background:white;padding:18px;border-radius:var(--r-lg);border:1px solid var(--gray-100);margin-bottom:10px;transition:all .3s;position:relative;overflow:hidden}
+  .leave-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+  .leave-card.pending::before{background:var(--amber-500)}
+  .leave-card.approved::before{background:var(--emerald-500)}
+  .leave-card.rejected::before{background:var(--red-500)}
+  .leave-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+  .leave-status{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:800;text-transform:uppercase}
+  .leave-status.pending{background:var(--amber-100);color:var(--amber-500)}
+  .leave-status.approved{background:var(--emerald-100);color:var(--emerald-500)}
+  .leave-status.rejected{background:var(--red-100);color:var(--red-500)}
+  .leave-card h4{font-size:14px;font-weight:800;color:var(--gray-800);margin:6px 0 4px}
+  .leave-card .leave-dates{font-size:13px;color:var(--gray-600);font-weight:600;display:flex;gap:10px;margin-bottom:6px}
+  .leave-card .leave-reason{font-size:13px;color:var(--gray-500);font-style:italic}
+
+  /* Employee Grid */
+  .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+  .emp-card{background:white;border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;text-align:center;transition:all .3s;cursor:pointer;position:relative;overflow:hidden}
+  .emp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:60px;background:var(--gradient-soft);z-index:0}
+  .emp-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--purple-300)}
+  .emp-card .avatar-lg{width:80px;height:80px;border-radius:50%;background:var(--gradient-brand);color:white;font-weight:800;font-family:var(--font-en);font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;border:4px solid white;box-shadow:var(--shadow-md);position:relative;z-index:1}
+  .emp-card h4{font-size:15px;font-weight:800;color:var(--gray-800);margin-bottom:2px;position:relative;z-index:1}
+  .emp-card .emp-desg{font-size:12px;color:var(--gray-500);font-weight:600;margin-bottom:8px}
+  .emp-card .type-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:var(--purple-100);color:var(--purple-700)}
+  .emp-card .status-dot{position:absolute;top:18px;right:18px;width:10px;height:10px;border-radius:50%;background:var(--emerald-500);box-shadow:0 0 0 3px white,0 0 8px rgba(16,185,129,.4);z-index:2}
+
+  /* Buttons */
+  .btn-success{background:linear-gradient(135deg,#34d399,#059669);color:white;box-shadow:0 8px 16px -6px rgba(5,150,105,.5)}
+  .btn-success:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(5,150,105,.55)}
+  .btn-danger{background:linear-gradient(135deg,#f87171,#dc2626);color:white;box-shadow:0 8px 16px -6px rgba(220,38,38,.5)}
+  .btn-danger:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(220,38,38,.55)}
+  .btn-outline{background:white;color:var(--purple-700);border:2px solid var(--purple-300)}
+  .btn-outline:hover{background:var(--purple-50);border-color:var(--purple-500)}
+  .btn-sm{padding:8px 14px;font-size:13px;min-height:36px;border-radius:10px}
+
+  /* Settings rows */
+  .settings-row{padding:18px;border:1px solid var(--gray-100);border-radius:var(--r-md);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;transition:all .25s}
+  .settings-row:hover{border-color:var(--purple-200);background:var(--purple-50)}
+  .settings-row h5{font-weight:800;color:var(--gray-800);font-size:14px;margin-bottom:4px}
+  .settings-row p{font-size:13px;color:var(--gray-500);font-weight:500}
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;border-bottom:2px solid var(--gray-100);margin-bottom:20px;overflow-x:auto}
+  .tab{padding:10px 18px;font-weight:700;font-size:14px;color:var(--gray-500);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .25s;white-space:nowrap}
+  .tab:hover{color:var(--purple-600)}
+  .tab.active{color:var(--purple-700);border-bottom-color:var(--purple-700)}
+
+  /* Profile */
+  .profile-banner{height:180px;background:var(--gradient-brand);background-size:200% 200%;animation:gradientShift 12s ease infinite;border-radius:var(--r-xl);margin-bottom:60px;position:relative;overflow:hidden;box-shadow:var(--shadow-md)}
+  .profile-banner::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.2) 1px,transparent 1px),radial-gradient(circle at 60% 70%,rgba(255,255,255,.15) 1px,transparent 1px);background-size:40px 40px}
+  .profile-photo{position:absolute;bottom:-50px;left:32px;width:120px;height:120px;border-radius:50%;background:var(--gradient-brand);border:6px solid white;display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-en);font-size:42px;font-weight:800;box-shadow:var(--shadow-lg)}
+  .profile-info{position:absolute;bottom:-40px;left:170px;color:var(--gray-900)}
+  .profile-info h2{font-size:22px;font-weight:800;margin-bottom:2px}
+  .profile-info p{font-size:13px;color:var(--gray-500);font-weight:600}
+  .profile-info .badges{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+  .verify-badge{display:inline-flex;align-items:center;gap:4px;background:var(--emerald-100);color:var(--emerald-500);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:800}
+
+  /* Info rows */
+  .info-row{display:flex;padding:12px 0;border-bottom:1px solid var(--gray-100);font-size:14px}
+  .info-row:last-child{border-bottom:none}
+  .info-label{width:140px;color:var(--gray-500);font-weight:600;flex-shrink:0}
+  .info-value{color:var(--gray-800);font-weight:700;display:flex;align-items:center;gap:8px}
+
+  /* Import wizard */
+  .step-indicator{display:flex;gap:8px;margin-bottom:24px}
+  .step{flex:1;padding:14px;background:var(--gray-50);border-radius:var(--r-md);font-size:13px;font-weight:700;color:var(--gray-500);position:relative;border:2px solid transparent}
+  .step.active{background:var(--purple-50);color:var(--purple-700);border-color:var(--purple-200)}
+  .step.done{background:var(--emerald-100);color:var(--emerald-500)}
+  .step .num{display:inline-flex;width:24px;height:24px;border-radius:50%;background:white;align-items:center;justify-content:center;font-family:var(--font-en);font-weight:800;font-size:13px;margin-right:8px}
+  .mapping-table{width:100%;border-collapse:separate;border-spacing:0;background:white;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--gray-100)}
+  .mapping-table th{background:var(--gray-50);padding:12px;text-align:left;font-weight:800;font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--gray-100)}
+  .mapping-table td{padding:14px 12px;border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700);font-weight:600}
+  .mapping-table tr:last-child td{border-bottom:none}
+  .form-select{padding:10px 14px;border:2px solid var(--purple-200);border-radius:10px;font-family:var(--font-bn);font-size:13px;font-weight:600;background:white;cursor:pointer;width:100%;outline:none}
+  .form-select:focus{border-color:var(--purple-500)}
+
+  /* Mobile */
+  @media (max-width:1024px){.sidebar{display:none}.topbar-search{display:none}.welcome-banner h1{font-size:22px}.clock-display{font-size:48px}}
+
+  /* Toast preview */
+  .toast-preview{position:fixed;top:80px;right:20px;background:white;border-radius:var(--r-md);padding:14px 18px;border-left:4px solid var(--emerald-500);box-shadow:var(--shadow-xl);display:flex;align-items:center;gap:12px;font-weight:700;font-size:13px;color:var(--gray-800);animation:slideInRight .4s ease;z-index:1000}
+  .toast-preview i{color:var(--emerald-500);font-size:18px}
+  .toast-preview .close{margin-left:8px;color:var(--gray-400);cursor:pointer;background:none;border:none;font-size:16px}
+
+  /* Color palette demo */
+  .palette-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-bottom:20px}
+  .swatch{padding:18px;border-radius:var(--r-md);color:white;font-weight:800;font-family:var(--font-en);font-size:13px;box-shadow:var(--shadow-sm);text-align:center}
+  .swatch small{display:block;font-size:11px;opacity:.85;margin-top:4px}
+
+  /* Page section title */
+  .page-title{font-size:24px;font-weight:800;color:var(--gray-900);margin-bottom:6px}
+  .page-subtitle{font-size:14px;color:var(--gray-500);margin-bottom:24px}
+
+  /* Note banner */
+  .note-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border-left:4px solid var(--amber-500);padding:14px 18px;border-radius:var(--r-md);margin:16px 0;font-size:13px;color:var(--gray-800);font-weight:600}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ DEMO TAB SWITCHER ═══ -->
+<nav class="demo-tabs">
+  <span class="demo-tab-label"><i class="fa-solid fa-eye"></i> PREVIEW</span>
+  <button class="demo-tab active" data-screen="login"><i class="fa-solid fa-right-to-bracket"></i> লগইন</button>
+  <button class="demo-tab" data-screen="dashboard"><i class="fa-solid fa-gauge-high"></i> ড্যাশবোর্ড</button>
+  <button class="demo-tab" data-screen="attendance"><i class="fa-solid fa-clock"></i> এটেন্ডেন্স</button>
+  <button class="demo-tab" data-screen="notices"><i class="fa-solid fa-bullhorn"></i> নোটিশ</button>
+  <button class="demo-tab" data-screen="leaves"><i class="fa-solid fa-calendar-check"></i> ছুটি</button>
+  <button class="demo-tab" data-screen="employees"><i class="fa-solid fa-users"></i> কর্মী</button>
+  <button class="demo-tab" data-screen="profile"><i class="fa-solid fa-user"></i> প্রোফাইল</button>
+  <button class="demo-tab" data-screen="settings"><i class="fa-solid fa-gear"></i> সেটিংস</button>
+  <button class="demo-tab" data-screen="import"><i class="fa-solid fa-file-import"></i> ইম্পোর্ট</button>
+  <button class="demo-tab" data-screen="palette"><i class="fa-solid fa-palette"></i> কালার</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 1: LOGIN
+══════════════════════════════════════════════════════════════ -->
+<section class="demo-screen active" id="screen-login">
+  <div class="auth-screen">
+    <div class="auth-particles">
+      <div class="auth-particle"></div>
+      <div class="auth-particle"></div>
+      <div class="auth-particle"></div>
+      <div class="auth-particle"></div>
+      <div class="auth-particle"></div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-mark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+            <path d="M60 26 C46 26 38 36 38 50 L38 76 C38 90 46 96 60 96 L88 96 C100 96 108 88 108 76 L108 46 C108 32 98 26 86 26 Z" fill="#5b2d8a"/>
+            <path d="M154 26 C142 26 132 32 132 46 L132 76 C132 88 140 96 152 96 L180 96 C194 96 202 90 202 76 L202 50 C202 36 194 26 180 26 Z" fill="#e91e63"/>
+            <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#5b2d8a"/>
+            <defs><clipPath id="po"><polygon points="120,110 240,40 240,130 150,220"/></clipPath></defs>
+            <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#e91e63" clip-path="url(#po)"/>
+          </svg>
+        </div>
+        <h1>OD<span>-HRMS</span></h1>
+        <div class="auth-bn">অর্ধেকদ্বীন HR ম্যানেজমেন্ট সিস্টেম</div>
+        <p>Employee · Attendance · Leave</p>
+      </div>
+      <div class="auth-tabs">
+        <div class="auth-tab active">লগইন</div>
+        <div class="auth-tab">রেজিস্ট্রেশন</div>
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-envelope"></i> ইমেইল</label>
+        <input class="form-input" type="email" placeholder="apnar@example.com" value="admin@ordhekdeen.com">
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-lock"></i> পাসওয়ার্ড</label>
+        <input class="form-input" type="password" placeholder="********" value="••••••••">
+      </div>
+      <div class="form-row">
+        <label><input type="checkbox" checked> মনে রাখুন</label>
+        <a>পাসওয়ার্ড ভুলে গেছেন?</a>
+      </div>
+      <button class="btn btn-primary"><i class="fa-solid fa-arrow-right-to-bracket"></i> লগইন করুন</button>
+      <div class="auth-divider">অথবা</div>
+      <button class="btn btn-primary" style="background:white;color:var(--gray-700);border:2px solid var(--gray-200);box-shadow:none"><i class="fa-brands fa-google" style="color:#ea4335"></i> গুগল দিয়ে লগইন</button>
+      <div class="auth-footer">
+        নতুন ইউজার? <a>এখানে রেজিস্টার করুন</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP LAYOUT (shared by Dashboard, Attendance, Notices, etc.)
+══════════════════════════════════════════════════════════════ -->
+<template id="app-layout-template"></template>
+
+<!-- ═══ SCREEN 2: DASHBOARD (Admin) ═══ -->
+<section class="demo-screen" id="screen-dashboard">
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+            <path d="M60 26 C46 26 38 36 38 50 L38 76 C38 90 46 96 60 96 L88 96 C100 96 108 88 108 76 L108 46 C108 32 98 26 86 26 Z" fill="#5b2d8a"/>
+            <path d="M154 26 C142 26 132 32 132 46 L132 76 C132 88 140 96 152 96 L180 96 C194 96 202 90 202 76 L202 50 C202 36 194 26 180 26 Z" fill="#e91e63"/>
+            <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#5b2d8a"/>
+            <defs><clipPath id="po2"><polygon points="120,110 240,40 240,130 150,220"/></clipPath></defs>
+            <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#e91e63" clip-path="url(#po2)"/>
+          </svg>
+        </div>
+        <h2>OD<span>-HRMS</span></h2>
+        <div class="brand-bn">অর্ধেকদ্বীন HR</div>
+        <p>Management System</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-title">প্রধান মেনু</div>
+        <div class="nav-item active">
+          <span class="nav-item-left"><i class="fa-solid fa-gauge-high"></i> ড্যাশবোর্ড</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-clock"></i> এটেন্ডেন্স</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-bullhorn"></i> নোটিশ বোর্ড</span>
+          <span class="nav-badge">৩</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-calendar-check"></i> ছুটির আবেদন</span>
+          <span class="nav-badge pink">২</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-user"></i> আমার প্রোফাইল</span>
+        </div>
+
+        <div class="sidebar-section-title">ব্যবস্থাপনা</div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-users"></i> কর্মী</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-chart-line"></i> রিপোর্ট</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট</span>
+        </div>
+
+        <div class="sidebar-section-title">সিস্টেম</div>
+        <div class="nav-item">
+          <span class="nav-item-left"><i class="fa-solid fa-gear"></i> সেটিংস</span>
+        </div>
+      </nav>
+      <div class="sidebar-user">
+        <div class="avatar">আ</div>
+        <div class="sidebar-user-info">
+          <h4>আব্দুল্লাহ মামুন</h4>
+          <p>Admin</p>
+        </div>
+        <button class="icon-btn" title="লগআউট"><i class="fa-solid fa-right-from-bracket"></i></button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2>ড্যাশবোর্ড</h2>
+          <p>স্বাগতম, আজ মঙ্গলবার, ২৬ মে ২০২৬</p>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input placeholder="খুঁজুন... (Ctrl+K)">
+          </div>
+          <button class="icon-btn-pill"><i class="fa-solid fa-bell"></i><span class="dot"></span></button>
+          <div class="topbar-user">
+            <div class="avatar">আ</div>
+            <span>আব্দুল্লাহ</span>
+            <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--gray-400)"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-content">
+        <div class="welcome-banner">
+          <h1>🌅 শুভ সকাল, আব্দুল্লাহ! 👋</h1>
+          <p>আজ আপনার অফিসে ৩৮ জন উপস্থিত আছেন, ৩ জন ছুটিতে এবং ১টি ছুটির আবেদন অনুমোদনের অপেক্ষায়।</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
+            <h3 class="num">৪২</h3>
+            <p>মোট কর্মী</p>
+            <div class="stat-trend"><i class="fa-solid fa-arrow-up"></i> ৪ জন গত মাসে</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon emerald"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 class="num">৩৮</h3>
+            <p>আজ উপস্থিত</p>
+            <div class="stat-trend"><i class="fa-solid fa-arrow-up"></i> ৯০% উপস্থিতির হার</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="fa-solid fa-umbrella-beach"></i></div>
+            <h3 class="num">৩</h3>
+            <p>আজ ছুটিতে</p>
+            <div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-minus"></i> স্বাভাবিক</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon pink"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <h3 class="num">২</h3>
+            <p>অপেক্ষমাণ ছুটি</p>
+            <div class="stat-trend" style="color:var(--amber-500)"><i class="fa-solid fa-triangle-exclamation"></i> অনুমোদন প্রয়োজন</div>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <div class="quick-action"><div class="qa-icon"><i class="fa-solid fa-user-plus"></i></div><span>নতুন কর্মী যোগ</span></div>
+          <div class="quick-action"><div class="qa-icon pink"><i class="fa-solid fa-bullhorn"></i></div><span>নোটিশ পোস্ট</span></div>
+          <div class="quick-action"><div class="qa-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><span>ছুটি অনুমোদন</span></div>
+          <div class="quick-action"><div class="qa-icon amber"><i class="fa-solid fa-file-import"></i></div><span>ডাটা ইম্পোর্ট</span></div>
+        </div>
+
+        <div class="card-grid">
+          <div class="card">
+            <div class="card-title">
+              <span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span>
+              <button class="btn btn-outline btn-sm">সব দেখুন</button>
+            </div>
+            <div class="notice-item unread">
+              <span class="priority-badge urgent">🔴 জরুরী</span>
+              <h4>ঈদুল আযহার ছুটির ঘোষণা</h4>
+              <p>আগামী ১৬ জুন থেকে ১৯ জুন পর্যন্ত অফিস বন্ধ থাকবে। সবাইকে ঈদ মোবারক!</p>
+              <div class="notice-meta"><span><i class="fa-regular fa-clock"></i> ২৬ মে · ১০:০০ AM</span><span><i class="fa-solid fa-eye"></i> ৩৮ পঠিত</span></div>
+            </div>
+            <div class="notice-item">
+              <span class="priority-badge important">🟡 গুরুত্বপূর্ণ</span>
+              <h4>মাসিক মিটিং সংক্রান্ত</h4>
+              <p>এই সপ্তাহের শুক্রবার বিকেল ৩টায় মাসিক মিটিং অনুষ্ঠিত হবে।</p>
+              <div class="notice-meta"><span><i class="fa-regular fa-clock"></i> ২৪ মে · ২:৩০ PM</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span><i class="fa-solid fa-clock-rotate-left"></i> অপেক্ষমাণ ছুটি</span>
+              <button class="btn btn-outline btn-sm">সব দেখুন</button>
+            </div>
+            <div class="leave-card pending">
+              <span class="leave-status pending"><i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ</span>
+              <h4>রহিম উদ্দিন · Type 1</h4>
+              <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ১৫ জুন - ১৭ জুন</span><span class="num">(৩ দিন)</span></div>
+              <div class="leave-reason">পারিবারিক প্রয়োজন</div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> অনুমোদন</button>
+                <button class="btn btn-danger btn-sm"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
+              </div>
+            </div>
+            <div class="leave-card pending">
+              <span class="leave-status pending"><i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ</span>
+              <h4>সালমা আক্তার · Type 2</h4>
+              <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ১২ জুন</span><span class="num">(১ দিন)</span></div>
+              <div class="leave-reason">চিকিৎসকের অ্যাপয়েন্টমেন্ট</div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> অনুমোদন</button>
+                <button class="btn btn-danger btn-sm"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ HELPER: shared sidebar+topbar maker ═══ -->
+<script>
+  function buildLayout(activeNav, pageTitle, pageSubtitle, contentHTML) {
+    const navItems = [
+      { key:'dashboard', icon:'gauge-high', label:'ড্যাশবোর্ড', section:'main' },
+      { key:'attendance', icon:'clock', label:'এটেন্ডেন্স', section:'main' },
+      { key:'notices', icon:'bullhorn', label:'নোটিশ বোর্ড', section:'main', badge:'৩' },
+      { key:'leaves', icon:'calendar-check', label:'ছুটির আবেদন', section:'main', badge:'২', badgeClass:'pink' },
+      { key:'profile', icon:'user', label:'আমার প্রোফাইল', section:'main' },
+      { key:'employees', icon:'users', label:'কর্মী', section:'mgmt' },
+      { key:'reports', icon:'chart-line', label:'রিপোর্ট', section:'mgmt' },
+      { key:'import', icon:'file-import', label:'ডাটা ইম্পোর্ট', section:'mgmt' },
+      { key:'settings', icon:'gear', label:'সেটিংস', section:'sys' },
+    ];
+    const sectionTitles = { main:'প্রধান মেনু', mgmt:'ব্যবস্থাপনা', sys:'সিস্টেম' };
+    let navHTML = '';
+    let lastSection = '';
+    for (const it of navItems) {
+      if (it.section !== lastSection) {
+        navHTML += `<div class="sidebar-section-title">${sectionTitles[it.section]}</div>`;
+        lastSection = it.section;
+      }
+      const isActive = it.key === activeNav ? 'active' : '';
+      const badge = it.badge ? `<span class="nav-badge ${it.badgeClass||''}">${it.badge}</span>` : '';
+      navHTML += `<div class="nav-item ${isActive}"><span class="nav-item-left"><i class="fa-solid fa-${it.icon}"></i> ${it.label}</span>${badge}</div>`;
+    }
+
+    return `
+      <div class="app-layout">
+        <aside class="sidebar">
+          <div class="sidebar-brand">
+            <div class="sidebar-brand-logo">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+                <path d="M60 26 C46 26 38 36 38 50 L38 76 C38 90 46 96 60 96 L88 96 C100 96 108 88 108 76 L108 46 C108 32 98 26 86 26 Z" fill="#5b2d8a"/>
+                <path d="M154 26 C142 26 132 32 132 46 L132 76 C132 88 140 96 152 96 L180 96 C194 96 202 90 202 76 L202 50 C202 36 194 26 180 26 Z" fill="#e91e63"/>
+                <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#5b2d8a"/>
+              </svg>
+            </div>
+            <h2>OD<span>-HRMS</span></h2>
+            <div class="brand-bn">অর্ধেকদ্বীন HR</div>
+            <p>Management System</p>
+          </div>
+          <nav class="sidebar-nav">${navHTML}</nav>
+          <div class="sidebar-user">
+            <div class="avatar">আ</div>
+            <div class="sidebar-user-info"><h4>আব্দুল্লাহ মামুন</h4><p>Admin</p></div>
+            <button class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i></button>
+          </div>
+        </aside>
+        <div class="main-content">
+          <div class="topbar">
+            <div class="topbar-left"><h2>${pageTitle}</h2><p>${pageSubtitle}</p></div>
+            <div class="topbar-right">
+              <div class="topbar-search"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="খুঁজুন..."></div>
+              <button class="icon-btn-pill"><i class="fa-solid fa-bell"></i><span class="dot"></span></button>
+              <div class="topbar-user"><div class="avatar">আ</div><span>আব্দুল্লাহ</span></div>
+            </div>
+          </div>
+          <div class="page-content">${contentHTML}</div>
+        </div>
+      </div>
+    `;
+  }
+</script>
+
+<!-- ═══ SCREEN 3: ATTENDANCE ═══ -->
+<section class="demo-screen" id="screen-attendance"></section>
+<script>
+  document.getElementById('screen-attendance').innerHTML = buildLayout('attendance', 'এটেন্ডেন্স', 'আজ মঙ্গলবার, ২৬ মে ২০২৬', `
+    <div class="clock-widget">
+      <div class="clock-display"><span id="liveClock">১০:২৪:৩৫</span> <span style="font-size:24px;color:var(--gray-500);font-weight:700">AM</span></div>
+      <div class="clock-date">মঙ্গলবার · ২৬ মে ২০২৬ · বাংলাদেশ সময়</div>
+      <div class="clock-actions">
+        <button class="clock-btn in"><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small style="opacity:.85;font-weight:500;font-size:11px">কাজ শুরু করুন</small></button>
+        <button class="clock-btn out"><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small style="opacity:.85;font-weight:500;font-size:11px">দিন শেষ করুন</small></button>
+        <button class="clock-btn lout"><i class="fa-solid fa-utensils"></i><span>লাঞ্চ আউট</span><small style="opacity:.85;font-weight:500;font-size:11px">খেতে যাচ্ছেন</small></button>
+        <button class="clock-btn lin"><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small style="opacity:.85;font-weight:500;font-size:11px">ফিরে এসেছেন</small></button>
+      </div>
+      <div class="clock-status"><i class="fa-solid fa-circle-check"></i> অফিসে চেক-ইন হয়েছে · সকাল ৯:৫৫ এ (৫ মিনিট আগে)</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">১৮</h3><p>এই মাসে উপস্থিত</p></div>
+      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">২</h3><p>লেট</p></div>
+      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">১</h3><p>ছুটি</p></div>
+      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">৪</h3><p>ওভারটাইম (ঘন্টা)</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-calendar"></i> আজকের বিস্তারিত</span></div>
+      <div class="info-row"><div class="info-label">চেক-ইন</div><div class="info-value"><i class="fa-solid fa-right-to-bracket" style="color:var(--emerald-500)"></i> <span class="num">৯:৫৫ AM</span> <span class="verify-badge">৫ মিনিট আগে</span></div></div>
+      <div class="info-row"><div class="info-label">লাঞ্চ আউট</div><div class="info-value"><i class="fa-solid fa-utensils" style="color:var(--amber-500)"></i> <span class="num">১:৩০ PM</span></div></div>
+      <div class="info-row"><div class="info-label">লাঞ্চ ইন</div><div class="info-value"><i class="fa-solid fa-mug-hot" style="color:var(--blue-500)"></i> <span class="num">২:০০ PM</span> <span class="verify-badge" style="background:var(--blue-100);color:var(--blue-500)">৩০ মিনিট</span></div></div>
+      <div class="info-row"><div class="info-label">চেক-আউট</div><div class="info-value" style="color:var(--gray-400)"><i class="fa-solid fa-hourglass-half"></i> বাকি আছে</div></div>
+      <div class="info-row"><div class="info-label">মোট সময়</div><div class="info-value"><span class="num" style="font-size:18px;color:var(--purple-700)">৪ ঘন্টা ৩৪ মিনিট</span> <span style="font-size:12px;color:var(--gray-500);font-weight:500">(এখন পর্যন্ত)</span></div></div>
+      <div class="info-row"><div class="info-label">স্ট্যাটাস</div><div class="info-value"><span class="leave-status approved"><i class="fa-solid fa-check"></i> নিয়মিত</span></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-history"></i> এই মাসের রেকর্ড</span><button class="btn btn-outline btn-sm">PDF ডাউনলোড</button></div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> এখানে calendar view ও list view দুটোই থাকবে। চাইলে যেকোনো তারিখ click করে details দেখা যাবে।</div>
+      <table class="mapping-table">
+        <thead><tr><th>তারিখ</th><th>চেক-ইন</th><th>চেক-আউট</th><th>মোট সময়</th><th>স্ট্যাটাস</th></tr></thead>
+        <tbody>
+          <tr><td>২৬ মে</td><td class="num">৯:৫৫ AM</td><td>—</td><td class="num">৪ঘ ৩৪মি</td><td><span class="leave-status approved">নিয়মিত</span></td></tr>
+          <tr><td>২৫ মে</td><td class="num">১০:০৫ AM</td><td class="num">৬:১০ PM</td><td class="num">৭ঘ ০৫মি</td><td><span class="leave-status pending">লেট</span></td></tr>
+          <tr><td>২৪ মে</td><td class="num">৯:৫০ AM</td><td class="num">৬:০০ PM</td><td class="num">৭ঘ ১০মি</td><td><span class="leave-status approved">নিয়মিত</span></td></tr>
+          <tr><td>২৩ মে</td><td>—</td><td>—</td><td>—</td><td><span class="leave-status approved" style="background:var(--purple-100);color:var(--purple-700)">ছুটি</span></td></tr>
+          <tr><td>২২ মে</td><td class="num">৯:৪০ AM</td><td class="num">৬:১৫ PM</td><td class="num">৭ঘ ৩৫মি</td><td><span class="leave-status approved">নিয়মিত</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  `);
+
+  // Live clock
+  setInterval(() => {
+    const now = new Date();
+    const h = now.getHours() % 12 || 12;
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    const bn = (str) => str.replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+    const el = document.getElementById('liveClock');
+    if (el) el.textContent = bn(`${h}:${m}:${s}`);
+  }, 1000);
+</script>
+
+
+<!-- ═══ SCREEN 4: NOTICES ═══ -->
+<section class="demo-screen" id="screen-notices"></section>
+<script>
+  document.getElementById('screen-notices').innerHTML = buildLayout('notices', 'নোটিশ বোর্ড', 'অফিসের সকল ঘোষণা এক জায়গায়', `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+      <div class="tabs" style="border:none;margin-bottom:0">
+        <div class="tab active">সব নোটিশ <span class="num" style="background:var(--purple-100);padding:2px 8px;border-radius:99px;font-size:11px;color:var(--purple-700);margin-left:4px">১২</span></div>
+        <div class="tab">অপঠিত <span class="num" style="background:var(--pink-100);padding:2px 8px;border-radius:99px;font-size:11px;color:var(--pink-600);margin-left:4px">৩</span></div>
+        <div class="tab">জরুরী</div>
+        <div class="tab">গুরুত্বপূর্ণ</div>
+      </div>
+      <button class="btn btn-primary" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন নোটিশ</button>
+    </div>
+
+    <div class="card" style="padding:18px">
+      <div class="notice-item unread">
+        <span class="priority-badge urgent">🔴 জরুরী</span>
+        <h4>ঈদুল আযহার ছুটির ঘোষণা</h4>
+        <p>আগামী ১৬ জুন থেকে ১৯ জুন পর্যন্ত অফিস বন্ধ থাকবে। সকলকে ঈদ মোবারক জানাচ্ছি। ছুটির পর ২০ জুন (সোমবার) থেকে যথাসময়ে অফিস শুরু হবে। আশা করি সবাই পরিবার নিয়ে ভালো সময় কাটাবেন। —HR টিম</p>
+        <div class="notice-meta">
+          <span><i class="fa-regular fa-user"></i> অ্যাডমিন</span>
+          <span><i class="fa-regular fa-clock"></i> ২৬ মে · সকাল ১০:০০</span>
+          <span><i class="fa-solid fa-eye"></i> <span class="num">৩৮</span>/<span class="num">৪২</span> পঠিত</span>
+        </div>
+      </div>
+      <div class="notice-item unread">
+        <span class="priority-badge important">🟡 গুরুত্বপূর্ণ</span>
+        <h4>মাসিক মিটিং সংক্রান্ত — শুক্রবার বিকেল ৩টা</h4>
+        <p>এই সপ্তাহের শুক্রবার (৩১ মে) বিকেল ৩টায় কনফারেন্স রুমে মাসিক রিভিউ মিটিং অনুষ্ঠিত হবে। সকল কর্মীর উপস্থিতি বাঞ্ছনীয়।</p>
+        <div class="notice-meta">
+          <span><i class="fa-regular fa-user"></i> অ্যাডমিন</span>
+          <span><i class="fa-regular fa-clock"></i> ২৪ মে · দুপুর ২:৩০</span>
+          <span><i class="fa-solid fa-eye"></i> <span class="num">২৫</span>/<span class="num">৪২</span> পঠিত</span>
+        </div>
+      </div>
+      <div class="notice-item">
+        <span class="priority-badge general">🟢 সাধারণ</span>
+        <h4>নতুন কর্মী যোগদান</h4>
+        <p>আমাদের টিমে নতুন সদস্য হিসেবে যোগ দিয়েছেন জনাব ইমরান হোসেন (Senior Developer)। তাকে স্বাগত জানাই।</p>
+        <div class="notice-meta">
+          <span><i class="fa-regular fa-user"></i> অ্যাডমিন</span>
+          <span><i class="fa-regular fa-clock"></i> ২২ মে · সকাল ১১:০০</span>
+          <span><i class="fa-solid fa-eye"></i> <span class="num">৪০</span>/<span class="num">৪২</span> পঠিত</span>
+        </div>
+      </div>
+      <div class="notice-item">
+        <span class="priority-badge general">🟢 সাধারণ</span>
+        <h4>অফিস টাইম পরিবর্তন</h4>
+        <p>পবিত্র রমজান মাসে অফিস টাইম পরিবর্তন করা হয়েছে। সকাল ৯টা থেকে বিকেল ৪টা পর্যন্ত (বিরতি ১:৩০-২:০০)।</p>
+        <div class="notice-meta">
+          <span><i class="fa-regular fa-user"></i> অ্যাডমিন</span>
+          <span><i class="fa-regular fa-clock"></i> ১০ মার্চ</span>
+        </div>
+      </div>
+    </div>
+  `);
+</script>
+
+<!-- ═══ SCREEN 5: LEAVES ═══ -->
+<section class="demo-screen" id="screen-leaves"></section>
+<script>
+  document.getElementById('screen-leaves').innerHTML = buildLayout('leaves', 'ছুটির আবেদন', 'আপনার ছুটি ব্যবস্থাপনা', `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+      <div class="tabs" style="border:none;margin-bottom:0">
+        <div class="tab active">আমার ছুটি</div>
+        <div class="tab">অপেক্ষমাণ অনুমোদন <span class="num" style="background:var(--amber-100);padding:2px 8px;border-radius:99px;font-size:11px;color:var(--amber-500);margin-left:4px">২</span></div>
+        <div class="tab">সকল আবেদন</div>
+      </div>
+      <button class="btn btn-primary" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন আবেদন</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-calendar"></i></div><h3 class="num">২০</h3><p>মোট ছুটি (বার্ষিক)</p></div>
+      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-calendar-day"></i></div><h3 class="num">৫</h3><p>ব্যবহৃত</p></div>
+      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-plus"></i></div><h3 class="num">১৫</h3><p>অবশিষ্ট</p></div>
+      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-hourglass-half"></i></div><h3 class="num">১</h3><p>অপেক্ষমাণ</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-list"></i> আমার আবেদনসমূহ</span></div>
+
+      <div class="leave-card pending">
+        <span class="leave-status pending"><i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ</span>
+        <h4>পারিবারিক ছুটি</h4>
+        <div class="leave-dates">
+          <span><i class="fa-regular fa-calendar"></i> ১৫ জুন - ১৭ জুন ২০২৬</span>
+          <span class="num">(৩ দিন)</span>
+        </div>
+        <div class="leave-reason">"পারিবারিক প্রয়োজনে গ্রামের বাড়িতে যেতে হবে।"</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-400)"><i class="fa-regular fa-clock"></i> আবেদন: ২৬ মে · সকাল ৯:০০</div>
+      </div>
+
+      <div class="leave-card approved">
+        <span class="leave-status approved"><i class="fa-solid fa-check"></i> অনুমোদিত</span>
+        <h4>অসুস্থতা ছুটি</h4>
+        <div class="leave-dates">
+          <span><i class="fa-regular fa-calendar"></i> ২ মে ২০২৬</span>
+          <span class="num">(১ দিন)</span>
+        </div>
+        <div class="leave-reason">"হালকা জ্বর হয়েছিল, ডাক্তার দেখাতে হয়েছে।"</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-400)"><i class="fa-solid fa-circle-check" style="color:var(--emerald-500)"></i> অনুমোদন: ১ মে · দুপুর ১২:০০ — অ্যাডমিন</div>
+      </div>
+
+      <div class="leave-card rejected">
+        <span class="leave-status rejected"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যাত</span>
+        <h4>বার্ষিক ছুটি</h4>
+        <div class="leave-dates">
+          <span><i class="fa-regular fa-calendar"></i> ২৫ এপ্রিল - ৩০ এপ্রিল ২০২৬</span>
+          <span class="num">(৬ দিন)</span>
+        </div>
+        <div class="leave-reason">"সফরে যাব।"</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-500);background:var(--red-100);padding:10px;border-radius:8px;font-weight:600">
+          <i class="fa-solid fa-comment"></i> মন্তব্য: "এপ্রিল মাসে অনেক কাজ আছে, পরে আবেদন করুন।"
+        </div>
+      </div>
+    </div>
+  `);
+</script>
+
+<!-- ═══ SCREEN 6: EMPLOYEES ═══ -->
+<section class="demo-screen" id="screen-employees"></section>
+<script>
+  const empData = [
+    { name:'আব্দুল্লাহ মামুন', desg:'সিনিয়র ডেভেলপার', type:'Admin', initial:'আ' },
+    { name:'রহিম উদ্দিন', desg:'ম্যানেজার', type:'Type 1', initial:'র' },
+    { name:'সালমা আক্তার', desg:'অ্যাকাউন্টেন্ট', type:'Type 2', initial:'স' },
+    { name:'কামাল হোসেন', desg:'ডিজাইনার', type:'Type 1', initial:'ক' },
+    { name:'ফারিহা ইসলাম', desg:'এইচআর', type:'Admin', initial:'ফ' },
+    { name:'ইমরান চৌধুরী', desg:'ডেভেলপার', type:'Type 1', initial:'ই' },
+    { name:'নুসরাত জাহান', desg:'কন্টেন্ট রাইটার', type:'Type 2', initial:'ন' },
+    { name:'তানভীর রহমান', desg:'মার্কেটিং', type:'Type 2', initial:'ত' },
+  ];
+  const empCardsHTML = empData.map(e => `
+    <div class="emp-card">
+      <span class="status-dot"></span>
+      <div class="avatar-lg">${e.initial}</div>
+      <h4>${e.name}</h4>
+      <div class="emp-desg">${e.desg}</div>
+      <span class="type-badge">${e.type}</span>
+    </div>
+  `).join('');
+  document.getElementById('screen-employees').innerHTML = buildLayout('employees', 'কর্মী ডিরেক্টরি', 'মোট ৪২ জন · সক্রিয় ৪০ · নিষ্ক্রিয় ২', `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="topbar-search" style="min-width:240px;background:white;border:1px solid var(--border)">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input placeholder="নাম, পদবি দিয়ে খুঁজুন...">
+        </div>
+        <select class="form-select" style="width:auto;min-width:160px">
+          <option>সকল ধরন</option><option>Admin</option><option>Type 1</option><option>Type 2</option>
+        </select>
+        <select class="form-select" style="width:auto;min-width:140px">
+          <option>সক্রিয়</option><option>সকল</option><option>নিষ্ক্রিয়</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm"><i class="fa-solid fa-table-cells"></i></button>
+        <button class="btn btn-outline btn-sm"><i class="fa-solid fa-list"></i></button>
+        <button class="btn btn-primary" style="width:auto"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী</button>
+      </div>
+    </div>
+
+    <div class="emp-grid">${empCardsHTML}</div>
+
+    <div style="text-align:center;margin-top:24px;color:var(--gray-500);font-size:13px">
+      ১-৮ দেখানো হচ্ছে · মোট ৪২ জন
+      <div style="display:inline-flex;gap:6px;margin-left:16px">
+        <button class="btn btn-outline btn-sm"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="btn btn-primary btn-sm" style="width:auto;min-width:36px">১</button>
+        <button class="btn btn-outline btn-sm" style="width:auto;min-width:36px">২</button>
+        <button class="btn btn-outline btn-sm" style="width:auto;min-width:36px">৩</button>
+        <button class="btn btn-outline btn-sm"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+  `);
+</script>
+
+<!-- ═══ SCREEN 7: PROFILE ═══ -->
+<section class="demo-screen" id="screen-profile"></section>
+<script>
+  document.getElementById('screen-profile').innerHTML = buildLayout('profile', 'আমার প্রোফাইল', 'ব্যক্তিগত ও কাজের তথ্য', `
+    <div class="profile-banner">
+      <div class="profile-photo">আ</div>
+      <div class="profile-info">
+        <h2>আব্দুল্লাহ মামুন</h2>
+        <p>সিনিয়র ডেভেলপার · Admin</p>
+        <div class="badges">
+          <span class="verify-badge"><i class="fa-solid fa-circle-check"></i> ইমেইল ভেরিফাইড</span>
+          <span class="verify-badge" style="background:var(--purple-100);color:var(--purple-700)"><i class="fa-solid fa-shield-halved"></i> অ্যাডমিন</span>
+          <span class="verify-badge" style="background:var(--amber-100);color:var(--amber-500)"><i class="fa-solid fa-medal"></i> ২ বছর+</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active">ব্যক্তিগত</div>
+      <div class="tab">কাজের তথ্য</div>
+      <div class="tab">এটেন্ডেন্স ইতিহাস</div>
+      <div class="tab">ছুটির ইতিহাস</div>
+      <div class="tab">সেটিংস</div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-user"></i> ব্যক্তিগত তথ্য</span><button class="btn btn-outline btn-sm"><i class="fa-solid fa-pen"></i> এডিট</button></div>
+        <div class="info-row"><div class="info-label">পূর্ণ নাম</div><div class="info-value">আব্দুল্লাহ আল মামুন</div></div>
+        <div class="info-row"><div class="info-label">ইমেইল</div><div class="info-value"><span class="num en">abdullah@ordhekdeen.com</span> <span class="verify-badge"><i class="fa-solid fa-check"></i> ভেরিফাইড</span></div></div>
+        <div class="info-row"><div class="info-label">ফোন</div><div class="info-value num">+৮৮ ০১৭১১-১২৩৪৫৬</div></div>
+        <div class="info-row"><div class="info-label">জন্ম তারিখ</div><div class="info-value">১৫ আগস্ট ১৯৯০</div></div>
+        <div class="info-row"><div class="info-label">NID</div><div class="info-value num">১৯৯০৫৬৭৮৯০১২</div></div>
+        <div class="info-row"><div class="info-label">ঠিকানা</div><div class="info-value">বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা</div></div>
+        <div class="info-row"><div class="info-label">জরুরি যোগাযোগ</div><div class="info-value num">+৮৮ ০১৮১১-৯৮৭৬৫৪</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span><i class="fa-solid fa-briefcase"></i> কাজের তথ্য</span></div>
+        <div class="info-row"><div class="info-label">পদবি</div><div class="info-value">সিনিয়র ডেভেলপার</div></div>
+        <div class="info-row"><div class="info-label">ভূমিকা</div><div class="info-value"><span class="type-badge" style="background:var(--purple-100);color:var(--purple-700);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">Admin</span></div></div>
+        <div class="info-row"><div class="info-label">যোগদান</div><div class="info-value">১ জানুয়ারি ২০২৪ <small style="color:var(--gray-500);font-weight:500">(২ বছর ৪ মাস)</small></div></div>
+        <div class="info-row"><div class="info-label">অফিস টাইম</div><div class="info-value num">৯:০০ AM - ৬:০০ PM</div></div>
+        <div class="info-row"><div class="info-label">লাঞ্চ ব্রেক</div><div class="info-value num">১:০০ - ২:০০ PM (১ ঘন্টা)</div></div>
+        <div class="info-row"><div class="info-label">কর্ম দিবস</div><div class="info-value">শনি - বৃহস্পতি</div></div>
+        <div class="info-row"><div class="info-label">বেতন</div><div class="info-value"><span style="color:var(--purple-700);font-weight:800" class="num">৳ ৬০,০০০</span> <small style="color:var(--gray-500);font-weight:500">(গোপনীয়)</small></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-chart-line"></i> এই মাসের পারফরম্যান্স</span></div>
+      <div class="stats-grid" style="margin-bottom:0">
+        <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-circle-check"></i></div><h3 class="num">১৮/২২</h3><p>উপস্থিতি</p></div>
+        <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">২</h3><p>লেট</p></div>
+        <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">১৪৪</h3><p>মোট কাজের ঘন্টা</p></div>
+        <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-trophy"></i></div><h3 class="num">৯২%</h3><p>উপস্থিতির হার</p></div>
+      </div>
+    </div>
+  `);
+</script>
+
+
+<!-- ═══ SCREEN 8: SETTINGS ═══ -->
+<section class="demo-screen" id="screen-settings"></section>
+<script>
+  document.getElementById('screen-settings').innerHTML = buildLayout('settings', 'সেটিংস', 'সিস্টেম কনফিগারেশন', `
+    <div class="tabs">
+      <div class="tab active">কর্মী ধরন</div>
+      <div class="tab">অফিস টাইম</div>
+      <div class="tab">ছুটির নীতি</div>
+      <div class="tab">কোম্পানি</div>
+      <div class="tab">সিকিউরিটি</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span><i class="fa-solid fa-users-gear"></i> কর্মী ধরন (Employee Types)</span>
+        <button class="btn btn-primary" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন ধরন</button>
+      </div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> আপনি যত ইচ্ছা কর্মী ধরন যোগ করতে পারবেন। প্রতিটি ধরনের জন্য আলাদা অফিস টাইম সেট করা যায়।</div>
+
+      <div class="settings-row">
+        <div>
+          <h5><span class="type-badge" style="background:var(--purple-100);color:var(--purple-700);padding:3px 10px;border-radius:99px;font-size:11px;margin-right:8px">Admin</span> অ্যাডমিন</h5>
+          <p>অফিস: <span class="num">৯:০০ AM - ৬:০০ PM</span> · লাঞ্চ: <span class="num">১:০০ - ২:০০ PM</span></p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm"><i class="fa-solid fa-pen"></i></button>
+          <span class="leave-status approved" style="font-size:11px"><i class="fa-solid fa-lock"></i> মূল</span>
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <div>
+          <h5><span class="type-badge" style="background:var(--blue-100);color:var(--blue-500);padding:3px 10px;border-radius:99px;font-size:11px;margin-right:8px">Type 1</span> কর্মী টাইপ ১</h5>
+          <p>অফিস: <span class="num">১০:০০ AM - ৬:০০ PM</span> · লাঞ্চ: <span class="num">১:৩০ - ২:৩০ PM</span> · ১৮ জন</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red-500);border-color:var(--red-100)"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <div>
+          <h5><span class="type-badge" style="background:var(--emerald-100);color:var(--emerald-500);padding:3px 10px;border-radius:99px;font-size:11px;margin-right:8px">Type 2</span> কর্মী টাইপ ২</h5>
+          <p>অফিস: <span class="num">৯:০০ AM - ৫:০০ PM</span> · লাঞ্চ: <span class="num">১:০০ - ১:৩০ PM</span> · ২২ জন</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red-500);border-color:var(--red-100)"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+
+      <button class="btn btn-outline" style="width:100%;margin-top:12px;padding:18px;border-style:dashed;color:var(--purple-700)"><i class="fa-solid fa-plus"></i> নতুন কর্মী ধরন যোগ করুন</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-clock"></i> অফিস টাইম সেটিংস (Type 1)</span></div>
+      <div class="card-grid">
+        <div class="form-group"><label><i class="fa-solid fa-right-to-bracket"></i> অফিস ইন</label><input class="form-input num" type="time" value="10:00"></div>
+        <div class="form-group"><label><i class="fa-solid fa-right-from-bracket"></i> অফিস আউট</label><input class="form-input num" type="time" value="18:00"></div>
+        <div class="form-group"><label><i class="fa-solid fa-utensils"></i> লাঞ্চ আউট</label><input class="form-input num" type="time" value="13:30"></div>
+        <div class="form-group"><label><i class="fa-solid fa-mug-hot"></i> লাঞ্চ ইন</label><input class="form-input num" type="time" value="14:30"></div>
+        <div class="form-group"><label><i class="fa-solid fa-stopwatch"></i> গ্রেস টাইম (মিনিট)</label><input class="form-input num" type="number" value="15"></div>
+        <div class="form-group"><label><i class="fa-solid fa-coffee"></i> ব্রেক ডিউরেশন (মিনিট)</label><input class="form-input num" type="number" value="60"></div>
+      </div>
+      <button class="btn btn-success" style="width:100%;margin-top:8px"><i class="fa-solid fa-floppy-disk"></i> পরিবর্তন সংরক্ষণ করুন</button>
+    </div>
+  `);
+</script>
+
+<!-- ═══ SCREEN 9: IMPORT ═══ -->
+<section class="demo-screen" id="screen-import"></section>
+<script>
+  document.getElementById('screen-import').innerHTML = buildLayout('import', 'ডাটা ইম্পোর্ট', 'গুগল শীট অথবা CSV থেকে ডাটা ইম্পোর্ট', `
+    <div class="step-indicator">
+      <div class="step done"><span class="num">১</span> সোর্স নির্বাচন</div>
+      <div class="step active"><span class="num">২</span> কলাম ম্যাপিং</div>
+      <div class="step"><span class="num">৩</span> ভেরিফাই</div>
+      <div class="step"><span class="num">৪</span> ইম্পোর্ট</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-table-columns"></i> কলাম ম্যাপিং</span></div>
+      <div class="note-banner"><i class="fa-solid fa-magic"></i> আমরা স্বয়ংক্রিয়ভাবে আপনার কলামগুলো শনাক্ত করেছি। প্রয়োজনে নিচের ম্যাপিং পরিবর্তন করুন।</div>
+
+      <table class="mapping-table">
+        <thead>
+          <tr><th>আপনার কলাম</th><th>অ্যাপ ফিল্ড</th><th>উদাহরণ ডাটা</th><th>স্ট্যাটাস</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>"Full Name"</b></td>
+            <td><select class="form-select"><option>পূর্ণ নাম</option><option>ইমেইল</option></select></td>
+            <td>আব্দুল্লাহ মামুন</td>
+            <td><span class="leave-status approved"><i class="fa-solid fa-check"></i> মিল</span></td>
+          </tr>
+          <tr>
+            <td><b>"Email Address"</b></td>
+            <td><select class="form-select"><option>ইমেইল</option></select></td>
+            <td class="num en">abc@xyz.com</td>
+            <td><span class="leave-status approved"><i class="fa-solid fa-check"></i> মিল</span></td>
+          </tr>
+          <tr>
+            <td><b>"Mobile"</b></td>
+            <td><select class="form-select"><option>ফোন নম্বর</option></select></td>
+            <td class="num">০১৭১১২৩৪৫৬৭</td>
+            <td><span class="leave-status approved"><i class="fa-solid fa-check"></i> মিল</span></td>
+          </tr>
+          <tr>
+            <td><b>"Designation"</b></td>
+            <td><select class="form-select"><option>পদবি</option></select></td>
+            <td>সিনিয়র ডেভেলপার</td>
+            <td><span class="leave-status approved"><i class="fa-solid fa-check"></i> মিল</span></td>
+          </tr>
+          <tr>
+            <td><b>"Type"</b></td>
+            <td><select class="form-select"><option>কর্মী ধরন</option></select></td>
+            <td>Type 1</td>
+            <td><span class="leave-status approved"><i class="fa-solid fa-check"></i> মিল</span></td>
+          </tr>
+          <tr>
+            <td><b>"Salary"</b></td>
+            <td><select class="form-select"><option>বেতন</option></select></td>
+            <td class="num">৬০০০০</td>
+            <td><span class="leave-status approved"><i class="fa-solid fa-check"></i> মিল</span></td>
+          </tr>
+          <tr>
+            <td><b>"Joining Date"</b></td>
+            <td><select class="form-select"><option>যোগদান তারিখ</option></select></td>
+            <td class="num">২০২৪-০১-০১</td>
+            <td><span class="leave-status approved"><i class="fa-solid fa-check"></i> মিল</span></td>
+          </tr>
+          <tr style="background:var(--amber-100)">
+            <td><b>"Department"</b></td>
+            <td><select class="form-select" style="border-color:var(--amber-500)"><option>-- ম্যাপ করা হয়নি --</option><option>মেটাডাটা</option></select></td>
+            <td>IT</td>
+            <td><span class="leave-status pending"><i class="fa-solid fa-triangle-exclamation"></i> অপশনাল</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-clipboard-check"></i> ভ্যালিডেশন সারাংশ</span></div>
+      <div class="stats-grid" style="margin-bottom:0">
+        <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-check"></i></div><h3 class="num">৩৮</h3><p>সঠিক রেকর্ড</p></div>
+        <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-triangle-exclamation"></i></div><h3 class="num">২</h3><p>সতর্কতা (ফোন মিসিং)</p></div>
+        <div class="stat-card"><div class="stat-icon pink" style="background:linear-gradient(135deg,#fda4af,#dc2626)"><i class="fa-solid fa-xmark"></i></div><h3 class="num">০</h3><p>ত্রুটি</p></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;gap:12px;margin-top:16px">
+      <button class="btn btn-outline"><i class="fa-solid fa-chevron-left"></i> পেছনে</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline">ম্যাপিং সেভ</button>
+        <button class="btn btn-success" style="width:auto"><i class="fa-solid fa-cloud-arrow-up"></i> ৩৮টি রেকর্ড ইম্পোর্ট করুন</button>
+      </div>
+    </div>
+  `);
+</script>
+
+<!-- ═══ SCREEN 10: COLOR PALETTE ═══ -->
+<section class="demo-screen" id="screen-palette">
+  <div style="padding:32px 24px;max-width:1200px;margin:0 auto">
+    <div class="page-title">🎨 ব্র্যান্ড কালার প্যালেট</div>
+    <div class="page-subtitle">অর্ধেকদ্বীন logo থেকে নেওয়া রঙের সিস্টেম</div>
+
+    <h3 style="margin:24px 0 12px;font-size:18px;color:var(--gray-800)">Brand Primaries (logo থেকে)</h3>
+    <div class="palette-grid">
+      <div class="swatch" style="background:#5b2d8a;height:100px;display:flex;flex-direction:column;justify-content:center"><div>Royal Purple</div><small>#5b2d8a</small></div>
+      <div class="swatch" style="background:#e91e63;height:100px;display:flex;flex-direction:column;justify-content:center"><div>Vibrant Pink</div><small>#e91e63</small></div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:18px;color:var(--gray-800)">Purple Scale</h3>
+    <div class="palette-grid">
+      <div class="swatch" style="background:#2a1340">950<small>#2a1340</small></div>
+      <div class="swatch" style="background:#3b1c5c">900<small>#3b1c5c</small></div>
+      <div class="swatch" style="background:#4a2374">800<small>#4a2374</small></div>
+      <div class="swatch" style="background:#5b2d8a;border:2px solid var(--amber-500)">700 ★<small>#5b2d8a</small></div>
+      <div class="swatch" style="background:#6d39a3">600<small>#6d39a3</small></div>
+      <div class="swatch" style="background:#8b5cf6">500<small>#8b5cf6</small></div>
+      <div class="swatch" style="background:#a78bfa">400<small>#a78bfa</small></div>
+      <div class="swatch" style="background:#c4b5fd;color:#3b1c5c">300<small>#c4b5fd</small></div>
+      <div class="swatch" style="background:#e4d6f8;color:#3b1c5c">200<small>#e4d6f8</small></div>
+      <div class="swatch" style="background:#f3ebff;color:#3b1c5c">100<small>#f3ebff</small></div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:18px;color:var(--gray-800)">Pink Scale</h3>
+    <div class="palette-grid">
+      <div class="swatch" style="background:#831843">900<small>#831843</small></div>
+      <div class="swatch" style="background:#9d174d">800<small>#9d174d</small></div>
+      <div class="swatch" style="background:#be185d">700<small>#be185d</small></div>
+      <div class="swatch" style="background:#db2777">600<small>#db2777</small></div>
+      <div class="swatch" style="background:#e91e63;border:2px solid var(--amber-500)">500 ★<small>#e91e63</small></div>
+      <div class="swatch" style="background:#f472b6">400<small>#f472b6</small></div>
+      <div class="swatch" style="background:#f9a8d4;color:#831843">300<small>#f9a8d4</small></div>
+      <div class="swatch" style="background:#fbcfe8;color:#831843">200<small>#fbcfe8</small></div>
+      <div class="swatch" style="background:#fce7f3;color:#831843">100<small>#fce7f3</small></div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:18px;color:var(--gray-800)">সিগনেচার গ্রেডিয়েন্ট</h3>
+    <div class="palette-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+      <div class="swatch" style="background:linear-gradient(135deg,#5b2d8a 0%,#8b5cf6 50%,#e91e63 100%);height:100px;display:flex;flex-direction:column;justify-content:center;font-size:14px">Brand Gradient<small style="font-size:10px">#5b2d8a → #8b5cf6 → #e91e63</small></div>
+      <div class="swatch" style="background:linear-gradient(135deg,#0f0520 0%,#2d0a4e 50%,#5b2d8a 100%);height:100px;display:flex;flex-direction:column;justify-content:center;font-size:14px">Auth Background<small style="font-size:10px">deep, dramatic</small></div>
+      <div class="swatch" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);height:100px;display:flex;flex-direction:column;justify-content:center;font-size:14px">Success Gradient<small style="font-size:10px">#10b981 → #059669</small></div>
+      <div class="swatch" style="background:linear-gradient(135deg,#faf5ff 0%,#fce7f3 100%);height:100px;color:#5b2d8a;display:flex;flex-direction:column;justify-content:center;font-size:14px;border:1px solid var(--purple-200)">Soft Brand<small style="font-size:10px;color:#831843">card backgrounds</small></div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:18px;color:var(--gray-800)">টাইপোগ্রাফি</h3>
+    <div class="card">
+      <div style="font-family:'Hind Siliguri';font-size:32px;font-weight:700;color:var(--gray-900);margin-bottom:8px">অর্ধেকদ্বীন HR সিস্টেম</div>
+      <div style="font-family:'Hind Siliguri';font-size:18px;font-weight:500;color:var(--gray-700);margin-bottom:20px">এটি একটি সম্পূর্ণ ম্যানেজমেন্ট সফটওয়্যার, বাংলাদেশের জন্য তৈরি।</div>
+      <div style="font-family:'Inter';font-size:32px;font-weight:900;background:linear-gradient(135deg,#5b2d8a,#e91e63);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-1px;margin-bottom:8px">OD-HRMS · Inter Font</div>
+      <div style="font-family:'Inter';font-size:14px;font-weight:600;color:var(--gray-600)">Numbers: 0 1 2 3 4 5 6 7 8 9 · Bengali: ০ ১ ২ ৩ ৪ ৫ ৬ ৭ ৮ ৯</div>
+    </div>
+
+    <h3 style="margin:24px 0 12px;font-size:18px;color:var(--gray-800)">বাটন স্টাইল</h3>
+    <div class="card">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="btn btn-primary" style="width:auto"><i class="fa-solid fa-star"></i> Primary Button</button>
+        <button class="btn btn-success" style="width:auto"><i class="fa-solid fa-check"></i> Success</button>
+        <button class="btn btn-danger" style="width:auto"><i class="fa-solid fa-trash"></i> Danger</button>
+        <button class="btn btn-outline" style="width:auto"><i class="fa-solid fa-pen"></i> Outline</button>
+        <button class="btn btn-primary btn-sm" style="width:auto">Small Button</button>
+      </div>
+      <p style="color:var(--gray-500);font-size:13px">সব বাটনে hover করলে shimmer effect, lift animation আছে।</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TOAST PREVIEW (always visible) ═══ -->
+<div class="toast-preview" id="toastPreview" style="display:none">
+  <i class="fa-solid fa-circle-check"></i>
+  <span>সফলভাবে চেক-ইন হয়েছে · সকাল ৯:৫৫</span>
+  <button class="close" onclick="this.parentElement.style.display='none'">&times;</button>
+</div>
+
+<!-- ═══ TAB SWITCHER LOGIC ═══ -->
+<script>
+  document.querySelectorAll('.demo-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.screen;
+      document.querySelectorAll('.demo-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.demo-screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + target).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Show toast on attendance screen
+      if (target === 'attendance') {
+        setTimeout(() => {
+          const t = document.getElementById('toastPreview');
+          t.style.display = 'flex';
+          setTimeout(() => t.style.display = 'none', 4000);
+        }, 800);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
