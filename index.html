@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="description" content="অর্ধেকদ্বীন HR ম্যানেজমেন্ট সিস্টেম — কর্মী, এটেন্ডেন্স, ছুটি ব্যবস্থাপনা">
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
 <title>OD-HRMS · অর্ধেকদ্বীন HR সিস্টেম</title>
 <link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cpath d='M60 26 C46 26 38 36 38 50 L38 76 C38 90 46 96 60 96 L88 96 C100 96 108 88 108 76 L108 46 C108 32 98 26 86 26 Z' fill='%235b2d8a'/%3E%3Cpath d='M154 26 C142 26 132 32 132 46 L132 76 C132 88 140 96 152 96 L180 96 C194 96 202 90 202 76 L202 50 C202 36 194 26 180 26 Z' fill='%23e91e63'/%3E%3Cpath d='M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z' fill='%235b2d8a'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -923,19 +926,23 @@ async function resendVerification(email, btn) {
 
 function openForgotPassword() {
   const prefilled = document.getElementById('loginEmail').value.trim();
-  showModal(
-    '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড রিসেট',
-    `<div style="padding:8px 0">
-      <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">আপনার ইমেইল লিখুন। আমরা আপনাকে একটি পাসওয়ার্ড রিসেট লিংক পাঠাব।</p>
-      <div class="form-group">
-        <label><i class="fa-solid fa-envelope"></i> ইমেইল</label>
-        <input class="form-input" type="email" id="forgotEmail" placeholder="apnar@example.com" value="${prefilled}">
-      </div>
-    </div>`,
-    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-     <button class="btn btn-primary" id="forgotBtn" onclick="sendResetEmail()"><i class="fa-solid fa-paper-plane"></i> রিসেট লিংক পাঠান</button>`
-  );
-  setTimeout(() => document.getElementById('forgotEmail')?.focus(), 200);
+  // Show toast IMMEDIATELY so user knows the click worked
+  showToast('পাসওয়ার্ড রিসেট ফর্ম খুলছে...', 'info');
+  setTimeout(() => {
+    showModal(
+      '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড রিসেট',
+      `<div style="padding:8px 0">
+        <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">আপনার ইমেইল লিখুন। আমরা ৬-অঙ্কের রিসেট কোড পাঠাব।</p>
+        <div class="form-group">
+          <label><i class="fa-solid fa-envelope"></i> ইমেইল</label>
+          <input class="form-input" type="email" id="forgotEmail" placeholder="apnar@example.com" value="${prefilled}">
+        </div>
+      </div>`,
+      `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+       <button class="btn btn-primary" id="forgotBtn" onclick="sendResetEmail()"><i class="fa-solid fa-paper-plane"></i> কোড পাঠান</button>`
+    );
+    setTimeout(() => document.getElementById('forgotEmail')?.focus(), 200);
+  }, 100);
 }
 
 async function sendResetEmail() {
