@@ -942,78 +942,64 @@ function openForgotPassword() {
   showModal(
     '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড ভুলে গেছেন?',
     `<div style="padding:4px 0">
-      <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px;line-height:1.6">আপনার ইমেইল লিখুন। অ্যাডমিন কাছে নটিফিকেশন যাবে — তিনি আপনাকে নতুন পাসওয়ার্ড দিয়ে দিবেন।</p>
+      <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px;line-height:1.6">আপনার ইমেইলে একটি ৬-অঙ্কের রিসেট কোড পাঠানো হবে। কোডটি দিয়ে নতুন পাসওয়ার্ড সেট করুন।</p>
       <div class="form-group">
         <label><i class="fa-solid fa-envelope"></i> আপনার ইমেইল *</label>
         <input class="form-input" type="email" id="forgotEmail" placeholder="apnar@example.com" value="${prefilled}">
       </div>
-      <div class="form-group">
-        <label><i class="fa-solid fa-comment"></i> মন্তব্য (ঐচ্ছিক)</label>
-        <textarea class="form-textarea" id="forgotReason" placeholder="পাসওয়ার্ড মনে নেই" style="min-height:60px"></textarea>
+      <div class="note-banner" style="font-size:12px">
+        💡 ইমেইল না পেলে Spam/Junk folder চেক করুন।
       </div>
     </div>`,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
-     <button class="btn btn-primary" id="forgotBtn" onclick="submitResetRequest()"><i class="fa-solid fa-paper-plane"></i> অ্যাডমিনকে জানান</button>`
+     <button class="btn btn-primary" id="forgotBtn" onclick="sendResetEmail()"><i class="fa-solid fa-paper-plane"></i> কোড পাঠান</button>`
   );
   setTimeout(() => document.getElementById('forgotEmail')?.focus(), 200);
 }
 
-async function submitResetRequest() {
+async function sendResetEmail() {
   const email = document.getElementById('forgotEmail').value.trim();
-  const reason = document.getElementById('forgotReason').value.trim();
   if (!email) return showToast('ইমেইল লিখুন', 'error');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('সঠিক ইমেইল লিখুন', 'error');
 
   const btn = document.getElementById('forgotBtn');
   setBtnLoading(btn, true);
   try {
-    // Call our API to generate code and notify admins
-    const res = await fetch('/api/forgot-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, reason: reason || null })
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || 'Server error');
-
+    const result = await Promise.race([
+      sb.auth.resetPasswordForEmail(email),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 20000))
+    ]);
+    if (result.error) {
+      const msg = result.error.message || '';
+      let friendly = msg;
+      if (msg.toLowerCase().includes('rate')) friendly = 'বেশি বার চেষ্টা করা হয়েছে — ১ মিনিট পর আবার চেষ্টা করুন';
+      else if (msg.toLowerCase().includes('not found')) friendly = 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই — সঠিক ইমেইল লিখুন';
+      showToast('❌ ' + friendly, 'error');
+      return;
+    }
     closeModal();
-    showModal(
-      '✅ অনুরোধ পাঠানো হয়েছে',
-      `<div style="padding:8px 0">
-        <div style="text-align:center;margin-bottom:18px">
-          <div style="font-size:48px;margin-bottom:10px">📨</div>
-          <h3 style="font-weight:800;color:var(--gray-800);margin-bottom:8px">অ্যাডমিনকে জানানো হয়েছে</h3>
-          <p style="font-size:14px;color:var(--gray-600);line-height:1.7"><b>${email}</b> এর জন্য একটি ৬-অঙ্কের কোড তৈরি হয়েছে।<br>অ্যাডমিন তাঁর নটিফিকেশন থেকে কোডটি দেখে আপনাকে দিবেন।</p>
-        </div>
-        <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);padding:14px;border-radius:10px;border:1px solid var(--purple-200);font-size:13px;color:var(--gray-700);line-height:1.7">
-          <p style="font-weight:700;color:var(--purple-700);margin-bottom:6px">পরবর্তী ধাপ:</p>
-          <p style="margin-bottom:4px">• অ্যাডমিন/HR ম্যানেজারকে WhatsApp/ফোনে জানান</p>
-          <p style="margin-bottom:4px">• তিনি কোড দিলে আপনি নিজেই নতুন পাসওয়ার্ড সেট করতে পারবেন</p>
-          <p>• লগইন স্ক্রিনে "কোড আছে? পাসওয়ার্ড রিসেট করুন" লিংকে ক্লিক করুন</p>
-        </div>
-      </div>`,
-      `<button class="btn btn-outline" onclick="closeModal()">পরে করব</button>
-       <button class="btn btn-primary" onclick="closeModal();showResetWithCodeModal('${email}')"><i class="fa-solid fa-keyboard"></i> কোড আছে — বসান</button>`
-    );
+    showToast('✅ কোড পাঠানো হয়েছে — ইমেইল চেক করুন', 'success');
+    setTimeout(() => showResetWithCodeModal(email), 300);
   } catch (e) {
-    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+    if (e.message === 'TIMEOUT') showToast('❌ Server timeout — আবার চেষ্টা করুন', 'error');
+    else showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
   } finally {
     setBtnLoading(btn, false);
   }
 }
 
-// User flow: enter email + 6-digit code (from admin) + new password
+// User flow: enter email + 6-digit code (from gmail) + new password
 function showResetWithCodeModal(prefilledEmail = '') {
   showModal(
     '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> কোড দিয়ে পাসওয়ার্ড রিসেট',
     `<div style="padding:4px 0">
-      <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;line-height:1.6">অ্যাডমিন থেকে পাওয়া ৬-অঙ্কের কোড বসান এবং নতুন পাসওয়ার্ড সেট করুন।</p>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;line-height:1.6">আপনার ইমেইলে পাঠানো ৬-অঙ্কের কোড বসান এবং নতুন পাসওয়ার্ড সেট করুন।</p>
       <div class="form-group">
         <label><i class="fa-solid fa-envelope"></i> আপনার ইমেইল</label>
         <input class="form-input" type="email" id="rcEmail" value="${prefilledEmail}" placeholder="apnar@example.com">
       </div>
       <div class="form-group">
-        <label><i class="fa-solid fa-key"></i> ৬-অঙ্কের কোড</label>
+        <label><i class="fa-solid fa-key"></i> ৬-অঙ্কের কোড (ইমেইল থেকে)</label>
         <input class="form-input num en" type="text" id="rcCode" maxlength="6" placeholder="123456" style="font-size:18px;letter-spacing:4px;text-align:center;font-weight:800">
       </div>
       <div class="form-group">
@@ -1044,13 +1030,23 @@ async function doResetWithCode() {
   const btn = document.getElementById('rcSubmit');
   setBtnLoading(btn, true);
   try {
-    const res = await fetch('/api/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, newPassword: p1 })
+    // Verify OTP code against Supabase
+    const { data, error: verifyErr } = await sb.auth.verifyOtp({
+      email, token: code, type: 'recovery'
     });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || 'Server error');
+    if (verifyErr) {
+      const msg = (verifyErr.message||'').toLowerCase();
+      if (msg.includes('expired')) showToast('❌ কোডের মেয়াদ শেষ — আবার পাঠান', 'error');
+      else if (msg.includes('invalid')) showToast('❌ ভুল কোড — আবার চেষ্টা করুন', 'error');
+      else showToast('❌ ' + verifyErr.message, 'error');
+      return;
+    }
+    // Now user is authenticated via OTP — update password
+    const { error: updErr } = await sb.auth.updateUser({ password: p1 });
+    if (updErr) { showToast('❌ ' + updErr.message, 'error'); return; }
+
+    // Sign out so they log in fresh with new password
+    await sb.auth.signOut();
     closeModal();
     showToast('✅ পাসওয়ার্ড পরিবর্তিত হয়েছে — এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন');
     document.getElementById('loginEmail').value = email;
@@ -1458,20 +1454,7 @@ async function loadNotifications() {
       }));
     }
     if (App.isAdmin) {
-      // Password reset requests
-      try {
-        const { data: prr } = await sb.from('password_reset_requests').select('*').eq('status','pending').order('created_at', { ascending: false }).limit(10);
-        (prr||[]).forEach(r => items.push({
-          id: 'prr_' + r.id,
-          type: 'prr',
-          icon: 'key',
-          iconBg: 'background:var(--red-100);color:var(--red-500)',
-          title: `🔑 পাসওয়ার্ড রিসেট অনুরোধ · ${r.email}`,
-          desc: r.reason || 'কর্মী পাসওয়ার্ড ভুলে গেছেন',
-          time: r.created_at,
-          action: () => handleResetRequest(r.id, r.email)
-        }));
-      } catch (e) { /* table might not exist if v5 SQL not run */ }
+      // (Password reset requests notification removed — users now reset directly via Gmail OTP)
     }
     if (!App.isAdmin) {
       const { data: myLeaves } = await sb.from('leaves').select('id, status, total_days, reviewed_at, leave_code').eq('user_id', App.user.id).in('status', ['approved','rejected']).order('reviewed_at', { ascending: false, nullsFirst: false }).limit(3);
