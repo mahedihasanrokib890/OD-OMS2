@@ -569,6 +569,10 @@
 
       <div class="editor-or-admin">
         <div class="sidebar-section-title">ব্যবস্থাপনা</div>
+        <div class="nav-item" data-route="inbox" onclick="navigate('inbox')">
+          <span class="nav-item-left"><i class="fa-solid fa-inbox"></i> ইনবক্স</span>
+          <span class="nav-badge pink" id="inboxBadge" style="display:none">০</span>
+        </div>
         <div class="nav-item" data-route="employees" onclick="navigate('employees')">
           <span class="nav-item-left"><i class="fa-solid fa-users"></i> কর্মী</span>
         </div>
@@ -1390,6 +1394,7 @@ function setupRealtimeSync() {
     if (App.currentPage === 'dashboard') loadDashboardLists();
     if (App.currentPage === 'notices' && table === 'notices') refreshNoticesList();
     if (App.currentPage === 'leaves' && table === 'leaves') refreshLeavesList();
+    if (App.currentPage === 'inbox' && table === 'leaves') refreshInboxList();
     if (App.currentPage === 'attendance' && table === 'attendance') refreshAttendanceList();
     if (App.currentPage === 'employees' && table === 'profiles') refreshEmployeesList();
   };
@@ -1630,6 +1635,7 @@ const routes = {
   leaves:     { title: 'ছুটির আবেদন',    subtitle: 'আপনার ছুটি ব্যবস্থাপনা',     renderFn: 'renderLeaves' },
   profile:    { title: 'আমার প্রোফাইল',  subtitle: 'ব্যক্তিগত ও কাজের তথ্য',     renderFn: 'renderProfile' },
   employees:  { title: 'কর্মী ডিরেক্টরি', subtitle: 'সকল কর্মীর তালিকা',           renderFn: 'renderEmployees', editorOrAdmin: true },
+  inbox:      { title: 'ইনবক্স',          subtitle: 'অপেক্ষমাণ ছুটি ও অনুরোধ',     renderFn: 'renderInbox',     editorOrAdmin: true },
   reports:    { title: 'রিপোর্ট',        subtitle: 'বিশ্লেষণ ও সারাংশ',          renderFn: 'renderReports', admin: true },
   import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     renderFn: 'renderImport', admin: true },
   settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         renderFn: 'renderSettings', admin: true }
@@ -1675,6 +1681,7 @@ function navigate(route) {
     if (route === 'notices') refreshNoticesList();
     if (route === 'leaves') refreshLeavesList();
     if (route === 'employees') refreshEmployeesList();
+    if (route === 'inbox')     refreshInboxList();
     if (route === 'settings') loadOfficeTimes();
 
     // Update today status if attendance is rendered
@@ -3039,8 +3046,10 @@ async function _renderLeavesContent() {
           </div>
         ` : ''}
         ${l.user_id === App.user.id && l.status === 'pending' ? `
-          <div style="margin-top:8px"><button class="btn btn-outline btn-sm" onclick="cancelLeave(${l.id})">আবেদন বাতিল</button></div>
-        ` : ''}
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="cancelLeave(${l.id})">আবেদন বাতিল</button><button class="btn btn-outline btn-sm" onclick="printLeaveLetter(${l.id})"><i class="fa-solid fa-print"></i> চিঠি প্রিন্ট</button></div>
+        ` : `
+          <div style="margin-top:8px"><button class="btn btn-outline btn-sm" onclick="printLeaveLetter(${l.id})"><i class="fa-solid fa-print"></i> চিঠি প্রিন্ট</button></div>
+        `}
       </div>
     `).join('');
   } catch (e) {
@@ -3454,6 +3463,265 @@ async function saveProfile() {
   } catch (e) {
     showToast('❌ ' + e.message, 'error');
   } finally { setBtnLoading(btn, false); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INBOX (admin/editor) — all pending leave requests + actions
+// ═══════════════════════════════════════════════════════════
+let _inboxFilter = 'pending';
+
+function renderInbox() {
+  return `
+    <div class="welcome-banner" style="background:linear-gradient(135deg,#5b2d8a,#8b5cf6,#e91e63)">
+      <h1>📥 ইনবক্স</h1>
+      <p>কর্মীদের ছুটির আবেদন, পাসওয়ার্ড অনুরোধ ও অন্যান্য বার্তা এক জায়গায়।</p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="inboxTabs">
+      <button class="btn btn-${_inboxFilter==='pending'?'primary':'outline'} btn-sm" onclick="setInboxFilter('pending')"><i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ</button>
+      <button class="btn btn-${_inboxFilter==='approved'?'primary':'outline'} btn-sm" onclick="setInboxFilter('approved')"><i class="fa-solid fa-circle-check"></i> অনুমোদিত</button>
+      <button class="btn btn-${_inboxFilter==='rejected'?'primary':'outline'} btn-sm" onclick="setInboxFilter('rejected')"><i class="fa-solid fa-circle-xmark"></i> প্রত্যাখ্যাত</button>
+      <button class="btn btn-${_inboxFilter==='all'?'primary':'outline'} btn-sm" onclick="setInboxFilter('all')"><i class="fa-solid fa-list"></i> সব</button>
+    </div>
+
+    <div class="card" id="inboxList">
+      <div style="padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    </div>
+  `;
+}
+
+function setInboxFilter(f) {
+  _inboxFilter = f;
+  navigate('inbox');
+}
+
+async function refreshInboxList() {
+  const card = document.getElementById('inboxList');
+  if (!card) return;
+  try {
+    let q = sb.from('leaves').select('*, profiles!user_id(full_name, email, photo_url, designation, department), reviewer:reviewed_by(full_name)').order('created_at', { ascending: false });
+    if (_inboxFilter !== 'all') q = q.eq('status', _inboxFilter);
+    const { data, error } = await q;
+    if (error) throw error;
+
+    // Update sidebar badge with pending count
+    const { count: pendingCount } = await sb.from('leaves').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+    const badge = document.getElementById('inboxBadge');
+    if (badge) {
+      if (pendingCount > 0) { badge.textContent = bnDigits(pendingCount); badge.style.display = ''; }
+      else badge.style.display = 'none';
+    }
+
+    if (!data || data.length === 0) {
+      card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><h3>${_inboxFilter==='pending'?'কোনো অপেক্ষমাণ আবেদন নেই 🎉':'এই বিভাগে কিছু নেই'}</h3></div>`;
+      return;
+    }
+
+    card.innerHTML = data.map(l => {
+      const init = initial(l.profiles?.full_name);
+      const img = l.profiles?.photo_url ? `<img src="${l.profiles.photo_url}" style="width:100%;height:100%;object-fit:cover">` : init;
+      return `
+      <div style="padding:16px;border:1px solid var(--gray-100);border-radius:14px;margin-bottom:12px;background:white;transition:all .25s" onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.borderColor='var(--purple-200)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--gray-100)'">
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <div class="avatar" style="width:48px;height:48px;border-radius:12px;background:var(--gradient-brand);color:white;font-weight:800;font-family:var(--font-en);font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">${img}</div>
+          <div style="flex:1;min-width:200px">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:center">
+              <div>
+                <h4 style="font-weight:800;color:var(--gray-800);font-size:15px">${escapeHtml(l.profiles?.full_name||'কর্মী')}</h4>
+                <p style="font-size:12px;color:var(--gray-500)">${escapeHtml(l.profiles?.designation||'')}${l.profiles?.department?` · ${escapeHtml(l.profiles.department)}`:''}</p>
+              </div>
+              <span class="leave-status ${l.status}">${statusIcon(l.status)} ${statusLabel(l.status)}</span>
+            </div>
+            <div style="margin-top:10px;font-size:13px;color:var(--gray-700)">
+              <b>${leaveTypeLabel(l.leave_type, l.leave_code)}</b> — <span style="color:var(--purple-700);font-weight:700">${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</span> <span class="num" style="color:var(--gray-500)">(${bnDigits(l.total_days)} দিন)</span>
+            </div>
+            <div style="margin-top:6px;font-size:13px;color:var(--gray-600);font-style:italic">"${escapeHtml(l.reason||'')}"</div>
+            ${l.review_comment ? `<div style="margin-top:8px;font-size:12px;background:var(--gray-50);padding:8px 12px;border-radius:8px"><b>মন্তব্য:</b> ${escapeHtml(l.review_comment)} ${l.reviewer?.full_name?`<small style="color:var(--gray-400)"> — ${escapeHtml(l.reviewer.full_name)}</small>`:''}</div>` : ''}
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <small style="color:var(--gray-400);font-size:11px"><i class="fa-regular fa-clock"></i> ${formatBnDate(l.created_at)} · ${formatBnTime(l.created_at)}</small>
+              <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-outline btn-sm" onclick="printLeaveLetter(${l.id})" title="চিঠি প্রিন্ট"><i class="fa-solid fa-print"></i> চিঠি প্রিন্ট</button>
+                ${l.status === 'pending' ? `
+                  <button class="btn btn-success btn-sm" onclick="reviewLeave(${l.id},'approved')"><i class="fa-solid fa-check"></i> অনুমোদন</button>
+                  <button class="btn btn-danger btn-sm" onclick="reviewLeave(${l.id},'rejected')"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      `;
+    }).join('');
+  } catch (e) {
+    card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড করতে সমস্যা</h3><p>${e.message}</p></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PRINT LEAVE LETTER — Ordhekdeen letterhead PDF
+// ═══════════════════════════════════════════════════════════
+async function printLeaveLetter(leaveId) {
+  const { data: leave } = await sb.from('leaves').select('*, profiles!user_id(full_name, email, designation, department, employee_types(name_bn))').eq('id', leaveId).maybeSingle();
+  if (!leave) return showToast('আবেদন পাওয়া যায়নি', 'error');
+
+  const today = new Date();
+  const todayBn = formatBnDate(today);
+  const startBn = formatBnDate(leave.start_date);
+  const endBn   = formatBnDate(leave.end_date);
+
+  const statusLine = leave.status === 'approved'
+    ? `<div style="background:#dcfce7;color:#15803d;padding:14px;border-radius:8px;margin:18px 0;font-weight:700;border-left:4px solid #16a34a">✓ এই ছুটি অনুমোদিত হয়েছে।</div>`
+    : leave.status === 'rejected'
+    ? `<div style="background:#fee2e2;color:#991b1b;padding:14px;border-radius:8px;margin:18px 0;font-weight:700;border-left:4px solid #dc2626">✗ এই ছুটি প্রত্যাখ্যাত হয়েছে।</div>`
+    : `<div style="background:#fef3c7;color:#92400e;padding:14px;border-radius:8px;margin:18px 0;font-weight:700;border-left:4px solid #f59e0b">⏳ এই আবেদন এখনো অপেক্ষমাণ।</div>`;
+
+  const letter = `
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<title>ছুটির আবেদন - ${escapeHtml(leave.profiles?.full_name||'')}</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Hind Siliguri', sans-serif; color:#1e293b; }
+  .page { width: 210mm; min-height: 297mm; padding: 0; position:relative; background:white; }
+
+  /* Header strip */
+  .header { display:flex; justify-content:space-between; align-items:center; padding:24px 36px; border-bottom:3px solid #5b2d8a; position:relative }
+  .header::after { content:''; position:absolute; top:0; right:0; width:120px; height:8px; background:linear-gradient(90deg,#5b2d8a,#e91e63); }
+  .brand { display:flex; align-items:center; gap:14px }
+  .brand-logo { width:48px; height:48px; flex-shrink:0 }
+  .brand-name { font-size:30px; font-weight:800; background:linear-gradient(90deg,#5b2d8a,#e91e63); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-1px }
+  .contact { font-size:12px; color:#64748b; text-align:right; line-height:1.7 }
+  .contact .row { display:flex; align-items:center; gap:6px; justify-content:flex-end }
+  .contact i { color:#5b2d8a; font-size:11px }
+
+  /* Watermark */
+  .watermark { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:280px; height:280px; opacity:.05; pointer-events:none; z-index:0 }
+
+  /* Body */
+  .body { padding:40px 56px; position:relative; z-index:1 }
+  .ref { display:flex; justify-content:space-between; font-size:13px; color:#475569; margin-bottom:30px }
+  h2 { font-size:22px; color:#5b2d8a; text-align:center; margin:20px 0 10px; text-decoration:underline }
+  .meta { background:#faf5ff; border:1px solid #e4d6f8; padding:18px; border-radius:10px; margin:18px 0 }
+  .meta-row { display:flex; padding:6px 0; font-size:14px }
+  .meta-row .lbl { width:160px; color:#64748b; font-weight:600 }
+  .meta-row .val { flex:1; color:#1e293b; font-weight:700 }
+  p.text { font-size:14px; line-height:1.9; margin:14px 0; text-align:justify }
+  .reason-box { background:#fff; border:1px solid #e4d6f8; padding:16px 20px; border-radius:8px; margin:14px 0; font-style:italic; color:#475569 }
+  .signatures { margin-top:60px; display:flex; justify-content:space-between; gap:40px }
+  .sig { flex:1; border-top:2px solid #1e293b; padding-top:8px; text-align:center; font-size:13px }
+  .sig small { display:block; color:#64748b; margin-top:4px }
+
+  /* Footer strip */
+  .footer { position:absolute; bottom:0; left:0; right:0; background:#5b2d8a; color:white; padding:14px 36px; display:flex; justify-content:space-between; font-size:12px; font-weight:600 }
+  .footer::before { content:''; position:absolute; top:-12px; right:140px; width:40px; height:24px; background:#5b2d8a; transform:skewX(-25deg) }
+  .footer i { margin-right:6px }
+
+  @media print {
+    body { background:white; }
+    .no-print { display:none !important; }
+  }
+  .no-print { position:fixed; top:20px; right:20px; z-index:1000; display:flex; gap:8px }
+  .no-print button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-family:'Hind Siliguri'; font-weight:700 }
+  .no-print .print { background:#5b2d8a; color:white }
+  .no-print .close { background:#e2e8f0; color:#1e293b }
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button class="print" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
+  <button class="close" onclick="window.close()">বন্ধ</button>
+</div>
+<div class="page">
+  <!-- Watermark -->
+  <svg class="watermark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+    <path d="M50 18 C36 18 28 28 28 44 L28 70 C28 86 36 96 50 96 L78 96 C92 96 100 86 100 70 L100 38 C100 26 92 18 80 18 Z" fill="#5b2d8a"/>
+    <path d="M160 18 C148 18 140 26 140 38 L140 70 C140 86 148 96 162 96 L190 96 C204 96 212 86 212 70 L212 44 C212 28 204 18 190 18 Z" fill="#e91e63"/>
+    <path d="M120 222 L34 140 C18 124 16 96 32 80 C52 62 84 66 104 90 L120 112 L136 90 C156 66 188 62 208 80 C224 96 222 124 206 140 Z" fill="#5b2d8a"/>
+    <path d="M120 112 L136 90 C156 66 188 62 208 80 C224 96 222 124 206 140 L120 222 C128 180 132 145 124 120 Z" fill="#e91e63"/>
+  </svg>
+
+  <div class="header">
+    <div class="brand">
+      <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+        <path d="M50 18 C36 18 28 28 28 44 L28 70 C28 86 36 96 50 96 L78 96 C92 96 100 86 100 70 L100 38 C100 26 92 18 80 18 Z" fill="#5b2d8a"/>
+        <path d="M160 18 C148 18 140 26 140 38 L140 70 C140 86 148 96 162 96 L190 96 C204 96 212 86 212 70 L212 44 C212 28 204 18 190 18 Z" fill="#e91e63"/>
+        <path d="M120 222 L34 140 C18 124 16 96 32 80 C52 62 84 66 104 90 L120 112 L136 90 C156 66 188 62 208 80 C224 96 222 124 206 140 Z" fill="#5b2d8a"/>
+        <path d="M120 112 L136 90 C156 66 188 62 208 80 C224 96 222 124 206 140 L120 222 C128 180 132 145 124 120 Z" fill="#e91e63"/>
+      </svg>
+      <div class="brand-name">অর্ধেকদ্বীন</div>
+    </div>
+    <div class="contact">
+      <div class="row"><i>✉</i> info@ordhekdeen.com</div>
+      <div class="row"><i>📞</i> +৮৮০১৭৬০৪৪২৪৭৬</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="ref">
+      <div><b>রেফারেন্স নং:</b> OD-LV-${String(leave.id).padStart(4,'0')}</div>
+      <div><b>তারিখ:</b> ${todayBn}</div>
+    </div>
+
+    <h2>ছুটির আবেদন</h2>
+
+    <div class="meta">
+      <div class="meta-row"><div class="lbl">কর্মীর নাম:</div><div class="val">${escapeHtml(leave.profiles?.full_name||'—')}</div></div>
+      <div class="meta-row"><div class="lbl">পদবি:</div><div class="val">${escapeHtml(leave.profiles?.designation||'কর্মী')}</div></div>
+      ${leave.profiles?.department ? `<div class="meta-row"><div class="lbl">ডিপার্টমেন্ট:</div><div class="val">${escapeHtml(leave.profiles.department)}</div></div>` : ''}
+      <div class="meta-row"><div class="lbl">ইমেইল:</div><div class="val">${escapeHtml(leave.profiles?.email||'—')}</div></div>
+      <div class="meta-row"><div class="lbl">ছুটির ধরন:</div><div class="val">${leaveTypeLabel(leave.leave_type, leave.leave_code)}</div></div>
+      <div class="meta-row"><div class="lbl">ছুটির তারিখ:</div><div class="val">${startBn} হতে ${endBn} (${bnDigits(leave.total_days)} দিন)</div></div>
+    </div>
+
+    <p class="text">বরাবর,<br><b>প্রতিষ্ঠান প্রধান / এইচআর ম্যানেজার</b><br>অর্ধেকদ্বীন</p>
+
+    <p class="text"><b>বিষয়:</b> ${leaveTypeLabel(leave.leave_type, leave.leave_code)}-এর জন্য আবেদন।</p>
+
+    <p class="text">জনাব,</p>
+
+    <p class="text">আসসালামু আলাইকুম। সবিনয় নিবেদন এই যে, আমি <b>${escapeHtml(leave.profiles?.full_name||'')}</b>, পদবি: <b>${escapeHtml(leave.profiles?.designation||'কর্মী')}</b>${leave.profiles?.department?`, ডিপার্টমেন্ট: <b>${escapeHtml(leave.profiles.department)}</b>`:''}; বিশেষ কারণে আগামী <b>${startBn}</b> হতে <b>${endBn}</b> তারিখ পর্যন্ত মোট <b>${bnDigits(leave.total_days)} দিনের ${leaveTypeLabel(leave.leave_type, leave.leave_code)}</b> প্রয়োজন। ছুটির কারণ নিম্নরূপ:</p>
+
+    <div class="reason-box">"${escapeHtml(leave.reason||'')}"</div>
+
+    <p class="text">অতএব, মহোদয়ের নিকট বিনীত প্রার্থনা, উল্লিখিত সময়ের জন্য ছুটি মঞ্জুর করিয়া বাধিত করিবেন।</p>
+
+    ${statusLine}
+
+    <p class="text" style="margin-top:24px">নিবেদক,<br><br><b>${escapeHtml(leave.profiles?.full_name||'')}</b><br>${escapeHtml(leave.profiles?.designation||'কর্মী')}</p>
+
+    <div class="signatures">
+      <div class="sig">
+        কর্মীর স্বাক্ষর
+        <small>${escapeHtml(leave.profiles?.full_name||'')}</small>
+      </div>
+      <div class="sig">
+        অনুমোদনকারী
+        <small>${leave.reviewer?.full_name ? escapeHtml(leave.reviewer.full_name) : 'এইচআর ম্যানেজার'}</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div><i>📍</i> ৫/২৫/গ, আউটার স্টেডিয়াম, ময়মনসিংহ</div>
+    <div><i>🌐</i> www.ordhekdeen.com</div>
+  </div>
+</div>
+<script>
+  // Auto-trigger print dialog after small delay
+  setTimeout(() => { /* user can choose to click button */ }, 100);
+</script>
+</body>
+</html>`;
+
+  // Open in new window for printing
+  const w = window.open('', '_blank', 'width=900,height=1100');
+  if (!w) return showToast('Popup blocked — popup allow করুন', 'error');
+  w.document.write(letter);
+  w.document.close();
 }
 
 // ═══════════════════════════════════════════════════════════
