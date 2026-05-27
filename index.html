@@ -1441,7 +1441,7 @@ async function loadNotifications() {
         title: `নতুন ছুটির আবেদন · ${l.profiles?.full_name||'কর্মী'}`,
         desc: `${bnDigits(l.total_days||1)} দিনের ছুটি — ${l.reason||''}`,
         time: l.created_at,
-        action: () => navigate('leaves')
+        action: () => navigate('inbox')
       }));
     }
     if (App.isAdmin) {
@@ -3166,6 +3166,7 @@ async function submitLeave() {
   const btn = document.getElementById('lvSaveBtn');
   setBtnLoading(btn, true);
   try {
+    const days = Math.floor((new Date(end_date) - new Date(start_date)) / 86400000) + 1;
     const { error } = await sb.from('leaves').insert({
       user_id: App.user.id,
       leave_code,
@@ -3177,11 +3178,35 @@ async function submitLeave() {
     showToast('✅ ছুটির আবেদন জমা হয়েছে!');
     closeModal();
     refreshLeavesList();
+
+    // Send email to all admins (best-effort, don't block UI)
+    notifyAdminsOfLeave({
+      employee:  App.profile.full_name,
+      leaveType: leaveTypeLabel(leave_code.toLowerCase(), leave_code),
+      startDate: formatBnDate(start_date),
+      endDate:   formatBnDate(end_date),
+      days:      bnDigits(days),
+      reason
+    }).catch(e => console.warn('Admin email notify failed:', e));
   } catch (e) {
     showToast('❌ ' + e.message, 'error');
   } finally {
     setBtnLoading(btn, false);
   }
+}
+
+// Send notification email to all admins about a new leave request
+async function notifyAdminsOfLeave(data) {
+  try {
+    const { data: admins } = await sb.from('profiles').select('email').eq('role', 'admin').eq('is_active', true);
+    const emails = (admins || []).map(a => a.email).filter(Boolean);
+    if (emails.length === 0) return;
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'leave_applied', to: emails, data })
+    });
+  } catch (e) { console.warn('notifyAdminsOfLeave:', e); }
 }
 
 async function reviewLeave(id, decision) {
@@ -3196,7 +3221,32 @@ async function reviewLeave(id, decision) {
     if (error) throw error;
     showToast(decision === 'approved' ? '✅ ছুটি অনুমোদিত' : '❌ ছুটি প্রত্যাখ্যাত');
     if (App.currentPage === 'leaves')    refreshLeavesList();
+    if (App.currentPage === 'inbox')     refreshInboxList();
     if (App.currentPage === 'dashboard') loadDashboardLists();
+
+    // Send decision email to the employee
+    try {
+      const { data: leave } = await sb.from('leaves').select('*, profiles!user_id(email, full_name)').eq('id', id).maybeSingle();
+      if (leave?.profiles?.email) {
+        const days = Math.floor((new Date(leave.end_date) - new Date(leave.start_date)) / 86400000) + 1;
+        fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'leave_decision',
+            to: leave.profiles.email,
+            data: {
+              status: decision,
+              leaveType: leaveTypeLabel(leave.leave_type, leave.leave_code),
+              startDate: formatBnDate(leave.start_date),
+              endDate:   formatBnDate(leave.end_date),
+              days:      bnDigits(days),
+              comment
+            }
+          })
+        }).catch(e => console.warn('Decision email failed:', e));
+      }
+    } catch (e) { console.warn('Email notify error:', e); }
   } catch (e) {
     showToast('❌ ' + e.message, 'error');
   }
