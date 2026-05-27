@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="OD-OMS Logo">
-  <!-- Top-left rounded leaf, purple -->
-  <path d="M58 28 C46 28 38 36 38 50 L38 78 C38 92 46 100 60 100 L88 100 C100 100 108 92 108 78 L108 50 C108 36 100 28 88 28 Z" fill="#5b2d8a"/>
+  <!-- Top-left rounded leaf, purple (rounded all corners except sharper bottom-left) -->
+  <path d="M50 18 C40 18 32 26 32 36 L32 64 C32 78 42 86 56 86 L72 86 C84 86 92 78 92 66 L92 36 C92 26 84 18 74 18 Z" fill="#5b2d8a"/>
 
-  <!-- Top-right rounded leaf, pink (mirror of left) -->
-  <path d="M152 28 C140 28 132 36 132 50 L132 78 C132 92 140 100 152 100 L180 100 C194 100 202 92 202 78 L202 50 C202 36 194 28 182 28 Z" fill="#e91e63"/>
+  <!-- Top-right rounded leaf, pink (mirror of left, sharper bottom-right) -->
+  <path d="M166 18 C156 18 148 26 148 36 L148 66 C148 78 156 86 168 86 L184 86 C198 86 208 78 208 64 L208 36 C208 26 200 18 190 18 Z" fill="#e91e63"/>
 
   <!-- Heart base — full purple -->
-  <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#5b2d8a"/>
+  <path d="M120 222 L40 144 C24 128 22 102 38 86 C56 70 84 72 102 90 L120 110 L138 90 C156 72 184 70 202 86 C218 102 216 128 200 144 Z" fill="#5b2d8a"/>
 
-  <!-- Pink overlay using diagonal clip from upper-right toward lower-right -->
+  <!-- Pink diagonal overlay covering top-right to bottom-right region of heart -->
   <defs>
-    <clipPath id="pinkOverlay">
-      <polygon points="120,110 235,40 240,140 155,222"/>
+    <clipPath id="heartPink">
+      <polygon points="120,110 240,40 240,150 165,225"/>
     </clipPath>
   </defs>
-  <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#e91e63" clip-path="url(#pinkOverlay)"/>
+  <path d="M120 222 L40 144 C24 128 22 102 38 86 C56 70 84 72 102 90 L120 110 L138 90 C156 72 184 70 202 86 C218 102 216 128 200 144 Z" fill="#e91e63" clip-path="url(#heartPink)"/>
 </svg>
