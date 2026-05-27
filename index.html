@@ -2410,7 +2410,125 @@ function toggleLeaveCodeRow() {
   if (row) row.style.display = (status === 'leave' || status === 'absent') ? 'block' : 'none';
 }
 
-// Admin: bulk-mark attendance for any employee
+// Admin quick-mark leave: just pick employee + date for a given leave code
+async function quickMarkLeave(code) {
+  if (!App.isAdmin) return;
+  const labels = {
+    CL:'নৈমিত্তিক ছুটি', SL:'অসুস্থতা ছুটি', EL:'অর্জিত ছুটি',
+    CoL:'সমবেদনা ছুটি', ML:'বিবাহ ছুটি', PH:'সরকারি ছুটি',
+    UL:'অননুমোদিত ছুটি', IL:'দায়িত্বহীন ছুটি'
+  };
+  const colors = { CL:'#3b82f6', SL:'#ef4444', EL:'#10b981', CoL:'#a78bfa', ML:'#ec4899', PH:'#f59e0b', UL:'#94a3b8', IL:'#dc2626' };
+
+  const { data: employees } = await sb.from('profiles').select('id, full_name, email').eq('is_active', true).order('full_name');
+  if (!employees || employees.length === 0) return showToast('কোনো কর্মী নেই', 'warning');
+
+  const empOptions = employees.map(e => `<option value="${e.id}">${escapeHtml(e.full_name)} · ${escapeHtml(e.email)}</option>`).join('');
+
+  showModal(
+    `<i class="fa-solid fa-umbrella-beach" style="color:${colors[code]}"></i> ${labels[code]} (<b>${code}</b>) দিন`,
+    `<div style="padding:4px 0">
+      <div style="background:${colors[code]}20;border-left:4px solid ${colors[code]};padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;color:var(--gray-700)">
+        <b>${code}</b> · ${labels[code]}<br><small style="color:var(--gray-500)">${code === 'PH' ? 'সকলের জন্য (সরকারি ছুটি)' : 'নির্দিষ্ট কর্মীর জন্য'}</small>
+      </div>
+
+      ${code === 'PH' ? `
+        <div class="form-group">
+          <label><i class="fa-solid fa-users"></i> কাদের জন্য?</label>
+          <select class="form-select" id="qmlScope">
+            <option value="all">সকল সক্রিয় কর্মীর জন্য</option>
+            <option value="single">শুধু একজন কর্মীর জন্য</option>
+          </select>
+        </div>
+        <div class="form-group" id="qmlEmpRow" style="display:none">
+          <label><i class="fa-solid fa-user"></i> কর্মী</label>
+          <select class="form-select" id="qmlEmp">${empOptions}</select>
+        </div>
+        <script>document.getElementById('qmlScope')?.addEventListener('change',e=>{document.getElementById('qmlEmpRow').style.display=e.target.value==='single'?'block':'none';});</script>
+      ` : `
+        <div class="form-group">
+          <label><i class="fa-solid fa-user"></i> কর্মী নির্বাচন করুন</label>
+          <select class="form-select" id="qmlEmp">${empOptions}</select>
+        </div>
+      `}
+
+      <div class="form-grid">
+        <div class="form-group"><label>শুরুর তারিখ</label><input class="form-input" type="date" id="qmlStart" value="${today()}"></div>
+        <div class="form-group"><label>শেষ তারিখ</label><input class="form-input" type="date" id="qmlEnd" value="${today()}"></div>
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-comment"></i> মন্তব্য (ঐচ্ছিক)</label>
+        <input class="form-input" id="qmlNote" placeholder="অতিরিক্ত মন্তব্য">
+      </div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="qmlSaveBtn" onclick="saveQuickLeave('${code}')"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
+  );
+
+  // Wire scope toggle for PH
+  if (code === 'PH') {
+    setTimeout(() => {
+      const scope = document.getElementById('qmlScope');
+      const empRow = document.getElementById('qmlEmpRow');
+      if (scope && empRow) scope.addEventListener('change', e => empRow.style.display = e.target.value === 'single' ? 'block' : 'none');
+    }, 100);
+  }
+}
+
+async function saveQuickLeave(code) {
+  const start = document.getElementById('qmlStart').value;
+  const end   = document.getElementById('qmlEnd').value;
+  const note  = document.getElementById('qmlNote').value.trim() || null;
+  const scope = document.getElementById('qmlScope')?.value || 'single';
+  if (!start || !end) return showToast('তারিখ দিন', 'error');
+  if (new Date(end) < new Date(start)) return showToast('শেষ তারিখ শুরুর পরের হতে হবে', 'error');
+
+  const btn = document.getElementById('qmlSaveBtn');
+  setBtnLoading(btn, true);
+  try {
+    let userIds = [];
+    if (code === 'PH' && scope === 'all') {
+      const { data: emps } = await sb.from('profiles').select('id').eq('is_active', true);
+      userIds = (emps||[]).map(e => e.id);
+    } else {
+      const empSel = document.getElementById('qmlEmp');
+      if (!empSel?.value) { showToast('কর্মী সিলেক্ট করুন', 'error'); setBtnLoading(btn, false); return; }
+      userIds = [empSel.value];
+    }
+
+    // Build all dates between start..end (inclusive)
+    const dates = [];
+    const sd = new Date(start), ed = new Date(end);
+    for (let d = new Date(sd); d <= ed; d.setDate(d.getDate()+1)) {
+      dates.push(d.toISOString().slice(0,10));
+    }
+
+    // Build all attendance rows
+    const status = (code === 'UL' || code === 'IL') ? 'absent' : (code === 'PH' ? 'holiday' : 'leave');
+    const rows = [];
+    userIds.forEach(uid => dates.forEach(dt => rows.push({
+      user_id: uid, date: dt, status, leave_code: code, notes: note,
+      late_minutes: 0, total_hours: null, updated_at: new Date().toISOString()
+    })));
+
+    // Upsert in batches of 100
+    let success = 0, failed = 0;
+    for (let i = 0; i < rows.length; i += 100) {
+      const batch = rows.slice(i, i+100);
+      const { error } = await sb.from('attendance').upsert(batch, { onConflict: 'user_id,date' });
+      if (error) { failed += batch.length; console.error(error); }
+      else success += batch.length;
+    }
+
+    showToast(`✅ ${bnDigits(success)} টি রেকর্ড সংরক্ষিত${failed?` (${bnDigits(failed)} ব্যর্থ)`:''}`);
+    closeModal();
+    if (App.currentPage === 'attendance') refreshAttendanceList();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
 async function openMarkOthersAttendance() {
   if (!App.isAdmin) return;
   const { data: employees } = await sb.from('profiles').select('id, full_name, email').eq('is_active', true).order('full_name');
@@ -2566,6 +2684,26 @@ function renderAttendance() {
       <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num" id="aStatLeave">০</h3><p>ছুটি</p></div>
       <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num" id="aStatHours">০</h3><p>মোট ঘন্টা</p></div>
     </div>
+
+    ${App.isAdmin ? `
+    <div class="card" style="background:linear-gradient(135deg,#faf5ff 0%,#fce7f3 100%);border:1px solid var(--purple-200)">
+      <div class="card-title" style="border:none;padding-bottom:8px;margin-bottom:8px">
+        <span><i class="fa-solid fa-clipboard-check" style="color:var(--purple-600)"></i> অ্যাডমিন: কর্মীদের ছুটি/অনুপস্থিতি দিন</span>
+      </div>
+      <p style="font-size:12px;color:var(--gray-600);margin-bottom:14px">কর্মী সিলেক্ট করে ছুটির ধরন (CL/SL/EL/CoL/ML/PH/UL/IL) এক ক্লিকে দিতে পারবেন।</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <button class="btn btn-sm" style="background:#3b82f6;color:white" onclick="quickMarkLeave('CL')"><b>CL</b> · নৈমিত্তিক</button>
+        <button class="btn btn-sm" style="background:#ef4444;color:white" onclick="quickMarkLeave('SL')"><b>SL</b> · অসুস্থতা</button>
+        <button class="btn btn-sm" style="background:#10b981;color:white" onclick="quickMarkLeave('EL')"><b>EL</b> · অর্জিত</button>
+        <button class="btn btn-sm" style="background:#a78bfa;color:white" onclick="quickMarkLeave('CoL')"><b>CoL</b> · সমবেদনা</button>
+        <button class="btn btn-sm" style="background:#ec4899;color:white" onclick="quickMarkLeave('ML')"><b>ML</b> · বিবাহ</button>
+        <button class="btn btn-sm" style="background:#f59e0b;color:white" onclick="quickMarkLeave('PH')"><b>PH</b> · সরকারি</button>
+        <button class="btn btn-sm" style="background:#94a3b8;color:white" onclick="quickMarkLeave('UL')"><b>UL</b> · অননুমোদিত</button>
+        <button class="btn btn-sm" style="background:#dc2626;color:white" onclick="quickMarkLeave('IL')"><b>IL</b> · দায়িত্বহীন</button>
+      </div>
+      <button class="btn btn-primary" onclick="openMarkOthersAttendance()" style="width:auto"><i class="fa-solid fa-plus"></i> বিস্তারিত এটেন্ডেন্স দিন (চেক-ইন/আউট সহ)</button>
+    </div>
+    ` : ''}
 
     <div class="card">
       <div class="card-title">
