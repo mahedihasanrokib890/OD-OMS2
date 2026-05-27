@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="OD-OMS Logo">
-  <!-- Top-left rounded leaf, purple (rounded all corners except sharper bottom-left) -->
-  <path d="M50 18 C40 18 32 26 32 36 L32 64 C32 78 42 86 56 86 L72 86 C84 86 92 78 92 66 L92 36 C92 26 84 18 74 18 Z" fill="#5b2d8a"/>
+  <!-- Top-left leaf, purple — sharper bottom-right corner -->
+  <path d="M52 22 C40 22 32 30 32 44 L32 76 C32 90 40 98 54 98 L82 98 C96 98 104 90 104 76 L104 42 C104 30 96 22 84 22 Z" fill="#5b2d8a"/>
 
-  <!-- Top-right rounded leaf, pink (mirror of left, sharper bottom-right) -->
-  <path d="M166 18 C156 18 148 26 148 36 L148 66 C148 78 156 86 168 86 L184 86 C198 86 208 78 208 64 L208 36 C208 26 200 18 190 18 Z" fill="#e91e63"/>
+  <!-- Top-right leaf, pink — mirror with sharper bottom-left -->
+  <path d="M156 22 C144 22 136 30 136 42 L136 76 C136 90 144 98 158 98 L186 98 C200 98 208 90 208 76 L208 44 C208 30 200 22 188 22 Z" fill="#e91e63"/>
 
-  <!-- Heart base — full purple -->
-  <path d="M120 222 L40 144 C24 128 22 102 38 86 C56 70 84 72 102 90 L120 110 L138 90 C156 72 184 70 202 86 C218 102 216 128 200 144 Z" fill="#5b2d8a"/>
+  <!-- Heart base — full purple — with significant gap below leaves -->
+  <path d="M120 222 L34 138 C18 122 16 96 32 80 C50 62 80 64 102 88 L120 112 L138 88 C160 64 190 62 208 80 C224 96 222 122 206 138 Z" fill="#5b2d8a"/>
 
-  <!-- Pink diagonal overlay covering top-right to bottom-right region of heart -->
+  <!-- Pink overlay — diagonal split from top-right of heart to bottom-right -->
   <defs>
-    <clipPath id="heartPink">
-      <polygon points="120,110 240,40 240,150 165,225"/>
+    <clipPath id="pinkSide">
+      <polygon points="120,112 230,40 240,150 165,225"/>
     </clipPath>
   </defs>
-  <path d="M120 222 L40 144 C24 128 22 102 38 86 C56 70 84 72 102 90 L120 110 L138 90 C156 72 184 70 202 86 C218 102 216 128 200 144 Z" fill="#e91e63" clip-path="url(#heartPink)"/>
+  <path d="M120 222 L34 138 C18 122 16 96 32 80 C50 62 80 64 102 88 L120 112 L138 88 C160 64 190 62 208 80 C224 96 222 122 206 138 Z" fill="#e91e63" clip-path="url(#pinkSide)"/>
 </svg>
