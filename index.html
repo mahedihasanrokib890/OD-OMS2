@@ -1115,22 +1115,8 @@ async function sendResetEmail() {
 
     // Success
     closeModal();
-    showModal(
-      '<i class="fa-solid fa-envelope-circle-check" style="color:var(--emerald-500)"></i> ইমেইল পাঠানো হয়েছে',
-      `<div style="text-align:center;padding:16px 0">
-        <div style="font-size:64px;margin-bottom:16px">📧</div>
-        <p style="font-size:15px;color:var(--gray-700);margin-bottom:8px">
-          <b style="color:var(--purple-700)">${escapeHtml(email)}</b> এ একটি পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে।
-        </p>
-        <div class="note-banner" style="text-align:left;margin:12px 0">
-          📥 ইমেইল ইনবক্স খুলুন<br>
-          📁 Spam/Junk ফোল্ডার চেক করুন<br>
-          🔗 "পাসওয়ার্ড রিসেট" লিংকে ক্লিক করুন<br>
-          ⏱️ লিংকটি ১ ঘন্টা পর্যন্ত সক্রিয় থাকবে
-        </div>
-      </div>`,
-      `<button class="btn btn-primary btn-block" onclick="closeModal()">ঠিক আছে, ইমেইল চেক করব</button>`
-    );
+    showToast('✅ কোড পাঠানো হয়েছে — ইমেইল চেক করুন', 'success');
+    setTimeout(() => showResetWithCodeModal(email), 300);
   } catch (e) {
     console.error('🔑 Reset exception:', e);
     if (e.message === 'নেটওয়ার্ক টাইমআউট' || e.message === 'TIMEOUT') {
