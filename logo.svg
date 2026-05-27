@@ -1,18 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="OD-OMS Logo">
-  <!-- Top-left leaf, purple — sharper bottom-right corner -->
-  <path d="M52 22 C40 22 32 30 32 44 L32 76 C32 90 40 98 54 98 L82 98 C96 98 104 90 104 76 L104 42 C104 30 96 22 84 22 Z" fill="#5b2d8a"/>
+  <!-- ── Top-left leaf, purple — rounded teardrop ── -->
+  <path d="M50 18
+           C36 18 28 28 28 44
+           L28 70
+           C28 86 36 96 50 96
+           L78 96
+           C92 96 100 86 100 70
+           L100 38
+           C100 26 92 18 80 18 Z" fill="#5b2d8a"/>
 
-  <!-- Top-right leaf, pink — mirror with sharper bottom-left -->
-  <path d="M156 22 C144 22 136 30 136 42 L136 76 C136 90 144 98 158 98 L186 98 C200 98 208 90 208 76 L208 44 C208 30 200 22 188 22 Z" fill="#e91e63"/>
+  <!-- ── Top-right leaf, pink — mirror teardrop ── -->
+  <path d="M160 18
+           C148 18 140 26 140 38
+           L140 70
+           C140 86 148 96 162 96
+           L190 96
+           C204 96 212 86 212 70
+           L212 44
+           C212 28 204 18 190 18 Z" fill="#e91e63"/>
 
-  <!-- Heart base — full purple — with significant gap below leaves -->
-  <path d="M120 222 L34 138 C18 122 16 96 32 80 C50 62 80 64 102 88 L120 112 L138 88 C160 64 190 62 208 80 C224 96 222 122 206 138 Z" fill="#5b2d8a"/>
+  <!-- ── Heart base — fully purple ── -->
+  <path d="M120 222
+           L34 140
+           C18 124 16 96 32 80
+           C52 62 84 66 104 90
+           L120 112
+           L136 90
+           C156 66 188 62 208 80
+           C224 96 222 124 206 140 Z" fill="#5b2d8a"/>
 
-  <!-- Pink overlay — diagonal split from top-right of heart to bottom-right -->
-  <defs>
-    <clipPath id="pinkSide">
-      <polygon points="120,112 230,40 240,150 165,225"/>
-    </clipPath>
-  </defs>
-  <path d="M120 222 L34 138 C18 122 16 96 32 80 C50 62 80 64 102 88 L120 112 L138 88 C160 64 190 62 208 80 C224 96 222 122 206 138 Z" fill="#e91e63" clip-path="url(#pinkSide)"/>
+  <!-- ── Pink overlay on heart — right lobe + smooth S-curve through middle ── -->
+  <path d="M120 112
+           L136 90
+           C156 66 188 62 208 80
+           C224 96 222 124 206 140
+           L120 222
+           C128 180 132 145 124 120
+           Z" fill="#e91e63"/>
 </svg>
