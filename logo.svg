@@ -1,16 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="OD-OMS Logo">
-  <!-- Left head: purple, leaf-like rounded shape (sharper at outer-bottom, rounded at inner-bottom) -->
-  <path d="M60 26 C46 26 38 36 38 50 L38 76 C38 90 46 96 60 96 L88 96 C100 96 108 88 108 76 L108 46 C108 32 98 26 86 26 Z" fill="#5b2d8a"/>
-  <!-- Right head: pink, mirror leaf shape (sharper at outer-bottom, rounded at inner-bottom) -->
-  <path d="M154 26 C142 26 132 32 132 46 L132 76 C132 88 140 96 152 96 L180 96 C194 96 202 90 202 76 L202 50 C202 36 194 26 180 26 Z" fill="#e91e63"/>
+  <!-- Top-left rounded leaf, purple -->
+  <path d="M58 28 C46 28 38 36 38 50 L38 78 C38 92 46 100 60 100 L88 100 C100 100 108 92 108 78 L108 50 C108 36 100 28 88 28 Z" fill="#5b2d8a"/>
 
-  <!-- Heart base (purple): full heart shape -->
+  <!-- Top-right rounded leaf, pink (mirror of left) -->
+  <path d="M152 28 C140 28 132 36 132 50 L132 78 C132 92 140 100 152 100 L180 100 C194 100 202 92 202 78 L202 50 C202 36 194 28 182 28 Z" fill="#e91e63"/>
+
+  <!-- Heart base — full purple -->
   <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#5b2d8a"/>
 
-  <!-- Pink overlay: top-right portion via clip-path (diagonal split from top-left to bottom-right of heart) -->
+  <!-- Pink overlay using diagonal clip from upper-right toward lower-right -->
   <defs>
     <clipPath id="pinkOverlay">
-      <polygon points="120,110 240,40 240,130 150,220" />
+      <polygon points="120,110 235,40 240,140 155,222"/>
     </clipPath>
   </defs>
   <path d="M120 215 L34 132 C18 117 16 92 32 78 C50 62 80 65 100 87 L120 110 L140 87 C160 65 190 62 208 78 C224 92 222 117 206 132 Z" fill="#e91e63" clip-path="url(#pinkOverlay)"/>
