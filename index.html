@@ -492,6 +492,9 @@
         <label><input type="checkbox" id="rememberMe" checked> মনে রাখুন</label>
         <a onclick="openForgotPassword()">পাসওয়ার্ড ভুলে গেছেন?</a>
       </div>
+      <div style="text-align:center;margin:-6px 0 14px">
+        <a onclick="showResetWithCodeModal()" style="font-size:12px;color:var(--purple-600);font-weight:600;cursor:pointer">কোড আছে? পাসওয়ার্ড রিসেট করুন →</a>
+      </div>
       <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-arrow-right-to-bracket"></i> লগইন করুন</button>
       <div class="auth-footer">নতুন ইউজার? <a onclick="switchAuthTab('register')">এখানে রেজিস্টার করুন</a></div>
     </form>
@@ -964,16 +967,14 @@ async function submitResetRequest() {
   const btn = document.getElementById('forgotBtn');
   setBtnLoading(btn, true);
   try {
-    // 1. Save request to database (admin will see in notifications)
-    const { error: dbErr } = await sb.from('password_reset_requests').insert({
-      email, reason: reason || null, status: 'pending'
+    // Call our API to generate code and notify admins
+    const res = await fetch('/api/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, reason: reason || null })
     });
-    if (dbErr) {
-      console.warn('DB error (non-fatal):', dbErr);
-    }
-
-    // 2. Try to send Supabase OTP email (best-effort, may fail silently)
-    sb.auth.resetPasswordForEmail(email).catch(e => console.warn('Email reset failed:', e));
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || 'Server error');
 
     closeModal();
     showModal(
@@ -981,18 +982,80 @@ async function submitResetRequest() {
       `<div style="padding:8px 0">
         <div style="text-align:center;margin-bottom:18px">
           <div style="font-size:48px;margin-bottom:10px">📨</div>
-          <h3 style="font-weight:800;color:var(--gray-800);margin-bottom:8px">কোড পাঠানো হয়েছে</h3>
-          <p style="font-size:14px;color:var(--gray-600);line-height:1.6"><b>${email}</b> এ ৬-অঙ্কের কোড পাঠানো হয়েছে।<br>ইমেইল চেক করুন (Spam folder ও দেখুন)।</p>
+          <h3 style="font-weight:800;color:var(--gray-800);margin-bottom:8px">অ্যাডমিনকে জানানো হয়েছে</h3>
+          <p style="font-size:14px;color:var(--gray-600);line-height:1.7"><b>${email}</b> এর জন্য একটি ৬-অঙ্কের কোড তৈরি হয়েছে।<br>অ্যাডমিন তাঁর নটিফিকেশন থেকে কোডটি দেখে আপনাকে দিবেন।</p>
         </div>
-        <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);padding:14px;border-radius:10px;border:1px solid var(--purple-200);font-size:13px;color:var(--gray-700);line-height:1.7;margin-bottom:14px">
-          <p style="font-weight:700;color:var(--purple-700);margin-bottom:6px">দুটো option আছে:</p>
-          <p style="margin-bottom:4px">• ইমেইলের কোড নিচে বসান → নিজেই নতুন পাসওয়ার্ড সেট করুন</p>
-          <p>• অথবা অ্যাডমিনের সাথে যোগাযোগ করুন (ইমেইল না পেলে)</p>
+        <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);padding:14px;border-radius:10px;border:1px solid var(--purple-200);font-size:13px;color:var(--gray-700);line-height:1.7">
+          <p style="font-weight:700;color:var(--purple-700);margin-bottom:6px">পরবর্তী ধাপ:</p>
+          <p style="margin-bottom:4px">• অ্যাডমিন/HR ম্যানেজারকে WhatsApp/ফোনে জানান</p>
+          <p style="margin-bottom:4px">• তিনি কোড দিলে আপনি নিজেই নতুন পাসওয়ার্ড সেট করতে পারবেন</p>
+          <p>• লগইন স্ক্রিনে "কোড আছে? পাসওয়ার্ড রিসেট করুন" লিংকে ক্লিক করুন</p>
         </div>
       </div>`,
       `<button class="btn btn-outline" onclick="closeModal()">পরে করব</button>
-       <button class="btn btn-primary" onclick="closeModal();showResetCodeInput('${email}')"><i class="fa-solid fa-keyboard"></i> কোড বসান</button>`
+       <button class="btn btn-primary" onclick="closeModal();showResetWithCodeModal('${email}')"><i class="fa-solid fa-keyboard"></i> কোড আছে — বসান</button>`
     );
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+// User flow: enter email + 6-digit code (from admin) + new password
+function showResetWithCodeModal(prefilledEmail = '') {
+  showModal(
+    '<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> কোড দিয়ে পাসওয়ার্ড রিসেট',
+    `<div style="padding:4px 0">
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;line-height:1.6">অ্যাডমিন থেকে পাওয়া ৬-অঙ্কের কোড বসান এবং নতুন পাসওয়ার্ড সেট করুন।</p>
+      <div class="form-group">
+        <label><i class="fa-solid fa-envelope"></i> আপনার ইমেইল</label>
+        <input class="form-input" type="email" id="rcEmail" value="${prefilledEmail}" placeholder="apnar@example.com">
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-key"></i> ৬-অঙ্কের কোড</label>
+        <input class="form-input num en" type="text" id="rcCode" maxlength="6" placeholder="123456" style="font-size:18px;letter-spacing:4px;text-align:center;font-weight:800">
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-lock"></i> নতুন পাসওয়ার্ড</label>
+        <input class="form-input" type="password" id="rcPass1" minlength="6" placeholder="********">
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-lock"></i> পাসওয়ার্ড নিশ্চিত করুন</label>
+        <input class="form-input" type="password" id="rcPass2" minlength="6" placeholder="********">
+      </div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" id="rcSubmit" onclick="doResetWithCode()"><i class="fa-solid fa-check"></i> পাসওয়ার্ড পরিবর্তন করুন</button>`
+  );
+  setTimeout(() => document.getElementById(prefilledEmail ? 'rcCode' : 'rcEmail')?.focus(), 200);
+}
+
+async function doResetWithCode() {
+  const email = document.getElementById('rcEmail').value.trim();
+  const code  = document.getElementById('rcCode').value.trim();
+  const p1    = document.getElementById('rcPass1').value;
+  const p2    = document.getElementById('rcPass2').value;
+  if (!email || !code) return showToast('ইমেইল ও কোড লিখুন', 'error');
+  if (code.length !== 6) return showToast('কোড ৬ অঙ্কের হতে হবে', 'error');
+  if (p1.length < 6) return showToast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর', 'error');
+  if (p1 !== p2) return showToast('পাসওয়ার্ড মিলছে না', 'error');
+
+  const btn = document.getElementById('rcSubmit');
+  setBtnLoading(btn, true);
+  try {
+    const res = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, newPassword: p1 })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || 'Server error');
+    closeModal();
+    showToast('✅ পাসওয়ার্ড পরিবর্তিত হয়েছে — এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন');
+    document.getElementById('loginEmail').value = email;
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginPassword').focus();
   } catch (e) {
     showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
   } finally {
@@ -1499,48 +1562,52 @@ function markAllNotifsRead() {
   showToast('সব নটিফিকেশন পঠিত হিসেবে চিহ্নিত হয়েছে');
 }
 
-// Admin handles a password reset request
+// Admin handles a password reset request — show the code so admin can share it
 async function handleResetRequest(reqId, email) {
   document.getElementById('notifPanel')?.classList.remove('active');
-  // Generate temp password
-  const tempPass = 'OD' + Math.random().toString(36).slice(2, 8).toUpperCase() + '!';
+  // Fetch full request to get the code
+  const { data: req } = await sb.from('password_reset_requests').select('*').eq('id', reqId).maybeSingle();
+  if (!req) return showToast('অনুরোধ পাওয়া যায়নি', 'error');
+  const code = req.code || '------';
+
   showModal(
     `<i class="fa-solid fa-key" style="color:var(--purple-600)"></i> পাসওয়ার্ড রিসেট অনুরোধ`,
     `<div style="padding:8px 0">
-      <p style="font-size:14px;color:var(--gray-700);margin-bottom:14px"><b>${escapeHtml(email)}</b> কর্মী পাসওয়ার্ড ভুলে গেছেন।</p>
+      <p style="font-size:14px;color:var(--gray-700);margin-bottom:14px"><b>${escapeHtml(email)}</b> পাসওয়ার্ড ভুলে গেছেন।</p>
 
-      <div style="background:var(--amber-100);padding:12px;border-radius:10px;margin-bottom:14px;font-size:12px;color:var(--gray-700);line-height:1.6">
-        ⚠️ <b>গুরুত্বপূর্ণ:</b> Supabase এর security এর জন্য কোনো client-side থেকে directly password বদলানো যায় না। নিচের ২টা option:
+      ${req.reason ? `<div style="background:var(--gray-50);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;color:var(--gray-600);font-style:italic">"${escapeHtml(req.reason)}"</div>` : ''}
+
+      <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);padding:20px;border-radius:14px;border:2px dashed var(--purple-400);text-align:center;margin-bottom:14px">
+        <p style="font-size:11px;color:var(--gray-500);margin-bottom:8px;text-transform:uppercase;letter-spacing:2px;font-weight:700">৬-অঙ্কের রিসেট কোড</p>
+        <div class="num en" style="font-size:32px;font-weight:900;color:var(--purple-700);letter-spacing:8px;margin-bottom:10px">${code}</div>
+        <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${code}');showToast('✅ কোড কপি হয়েছে!')"><i class="fa-solid fa-copy"></i> কোড কপি করুন</button>
       </div>
 
-      <div style="background:var(--purple-50);padding:18px;border-radius:12px;border:2px dashed var(--purple-400);text-align:center;margin-bottom:14px">
-        <p style="font-size:11px;color:var(--gray-500);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Generated Temporary Password</p>
-        <div class="num en" style="font-size:22px;font-weight:900;color:var(--purple-700);letter-spacing:2px">${tempPass}</div>
-        <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="navigator.clipboard.writeText('${tempPass}');showToast('✅ Copied!')"><i class="fa-solid fa-copy"></i> কপি করুন</button>
+      <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:10px;font-size:13px;color:var(--gray-700);line-height:1.7;border-left:4px solid var(--amber-500)">
+        <p style="font-weight:700;margin-bottom:6px;color:var(--amber-600)">📞 কর্মীকে পাঠান:</p>
+        <p style="font-size:12px;margin-bottom:4px">১) WhatsApp / SMS / ফোনে কোডটি দিন</p>
+        <p style="font-size:12px;margin-bottom:4px">২) তিনি লগইন স্ক্রিনে "<b>কোড আছে? পাসওয়ার্ড রিসেট</b>" ক্লিক করবেন</p>
+        <p style="font-size:12px">৩) কোড + নতুন পাসওয়ার্ড দিয়ে নিজেই reset করবেন</p>
       </div>
 
-      <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);padding:14px;border-radius:10px;font-size:13px;color:var(--gray-700);line-height:1.7">
-        <h4 style="font-weight:800;margin-bottom:8px;color:var(--purple-700)">📋 Admin করণীয়:</h4>
-        <ol style="padding-left:20px;margin:0">
-          <li>উপরের temp password কপি করুন</li>
-          <li><a href="https://supabase.com/dashboard/project/dfdccqadrmyhgfkzgmqk/auth/users" target="_blank" style="color:var(--purple-700);font-weight:700">Supabase Users</a> এ যান</li>
-          <li><b>${escapeHtml(email)}</b> খুঁজে ⋯ menu → <b>"Send password recovery"</b> অথবা <b>"Reset password"</b> এ click করুন</li>
-          <li>নতুন password বসিয়ে দিন (উপরেরটা)</li>
-          <li>কর্মীকে SMS/WhatsApp এ password পাঠান</li>
-        </ol>
-      </div>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-size:12px;color:var(--purple-600);font-weight:700">অথবা অ্যাডমিন নিজেই বদলাবেন (Supabase ড্যাশবোর্ড)</summary>
+        <div style="margin-top:8px;padding:10px;background:var(--gray-50);border-radius:8px;font-size:12px;color:var(--gray-600);line-height:1.7">
+          <p>১. <a href="https://supabase.com/dashboard/project/dfdccqadrmyhgfkzgmqk/auth/users" target="_blank" style="color:var(--purple-700);font-weight:700">Supabase Users</a> এ যান</p>
+          <p>২. <b>${escapeHtml(email)}</b> খুঁজুন → ⋯ → "Send password recovery"</p>
+        </div>
+      </details>
     </div>`,
     `<button class="btn btn-outline" onclick="rejectResetRequest(${reqId})">প্রত্যাখ্যান</button>
-     <button class="btn btn-success" onclick="resolveResetRequest(${reqId},'${tempPass}')"><i class="fa-solid fa-check"></i> সমাধান হয়েছে</button>`
+     <button class="btn btn-success" onclick="resolveResetRequest(${reqId})"><i class="fa-solid fa-check"></i> সমাধান হয়েছে</button>`
   );
 }
 
-async function resolveResetRequest(reqId, tempPass) {
+async function resolveResetRequest(reqId) {
   await sb.from('password_reset_requests').update({
     status: 'resolved',
     resolved_by: App.user.id,
-    resolved_at: new Date().toISOString(),
-    admin_note: 'Temp password generated: ' + tempPass
+    resolved_at: new Date().toISOString()
   }).eq('id', reqId);
   showToast('✅ অনুরোধ সমাধান হিসেবে চিহ্নিত হয়েছে');
   closeModal();
