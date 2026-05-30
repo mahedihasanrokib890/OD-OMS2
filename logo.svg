@@ -1,40 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="OD-OMS Logo">
-  <!-- ── Top-left leaf, purple — rounded teardrop ── -->
-  <path d="M50 18
-           C36 18 28 28 28 44
-           L28 70
-           C28 86 36 96 50 96
-           L78 96
-           C92 96 100 86 100 70
-           L100 38
-           C100 26 92 18 80 18 Z" fill="#5b2d8a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="135 -10 730 1010" width="100%" height="100%">
+  <defs>
+    <clipPath id="pinkClip">
+      <path d="M 500 450 A 159.1 159.1 0 0 1 725 675 Z" />
+    </clipPath>
+    <filter id="shadowBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" />
+    </filter>
+  </defs>
 
-  <!-- ── Top-right leaf, pink — mirror teardrop ── -->
-  <path d="M160 18
-           C148 18 140 26 140 38
-           L140 70
-           C140 86 148 96 162 96
-           L190 96
-           C204 96 212 86 212 70
-           L212 44
-           C212 28 204 18 190 18 Z" fill="#e91e63"/>
+  <path fill="#4B247A" d="M 475 90 L 355 90 A 120 120 0 0 0 235 210 L 235 230 A 120 120 0 0 0 355 350 L 475 350 Z" />
 
-  <!-- ── Heart base — fully purple ── -->
-  <path d="M120 222
-           L34 140
-           C18 124 16 96 32 80
-           C52 62 84 66 104 90
-           L120 112
-           L136 90
-           C156 66 188 62 208 80
-           C224 96 222 124 206 140 Z" fill="#5b2d8a"/>
+  <path fill="#ED2880" d="M 525 90 L 645 90 A 120 120 0 0 1 765 210 L 765 350 L 645 350 A 120 120 0 0 1 525 230 Z" />
 
-  <!-- ── Pink overlay on heart — right lobe + smooth S-curve through middle ── -->
-  <path d="M120 112
-           L136 90
-           C156 66 188 62 208 80
-           C224 96 222 124 206 140
-           L120 222
-           C128 180 132 145 124 120
-           Z" fill="#e91e63"/>
+  <path fill="#ED2880" d="M 500 450 A 159.1 159.1 0 0 1 725 675 Z" />
+
+  <path fill="#000000" opacity="0.22" transform="translate(8, 8)" filter="url(#shadowBlur)" clip-path="url(#pinkClip)" d="M 500 900 L 275 675 A 159.1 159.1 0 0 1 500 450 L 725 675 Z" />
+
+  <path fill="#4B247A" d="M 500 900 L 275 675 A 159.1 159.1 0 0 1 500 450 L 725 675 Z" />
+
 </svg>
