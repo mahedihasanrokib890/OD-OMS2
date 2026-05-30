@@ -1,8 +1,9 @@
 // Vercel Serverless Function: POST /api/notify
-// Sends transactional emails via Gmail SMTP (nodemailer)
-// Required env vars (set in Vercel project settings):
-//   GMAIL_USER         — your gmail address (e.g. mahedihasanrokib83@gmail.com)
-//   GMAIL_APP_PASSWORD — 16-char app password (no spaces)
+// Sends transactional emails — supports two providers (auto-fallback):
+//   Provider 1 (preferred): Resend  — set RESEND_API_KEY (free tier 3000/mo)
+//   Provider 2 (fallback): Gmail SMTP — set GMAIL_USER + GMAIL_APP_PASSWORD
+//
+// At least one provider must be configured.
 import nodemailer from 'nodemailer';
 
 const BRAND = {
@@ -111,12 +112,15 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!user || !pass) {
+  const resendKey = process.env.RESEND_API_KEY;
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  const fromEmail = process.env.FROM_EMAIL || gmailUser || 'onboarding@resend.dev';
+
+  if (!resendKey && !(gmailUser && gmailPass)) {
     return res.status(500).json({
       error: 'Email service not configured',
-      hint: 'Vercel Project Settings → Environment Variables এ GMAIL_USER এবং GMAIL_APP_PASSWORD সেট করুন, তারপর Redeploy করুন'
+      hint: 'Vercel এ RESEND_API_KEY অথবা GMAIL_USER + GMAIL_APP_PASSWORD সেট করুন'
     });
   }
 
@@ -129,23 +133,69 @@ export default async function handler(req, res) {
     else if (type === 'leave_decision') template = leaveDecisionTemplate(data || {});
     else return res.status(400).json({ error: 'Unknown notification type: ' + type });
 
+    const recipients = Array.isArray(to) ? to : [to];
+
+    // ─── Provider 1: Resend ──────────────────────────────────
+    if (resendKey) {
+      try {
+        const r = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: `OD-OMS System <${fromEmail}>`,
+            to: recipients,
+            subject: template.subject,
+            html: template.html
+          })
+        });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok) {
+          return res.status(200).json({ ok: true, provider: 'resend', id: j.id });
+        }
+        // Fall through to Gmail if Resend failed
+        console.warn('Resend failed:', r.status, j);
+        if (!(gmailUser && gmailPass)) {
+          return res.status(500).json({
+            error: 'Resend failed: ' + (j.message || j.error || r.status),
+            hint: 'Resend dashboard এ API key + verified domain চেক করুন'
+          });
+        }
+      } catch (e) {
+        console.warn('Resend exception:', e);
+        if (!(gmailUser && gmailPass)) {
+          return res.status(500).json({ error: 'Resend error: ' + e.message });
+        }
+      }
+    }
+
+    // ─── Provider 2: Gmail SMTP (fallback) ───────────────────
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      auth: { user, pass }
+      auth: { user: gmailUser, pass: gmailPass }
     });
 
     const info = await transporter.sendMail({
-      from: `"OD-OMS System" <${user}>`,
-      to: Array.isArray(to) ? to.join(',') : to,
+      from: `"OD-OMS System" <${gmailUser}>`,
+      to: recipients.join(','),
       subject: template.subject,
       html: template.html
     });
 
-    return res.status(200).json({ ok: true, accepted: info.accepted, rejected: info.rejected });
+    return res.status(200).json({ ok: true, provider: 'gmail', accepted: info.accepted, rejected: info.rejected });
   } catch (e) {
     console.error('notify error:', e);
-    return res.status(500).json({ error: e.message || 'Send failed' });
+    const msg = e.message || 'Send failed';
+    let hint = '';
+    if (msg.includes('Username and Password not accepted')) {
+      hint = 'Gmail App Password ভুল বা expired — myaccount.google.com/apppasswords থেকে নতুন বানান';
+    } else if (msg.includes('Invalid login')) {
+      hint = 'Gmail credentials ভুল — GMAIL_USER ও GMAIL_APP_PASSWORD আবার চেক করুন';
+    }
+    return res.status(500).json({ error: msg, hint });
   }
 }
