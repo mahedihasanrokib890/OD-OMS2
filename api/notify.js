@@ -1,9 +1,14 @@
 // Vercel Serverless Function: POST /api/notify
-// Sends transactional emails — supports two providers (auto-fallback):
-//   Provider 1 (preferred): Resend  — set RESEND_API_KEY (free tier 3000/mo)
-//   Provider 2 (fallback): Gmail SMTP — set GMAIL_USER + GMAIL_APP_PASSWORD
+// Sends transactional emails via Gmail SMTP
+// Required env: GMAIL_USER + GMAIL_APP_PASSWORD
+// Optional env: ADMIN_EMAIL (defaults to GMAIL_USER)
 //
-// At least one provider must be configured.
+// Supported types:
+//   leave_applied       — admin gets new leave notification
+//   leave_decision      — employee gets approve/reject notification
+//   leave_confirmation  — employee gets "we received your application" email
+//   verification_code   — new user gets email verification code
+//   password_reset      — user gets password reset code
 import nodemailer from 'nodemailer';
 
 const BRAND = {
@@ -57,6 +62,10 @@ function statusBanner({ color, bg, text, sub }) {
 </div>`;
 }
 
+// ══════════════════════════════════════════
+// EMAIL TEMPLATES
+// ══════════════════════════════════════════
+
 function leaveAppliedTemplate({ employee, leaveType, startDate, endDate, days, reason }) {
   return {
     subject: `📋 নতুন ছুটির আবেদন — ${employee}`,
@@ -73,6 +82,29 @@ function leaveAppliedTemplate({ employee, leaveType, startDate, endDate, days, r
 </table>
 
 <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 14px;border-radius:8px;margin-top:14px;font-size:13px;color:#92400e">⏳ অ্যাপের <b>📥 ইনবক্স</b> এ গিয়ে অনুমোদন বা প্রত্যাখ্যান করুন।</div>`
+    })
+  };
+}
+
+function leaveConfirmationTemplate({ employee, leaveType, startDate, endDate, days, reason }) {
+  return {
+    subject: `✅ আপনার ছুটির আবেদন গৃহীত হয়েছে — ${leaveType}`,
+    html: shell({
+      subtitle: 'ছুটির আবেদন গৃহীত',
+      body: `
+<p style="margin:0 0 8px"><b>আসসালামু আলাইকুম ${employee},</b></p>
+<p style="margin:0 0 14px;color:#475569">আপনার ছুটির আবেদনটি সফলভাবে গৃহীত হয়েছে এবং কর্তৃপক্ষের কাছে পাঠানো হয়েছে। অনুমোদন হলে আপনাকে ইমেইলে জানানো হবে।</p>
+
+${statusBanner({ color: '#f59e0b', bg: '#fef3c7', text: '⏳ অপেক্ষমাণ (Pending)', sub: 'আপনার আবেদন পর্যালোচনার অপেক্ষায়' })}
+
+<table style="width:100%;border-collapse:collapse;margin:14px 0;background:#faf5ff;border-radius:10px;overflow:hidden">
+<tr><td style="padding:10px 14px;color:#64748b;font-weight:600;width:140px;border-bottom:1px solid #f3e8ff">ছুটির ধরন</td><td style="padding:10px 14px;font-weight:700;border-bottom:1px solid #f3e8ff">${leaveType}</td></tr>
+<tr><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #f3e8ff">সময়কাল</td><td style="padding:10px 14px;font-weight:700;border-bottom:1px solid #f3e8ff">${startDate} – ${endDate}</td></tr>
+<tr><td style="padding:10px 14px;color:#64748b;font-weight:600;border-bottom:1px solid #f3e8ff">মোট দিন</td><td style="padding:10px 14px;font-weight:700;border-bottom:1px solid #f3e8ff">${days} দিন</td></tr>
+<tr><td style="padding:10px 14px;color:#64748b;font-weight:600;vertical-align:top">কারণ</td><td style="padding:10px 14px;color:#475569;font-style:italic">"${reason}"</td></tr>
+</table>
+
+<p style="margin:14px 0 0;font-size:13px;color:#64748b">কোনো প্রশ্ন থাকলে অনুগ্রহ করে এইচআর ম্যানেজারের সাথে যোগাযোগ করুন।</p>`
     })
   };
 }
@@ -105,6 +137,61 @@ ${comment ? `<tr><td style="padding:10px 14px;color:#64748b;font-weight:600;vert
   };
 }
 
+function verificationCodeTemplate({ name, code }) {
+  return {
+    subject: `🔐 আপনার ভেরিফিকেশন কোড — ${code}`,
+    html: shell({
+      subtitle: 'ইমেইল ভেরিফিকেশন',
+      body: `
+<p style="margin:0 0 8px"><b>আসসালামু আলাইকুম${name ? ' ' + name : ''},</b></p>
+<p style="margin:0 0 14px;color:#475569">আপনার OD-OMS অ্যাকাউন্ট ভেরিফাই করতে নিচের ৬-অঙ্কের কোডটি ব্যবহার করুন:</p>
+
+<div style="text-align:center;padding:30px 20px;margin:18px 0;background:linear-gradient(135deg,#faf5ff,#fce7f3);border-radius:14px;border:2px dashed #a78bfa40">
+  <div style="font-size:11px;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:3px;font-weight:700">ভেরিফিকেশন কোড</div>
+  <div style="font-size:42px;font-weight:900;color:${BRAND.primary};letter-spacing:12px;font-family:'Inter',monospace;margin-bottom:8px">${code}</div>
+  <div style="font-size:12px;color:#94a3b8;font-weight:600">এই কোডের মেয়াদ ২৪ ঘন্টা</div>
+</div>
+
+<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 14px;border-radius:8px;margin-top:14px;font-size:13px;color:#92400e">
+  ⚠️ এই কোড কারো সাথে শেয়ার করবেন না। আমরা কখনো ফোনে বা মেসেজে কোড চাইবো না।
+</div>
+
+<p style="margin:14px 0 0;font-size:12px;color:#94a3b8">আপনি এই অনুরোধ না করে থাকলে এই ইমেইল উপেক্ষা করুন।</p>`
+    })
+  };
+}
+
+function passwordResetTemplate({ name, code, email }) {
+  return {
+    subject: `🔑 পাসওয়ার্ড রিসেট কোড — ${code}`,
+    html: shell({
+      subtitle: 'পাসওয়ার্ড রিসেট',
+      body: `
+<p style="margin:0 0 8px"><b>আসসালামু আলাইকুম${name ? ' ' + name : ''},</b></p>
+<p style="margin:0 0 14px;color:#475569">আপনার OD-OMS অ্যাকাউন্টের (${email || ''}) পাসওয়ার্ড রিসেট করতে নিচের ৬-অঙ্কের কোডটি ব্যবহার করুন:</p>
+
+<div style="text-align:center;padding:30px 20px;margin:18px 0;background:linear-gradient(135deg,#faf5ff,#fce7f3);border-radius:14px;border:2px dashed #a78bfa40">
+  <div style="font-size:11px;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:3px;font-weight:700">পাসওয়ার্ড রিসেট কোড</div>
+  <div style="font-size:42px;font-weight:900;color:${BRAND.primary};letter-spacing:12px;font-family:'Inter',monospace;margin-bottom:8px">${code}</div>
+  <div style="font-size:12px;color:#94a3b8;font-weight:600">এই কোডের মেয়াদ ২৪ ঘন্টা</div>
+</div>
+
+<div style="background:#dcfce7;border-left:4px solid #16a34a;padding:12px 14px;border-radius:8px;margin:14px 0;font-size:13px;color:#166534">
+  📌 <b>কিভাবে রিসেট করবেন:</b><br>
+  ১) অ্যাপে গিয়ে "কোড আছে? পাসওয়ার্ড রিসেট করুন" ক্লিক করুন<br>
+  ২) ইমেইল, কোড ও নতুন পাসওয়ার্ড দিন<br>
+  ৩) সাবমিট করুন — ব্যস!
+</div>
+
+<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 14px;border-radius:8px;font-size:13px;color:#92400e">
+  ⚠️ এই কোড কারো সাথে শেয়ার করবেন না। আমরা কখনো ফোনে বা মেসেজে কোড চাইবো না।
+</div>
+
+<p style="margin:14px 0 0;font-size:12px;color:#94a3b8">আপনি এই অনুরোধ না করে থাকলে এই ইমেইল উপেক্ষা করুন।</p>`
+    })
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -112,66 +199,44 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const resendKey = process.env.RESEND_API_KEY;
   const gmailUser = process.env.GMAIL_USER;
   const gmailPass = process.env.GMAIL_APP_PASSWORD;
-  const fromEmail = process.env.FROM_EMAIL || gmailUser || 'onboarding@resend.dev';
+  const adminEmail = process.env.ADMIN_EMAIL || gmailUser;
 
-  if (!resendKey && !(gmailUser && gmailPass)) {
+  if (!(gmailUser && gmailPass)) {
     return res.status(500).json({
       error: 'Email service not configured',
-      hint: 'Vercel এ RESEND_API_KEY অথবা GMAIL_USER + GMAIL_APP_PASSWORD সেট করুন'
+      hint: 'Vercel এ GMAIL_USER + GMAIL_APP_PASSWORD সেট করুন'
     });
   }
 
   try {
-    const { type, to, data } = req.body || {};
+    const { type, to, data, cc } = req.body || {};
     if (!to || !type) return res.status(400).json({ error: 'Missing fields (type, to)' });
 
     let template;
-    if (type === 'leave_applied')   template = leaveAppliedTemplate(data || {});
-    else if (type === 'leave_decision') template = leaveDecisionTemplate(data || {});
+    if (type === 'leave_applied')        template = leaveAppliedTemplate(data || {});
+    else if (type === 'leave_decision')  template = leaveDecisionTemplate(data || {});
+    else if (type === 'leave_confirmation') template = leaveConfirmationTemplate(data || {});
+    else if (type === 'verification_code')  template = verificationCodeTemplate(data || {});
+    else if (type === 'password_reset')     template = passwordResetTemplate(data || {});
     else return res.status(400).json({ error: 'Unknown notification type: ' + type });
 
     const recipients = Array.isArray(to) ? to : [to];
 
-    // ─── Provider 1: Resend ──────────────────────────────────
-    if (resendKey) {
-      try {
-        const r = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: `OD-OMS System <${fromEmail}>`,
-            to: recipients,
-            subject: template.subject,
-            html: template.html
-          })
-        });
-        const j = await r.json().catch(() => ({}));
-        if (r.ok) {
-          return res.status(200).json({ ok: true, provider: 'resend', id: j.id });
-        }
-        // Fall through to Gmail if Resend failed
-        console.warn('Resend failed:', r.status, j);
-        if (!(gmailUser && gmailPass)) {
-          return res.status(500).json({
-            error: 'Resend failed: ' + (j.message || j.error || r.status),
-            hint: 'Resend dashboard এ API key + verified domain চেক করুন'
-          });
-        }
-      } catch (e) {
-        console.warn('Resend exception:', e);
-        if (!(gmailUser && gmailPass)) {
-          return res.status(500).json({ error: 'Resend error: ' + e.message });
-        }
+    // Build CC list: include admin email for leave-related notifications
+    let ccList = [];
+    if (cc) {
+      ccList = Array.isArray(cc) ? cc : [cc];
+    }
+    // Always CC admin on leave-related emails
+    if (['leave_applied', 'leave_decision', 'leave_confirmation'].includes(type)) {
+      if (adminEmail && !recipients.includes(adminEmail) && !ccList.includes(adminEmail)) {
+        ccList.push(adminEmail);
       }
     }
 
-    // ─── Provider 2: Gmail SMTP (fallback) ───────────────────
+    // ─── Gmail SMTP ───────────────────────────────────────────
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
@@ -179,14 +244,27 @@ export default async function handler(req, res) {
       auth: { user: gmailUser, pass: gmailPass }
     });
 
-    const info = await transporter.sendMail({
+    const mailOptions = {
       from: `"OD-OMS System" <${gmailUser}>`,
       to: recipients.join(','),
       subject: template.subject,
       html: template.html
-    });
+    };
 
-    return res.status(200).json({ ok: true, provider: 'gmail', accepted: info.accepted, rejected: info.rejected });
+    // Add CC if any
+    if (ccList.length > 0) {
+      mailOptions.cc = ccList.join(',');
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({
+      ok: true,
+      provider: 'gmail',
+      accepted: info.accepted,
+      rejected: info.rejected,
+      cc: ccList
+    });
   } catch (e) {
     console.error('notify error:', e);
     const msg = e.message || 'Send failed';

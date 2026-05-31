@@ -211,15 +211,17 @@
 
   /* Quick actions */
   .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
-  .quick-action{background:white;padding:18px;border-radius:var(--r-lg);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .3s;position:relative;overflow:hidden}
+  .quick-action{background:white;padding:16px 18px;border-radius:var(--r-lg);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .3s;position:relative;overflow:hidden}
   .quick-action::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gradient-brand);transform:scaleY(0);transition:transform .3s}
   .quick-action:hover{transform:translateX(4px) translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--purple-200)}
   .quick-action:hover::before{transform:scaleY(1)}
-  .quick-action .qa-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--purple-50);color:var(--purple-700)}
+  .quick-action .qa-icon{width:42px;height:42px;min-width:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--purple-50);color:var(--purple-700)}
   .quick-action .qa-icon.pink{background:var(--pink-100);color:var(--pink-600)}
   .quick-action .qa-icon.emerald{background:var(--emerald-100);color:var(--emerald-500)}
   .quick-action .qa-icon.amber{background:var(--amber-100);color:var(--amber-500)}
+  .quick-action .qa-icon.blue{background:var(--blue-100);color:var(--blue-500)}
   .quick-action span{font-weight:700;color:var(--gray-700);font-size:14px}
+  .quick-action > div:last-child{flex:1;min-width:0}
 
   /* Cards */
   .card{background:white;border-radius:var(--r-xl);border:1px solid var(--border);box-shadow:var(--shadow-sm);padding:24px;margin-bottom:18px}
@@ -463,6 +465,30 @@
     body.printing-letter #leaveLetterOverlay .ll-page{box-shadow:none !important;border-radius:0 !important;max-width:none !important;margin:0 !important}
     @page{size:A4;margin:0}
   }
+  /* ═══ LEAVE LETTER DOC — global styles (needed for print context) ═══ */
+  .ll-letter-doc{font-family:'Hind Siliguri',sans-serif;color:#1e293b;background:#fff}
+  .ll-letter-doc *{box-sizing:border-box}
+  .ll-letter-doc .ll-doc-page{position:relative;min-height:297mm;width:100%;background:#fff}
+  .ll-letter-doc .ll-doc-header{display:flex;justify-content:space-between;align-items:center;padding:24px 36px;border-bottom:3px solid #5b2d8a;position:relative}
+  .ll-letter-doc .ll-doc-header::after{content:'';position:absolute;top:0;right:0;width:120px;height:8px;background:linear-gradient(90deg,#5b2d8a,#e91e63)}
+  .ll-letter-doc .ll-doc-brand{display:flex;align-items:center;gap:14px}
+  .ll-letter-doc .ll-doc-logo{width:48px;height:48px;flex-shrink:0}
+  .ll-letter-doc .ll-doc-name{font-size:30px;font-weight:800;background:linear-gradient(90deg,#5b2d8a,#e91e63);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-1px}
+  .ll-letter-doc .ll-doc-contact{font-size:12px;color:#64748b;text-align:right;line-height:1.7}
+  .ll-letter-doc .ll-doc-watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:280px;height:280px;opacity:.05;pointer-events:none;z-index:0}
+  .ll-letter-doc .ll-doc-body{padding:40px 56px 100px;position:relative;z-index:1}
+  .ll-letter-doc .ll-doc-ref{display:flex;justify-content:space-between;font-size:13px;color:#475569;margin-bottom:30px;flex-wrap:wrap;gap:8px}
+  .ll-letter-doc .ll-doc-title{font-size:22px;color:#5b2d8a;text-align:center;margin:20px 0 10px;text-decoration:underline;font-weight:700}
+  .ll-letter-doc .ll-doc-meta{background:#faf5ff;border:1px solid #e4d6f8;padding:18px;border-radius:10px;margin:18px 0}
+  .ll-letter-doc .ll-doc-meta-row{display:flex;padding:6px 0;font-size:14px;flex-wrap:wrap}
+  .ll-letter-doc .ll-doc-meta-row .lbl{width:160px;color:#64748b;font-weight:600}
+  .ll-letter-doc .ll-doc-meta-row .val{flex:1;min-width:200px;color:#1e293b;font-weight:700}
+  .ll-letter-doc p.ll-text{font-size:14px;line-height:1.9;margin:14px 0;text-align:justify}
+  .ll-letter-doc .ll-reason-box{background:#fff;border:1px solid #e4d6f8;padding:16px 20px;border-radius:8px;margin:14px 0;font-style:italic;color:#475569}
+  .ll-letter-doc .ll-signatures{margin-top:60px;display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap}
+  .ll-letter-doc .ll-sig{flex:1;min-width:180px;border-top:2px solid #1e293b;padding-top:8px;text-align:center;font-size:13px;font-weight:600}
+  .ll-letter-doc .ll-sig small{display:block;color:#64748b;margin-top:4px;font-weight:500}
+  .ll-letter-doc .ll-doc-footer{background:#5b2d8a;color:#fff;padding:14px 36px;display:flex;justify-content:space-between;font-size:12px;font-weight:600;flex-wrap:wrap;gap:6px;position:absolute;bottom:0;left:0;right:0}
 </style>
 </head>
 
@@ -571,6 +597,12 @@
       <p>Management System</p>
     </div>
     <nav class="sidebar-nav">
+      <!-- Admin role indicator badge -->
+      <div class="admin-only" style="margin:0 12px 12px;padding:8px 12px;background:linear-gradient(135deg,rgba(91,45,138,.15),rgba(233,30,99,.1));border-radius:10px;border:1px solid rgba(91,45,138,.2);display:flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-shield-halved" style="color:var(--purple-600);font-size:13px"></i>
+        <span style="font-size:11px;font-weight:800;color:var(--purple-700);text-transform:uppercase;letter-spacing:.5px">Admin Access</span>
+      </div>
+
       <div class="sidebar-section-title">প্রধান মেনু</div>
       <div class="nav-item active" data-route="dashboard" onclick="navigate('dashboard')">
         <span class="nav-item-left"><i class="fa-solid fa-gauge-high"></i> ড্যাশবোর্ড</span>
@@ -586,6 +618,9 @@
         <span class="nav-item-left"><i class="fa-solid fa-calendar-check"></i> ছুটির আবেদন</span>
         <span class="nav-badge pink" id="leaveBadge" style="display:none">০</span>
       </div>
+      <div class="nav-item" data-route="profile" onclick="navigate('profile')">
+        <span class="nav-item-left"><i class="fa-solid fa-circle-user"></i> আমার প্রোফাইল</span>
+      </div>
 
       <div class="editor-or-admin">
         <div class="sidebar-section-title">ব্যবস্থাপনা</div>
@@ -594,7 +629,7 @@
           <span class="nav-badge pink" id="inboxBadge" style="display:none">০</span>
         </div>
         <div class="nav-item" data-route="employees" onclick="navigate('employees')">
-          <span class="nav-item-left"><i class="fa-solid fa-users"></i> কর্মী</span>
+          <span class="nav-item-left"><i class="fa-solid fa-users"></i> কর্মী তালিকা</span>
         </div>
       </div>
       <div class="admin-only">
@@ -611,6 +646,7 @@
         <span class="nav-item-left"><i class="fa-solid fa-gear"></i> সেটিংস</span>
       </div>
     </nav>
+
     <div class="sidebar-user">
       <div class="avatar" id="sidebarAvatar">আ</div>
       <div class="sidebar-user-info">
@@ -989,23 +1025,28 @@ async function sendResetEmail() {
   const btn = document.getElementById('forgotBtn');
   setBtnLoading(btn, true);
   try {
-    const result = await Promise.race([
-      sb.auth.resetPasswordForEmail(email),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 20000))
-    ]);
-    if (result.error) {
-      const msg = result.error.message || '';
-      let friendly = msg;
-      if (msg.toLowerCase().includes('rate')) friendly = 'বেশি বার চেষ্টা করা হয়েছে — ১ মিনিট পর আবার চেষ্টা করুন';
-      else if (msg.toLowerCase().includes('not found')) friendly = 'এই ইমেইলে কোনো অ্যাকাউন্ট নেই — সঠিক ইমেইল লিখুন';
-      showToast('❌ ' + friendly, 'error');
+    // Use our Gmail-based API to send OTP code
+    const res = await withTimeout(
+      fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      }), 20000
+    );
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast('❌ ' + (result.error || 'কোড পাঠানো যায়নি'), 'error');
       return;
     }
     closeModal();
-    showToast('✅ কোড পাঠানো হয়েছে — ইমেইল চেক করুন', 'success');
+    if (result.emailSent) {
+      showToast('✅ কোড পাঠানো হয়েছে — Gmail চেক করুন (mahedihasanrokib47@gmail.com থেকে)', 'success');
+    } else {
+      showToast('✅ কোড তৈরি হয়েছে — এডমিনের কাছ থেকে নিন', 'success');
+    }
     setTimeout(() => showResetWithCodeModal(email), 300);
   } catch (e) {
-    if (e.message === 'TIMEOUT') showToast('❌ Server timeout — আবার চেষ্টা করুন', 'error');
+    if (e.message === 'নেটওয়ার্ক টাইমআউট') showToast('❌ Server timeout — আবার চেষ্টা করুন', 'error');
     else showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
   } finally {
     setBtnLoading(btn, false);
@@ -1054,23 +1095,23 @@ async function doResetWithCode() {
   const btn = document.getElementById('rcSubmit');
   setBtnLoading(btn, true);
   try {
-    // Verify OTP code against Supabase
-    const { data, error: verifyErr } = await sb.auth.verifyOtp({
-      email, token: code, type: 'recovery'
-    });
-    if (verifyErr) {
-      const msg = (verifyErr.message||'').toLowerCase();
-      if (msg.includes('expired')) showToast('❌ কোডের মেয়াদ শেষ — আবার পাঠান', 'error');
-      else if (msg.includes('invalid')) showToast('❌ ভুল কোড — আবার চেষ্টা করুন', 'error');
-      else showToast('❌ ' + verifyErr.message, 'error');
+    // Use our server-side API to verify code and reset password
+    const res = await withTimeout(
+      fetch('/api/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, newPassword: p1 })
+      }), 15000
+    );
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = (result.error || '').toLowerCase();
+      if (msg.includes('expired') || msg.includes('মেয়াদ')) showToast('❌ কোডের মেয়াদ শেষ — আবার পাঠান', 'error');
+      else if (msg.includes('invalid') || msg.includes('ভুল')) showToast('❌ ভুল কোড — আবার চেষ্টা করুন', 'error');
+      else showToast('❌ ' + (result.error || 'রিসেট ব্যর্থ'), 'error');
       return;
     }
-    // Now user is authenticated via OTP — update password
-    const { error: updErr } = await sb.auth.updateUser({ password: p1 });
-    if (updErr) { showToast('❌ ' + updErr.message, 'error'); return; }
 
-    // Sign out so they log in fresh with new password
-    await sb.auth.signOut();
     closeModal();
     showToast('✅ পাসওয়ার্ড পরিবর্তিত হয়েছে — এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন');
     document.getElementById('loginEmail').value = email;
@@ -1083,75 +1124,8 @@ async function doResetWithCode() {
   }
 }
 
-async function sendResetEmail() {
-  const email = document.getElementById('forgotEmail').value.trim();
-  if (!email) return showToast('ইমেইল লিখুন', 'error');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('সঠিক ইমেইল লিখুন', 'error');
-
-  const btn = document.getElementById('forgotBtn');
-  setBtnLoading(btn, true);
-
-  try {
-    const resetRedirectUrl = window.location.origin + window.location.pathname;
-    const { error } = await withTimeout(
-      sb.auth.resetPasswordForEmail(email, {
-        redirectTo: resetRedirectUrl
-      }), 20000
-    );
-
-    if (error) {
-      const msg = error.message || '';
-      console.error('🔑 Reset error:', msg);
-
-      // Rate limit
-      if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('too many')) {
-        showToast('⚠️ বেশি বার চেষ্টা হয়েছে — ৫ মিনিট পর আবার চেষ্টা করুন', 'warning');
-        return;
-      }
-
-      // SMTP / email sending error — show helpful modal
-      closeModal();
-      showModal(
-        '<i class="fa-solid fa-envelope-circle-check" style="color:var(--amber-500)"></i> ইমেইল পাঠাতে সমস্যা',
-        `<div style="padding:8px 0">
-          <div style="text-align:center;font-size:48px;margin-bottom:12px">📧</div>
-          <p style="font-size:14px;color:var(--gray-700);margin-bottom:16px;text-align:center">
-            ইমেইল সার্ভার এই মুহূর্তে রিসপন্স করছে না। নিচের বিকল্প ব্যবহার করুন:
-          </p>
-          <div style="background:var(--purple-50);border-radius:12px;padding:16px;margin-bottom:12px">
-            <div style="font-weight:800;color:var(--purple-700);margin-bottom:8px">১️⃣ পরে আবার চেষ্টা করুন</div>
-            <div style="font-size:13px;color:var(--gray-600)">ইমেইল সার্ভার সাময়িক সমস্যা থাকলে ৫-১০ মিনিট পর আবার চেষ্টা করুন।</div>
-          </div>
-          <div style="background:var(--emerald-100);border-radius:12px;padding:16px;margin-bottom:12px">
-            <div style="font-weight:800;color:var(--emerald-500);margin-bottom:8px">২️⃣ অ্যাডমিনকে যোগাযোগ করুন</div>
-            <div style="font-size:13px;color:var(--gray-600)">অ্যাডমিন Supabase Dashboard থেকে সরাসরি পাসওয়ার্ড দিয়ে দিতে পারবেন।</div>
-          </div>
-          <div style="background:var(--amber-100);border-radius:12px;padding:14px">
-            <div style="font-weight:800;color:var(--amber-500);margin-bottom:6px">🔧 তত্ত্বগত তথ্য (অ্যাডমিন এর জন্য)</div>
-            <div style="font-size:12px;color:var(--gray-700);font-family:monospace">Error: ${escapeHtml(msg)}</div>
-          </div>
-        </div>`,
-        `<button class="btn btn-outline" onclick="closeModal()">ঠিক আছে</button>
-         <button class="btn btn-primary" onclick="closeModal();openForgotPassword()"><i class="fa-solid fa-rotate-right"></i> আবার চেষ্টা</button>`
-      );
-      return;
-    }
-
-    // Success
-    closeModal();
-    showToast('✅ কোড পাঠানো হয়েছে — ইমেইল চেক করুন', 'success');
-    setTimeout(() => showResetWithCodeModal(email), 300);
-  } catch (e) {
-    console.error('🔑 Reset exception:', e);
-    if (e.message === 'নেটওয়ার্ক টাইমআউট' || e.message === 'TIMEOUT') {
-      showToast('❌ সার্ভার রিসপন্স নেই — ইন্টারনেট সংযোগ চেক করুন', 'error');
-    } else {
-      showToast('❌ ' + (e.message || 'অজানা সমস্যা'), 'error');
-    }
-  } finally {
-    setBtnLoading(btn, false);
-  }
-}
+// NOTE: The primary sendResetEmail function is defined above (line ~984).
+// This duplicate is kept as a no-op fallback — the first definition takes priority in JS.
 
 // ═══════════════════════════════════════════════════════════
 // OTP VERIFICATION MODAL — beautiful 6-digit code input
@@ -1739,128 +1713,225 @@ function toggleSidebar(force) {
 // ═══════════════════════════════════════════════════════════
 async function renderDashboard() {
   const name = App.profile?.full_name?.split(' ')[0] || 'বন্ধু';
-  const isAdmin = App.isAdmin;
-
-  // Fetch live stats
+  const isAdmin = App.isAdmin || App.isEditor;
   const stats = await getDashboardStats();
 
   if (isAdmin) {
+    const attRate = stats.totalEmp ? Math.round((stats.todayPresent / stats.totalEmp) * 100) : 0;
+    const lateCount = stats.todayLate || 0;
     return `
-      <div class="welcome-banner">
-        <h1>🌅 ${greeting()}, ${name}! 👋</h1>
-        <p>আজ ${dayName(today())}, ${formatBnDate(today())}। আপনার HR ড্যাশবোর্ডে স্বাগতম।</p>
+      <!-- Admin Hero Banner -->
+      <div style="background:linear-gradient(135deg,#2d1b69 0%,#5b2d8a 40%,#c2185b 100%);color:white;padding:32px 36px;border-radius:24px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(91,45,138,.35)">
+        <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-60px;left:10%;width:180px;height:180px;background:radial-gradient(circle,rgba(233,30,99,.25) 0%,transparent 70%);border-radius:50%"></div>
+        <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px">
+          <div>
+            <div style="font-size:13px;font-weight:700;opacity:.75;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">🛡️ Admin Dashboard</div>
+            <h1 style="font-size:28px;font-weight:800;margin-bottom:8px;line-height:1.2">আস্সালামু আলাইকুম, ${name}! 👋</h1>
+            <p style="opacity:.85;font-size:15px">${dayName(today())}, ${formatBnDate(today())} · আপনার HR কন্ট্রোল সেন্টারে স্বাগতম</p>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(8px)" onclick="openMarkOthersAttendance()"><i class="fa-solid fa-clipboard-check"></i> এটেন্ডেন্স</button>
+            <button class="btn" style="background:white;color:#5b2d8a;font-weight:800" onclick="openEmployeeModal()"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী</button>
+          </div>
+        </div>
+        <!-- Mini KPI strip -->
+        <div style="position:relative;z-index:1;display:flex;gap:24px;margin-top:24px;flex-wrap:wrap">
+          <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);padding:12px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.2)">
+            <div style="font-size:11px;opacity:.7;font-weight:700;text-transform:uppercase;letter-spacing:1px">আজ উপস্থিত</div>
+            <div style="font-size:24px;font-weight:900;font-family:var(--font-en)">${bnDigits(stats.todayPresent)}<span style="font-size:13px;opacity:.7">/${bnDigits(stats.totalEmp)}</span></div>
+          </div>
+          <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);padding:12px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.2)">
+            <div style="font-size:11px;opacity:.7;font-weight:700;text-transform:uppercase;letter-spacing:1px">হাজিরা হার</div>
+            <div style="font-size:24px;font-weight:900;font-family:var(--font-en)">${bnDigits(attRate)}%</div>
+          </div>
+          <div style="background:rgba(255,180,0,.18);backdrop-filter:blur(8px);padding:12px 18px;border-radius:12px;border:1px solid rgba(255,180,0,.3)">
+            <div style="font-size:11px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:1px">অপেক্ষমাণ ছুটি</div>
+            <div style="font-size:24px;font-weight:900;font-family:var(--font-en)">${bnDigits(stats.pendingLeaves)}</div>
+          </div>
+        </div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card" onclick="navigate('employees')" style="cursor:pointer">
+      <!-- Stats Grid -->
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="stat-card" onclick="navigate('employees')" style="cursor:pointer;border-left:4px solid var(--purple-500)">
           <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
-          <h3 class="num">${bnDigits(stats.totalEmp)}</h3><p>মোট কর্মী</p>
-          <div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত দেখুন</div>
+          <h3 class="num">${bnDigits(stats.totalEmp)}</h3><p>মোট সক্রিয় কর্মী</p>
+          <div class="stat-trend" style="color:var(--purple-600)"><i class="fa-solid fa-arrow-right"></i> কর্মী দেখুন</div>
         </div>
-        <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer">
+        <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer;border-left:4px solid var(--emerald-500)">
           <div class="stat-icon emerald"><i class="fa-solid fa-circle-check"></i></div>
           <h3 class="num">${bnDigits(stats.todayPresent)}</h3><p>আজ উপস্থিত</p>
-          <div class="stat-trend"><i class="fa-solid fa-arrow-up"></i> ${stats.totalEmp ? bnDigits(Math.round((stats.todayPresent/stats.totalEmp)*100)) : '০'}% হাজিরা</div>
+          <div class="stat-trend"><i class="fa-solid fa-arrow-up"></i> ${bnDigits(attRate)}% হাজিরা</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" style="border-left:4px solid var(--red-500)">
+          <div class="stat-icon" style="background:linear-gradient(135deg,#f87171,#dc2626)"><i class="fa-solid fa-clock"></i></div>
+          <h3 class="num">${bnDigits(lateCount)}</h3><p>আজ লেট</p>
+          <div class="stat-trend" style="color:var(--red-500)"><i class="fa-solid fa-triangle-exclamation"></i> লক্ষ্য রাখুন</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid var(--amber-500)">
           <div class="stat-icon amber"><i class="fa-solid fa-umbrella-beach"></i></div>
           <h3 class="num">${bnDigits(stats.todayOnLeave)}</h3><p>আজ ছুটিতে</p>
         </div>
-        <div class="stat-card" onclick="navigate('leaves')" style="cursor:pointer">
-          <div class="stat-icon pink"><i class="fa-solid fa-clock-rotate-left"></i></div>
-          <h3 class="num">${bnDigits(stats.pendingLeaves)}</h3><p>অপেক্ষমাণ ছুটি</p>
-          <div class="stat-trend" style="color:var(--amber-500)"><i class="fa-solid fa-arrow-right"></i> অনুমোদন করুন</div>
+        <div class="stat-card" onclick="navigate('inbox')" style="cursor:pointer;border-left:4px solid var(--pink-500)">
+          <div class="stat-icon pink"><i class="fa-solid fa-inbox"></i></div>
+          <h3 class="num">${bnDigits(stats.pendingLeaves)}</h3><p>অপেক্ষমাণ আবেদন</p>
+          <div class="stat-trend" style="color:var(--pink-500)"><i class="fa-solid fa-arrow-right"></i> অনুমোদন করুন</div>
         </div>
       </div>
 
-      <div class="quick-actions">
-        <div class="quick-action" onclick="openMarkOthersAttendance()"><div class="qa-icon emerald"><i class="fa-solid fa-clipboard-check"></i></div><span>সবার এটেন্ডেন্স</span></div>
-        <div class="quick-action" onclick="openEmployeeModal()"><div class="qa-icon"><i class="fa-solid fa-user-plus"></i></div><span>নতুন কর্মী</span></div>
-        <div class="quick-action" onclick="openNoticeModal()"><div class="qa-icon pink"><i class="fa-solid fa-bullhorn"></i></div><span>নতুন নোটিশ</span></div>
-        <div class="quick-action" onclick="navigate('reports')"><div class="qa-icon amber"><i class="fa-solid fa-chart-line"></i></div><span>রিপোর্ট</span></div>
+      <!-- Quick Actions -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+        <div class="quick-action" onclick="openMarkOthersAttendance()">
+          <div class="qa-icon emerald"><i class="fa-solid fa-clipboard-check"></i></div>
+          <div><span style="font-weight:800;font-size:13px">সবার এটেন্ডেন্স</span><br><small style="color:var(--gray-400);font-size:11px">মার্ক করুন</small></div>
+        </div>
+        <div class="quick-action" onclick="openEmployeeModal()">
+          <div class="qa-icon"><i class="fa-solid fa-user-plus"></i></div>
+          <div><span style="font-weight:800;font-size:13px">নতুন কর্মী</span><br><small style="color:var(--gray-400);font-size:11px">যোগ করুন</small></div>
+        </div>
+        <div class="quick-action" onclick="openNoticeModal()">
+          <div class="qa-icon pink"><i class="fa-solid fa-bullhorn"></i></div>
+          <div><span style="font-weight:800;font-size:13px">নতুন নোটিশ</span><br><small style="color:var(--gray-400);font-size:11px">পোস্ট করুন</small></div>
+        </div>
+        <div class="quick-action" onclick="navigate('reports')">
+          <div class="qa-icon amber"><i class="fa-solid fa-chart-line"></i></div>
+          <div><span style="font-weight:800;font-size:13px">রিপোর্ট</span><br><small style="color:var(--gray-400);font-size:11px">বিশ্লেষণ দেখুন</small></div>
+        </div>
+        <div class="quick-action" onclick="navigate('inbox')">
+          <div class="qa-icon" style="background:var(--pink-100);color:var(--pink-600)"><i class="fa-solid fa-inbox"></i></div>
+          <div><span style="font-weight:800;font-size:13px">ইনবক্স</span><br><small style="color:var(--gray-400);font-size:11px">আবেদন পর্যালোচনা</small></div>
+        </div>
+        <div class="quick-action" onclick="navigate('employees')">
+          <div class="qa-icon" style="background:var(--blue-100);color:var(--blue-500)"><i class="fa-solid fa-users"></i></div>
+          <div><span style="font-weight:800;font-size:13px">কর্মী তালিকা</span><br><small style="color:var(--gray-400);font-size:11px">সবাইকে দেখুন</small></div>
+        </div>
       </div>
 
-      <div class="card-grid">
+      <!-- Charts row -->
+      <div class="card-grid" style="margin-bottom:18px">
         <div class="card">
-          <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> আজকের হাজিরা ওভারভিউ</span></div>
-          <div style="position:relative;height:240px"><canvas id="dashTodayChart"></canvas></div>
+          <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> আজকের হাজিরা</span>
+            <span style="font-size:12px;color:var(--gray-400)">${formatBnDate(today())}</span>
+          </div>
+          <div style="position:relative;height:220px"><canvas id="dashTodayChart"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-title"><span><i class="fa-solid fa-chart-line"></i> এই সপ্তাহের ট্রেন্ড</span></div>
-          <div style="position:relative;height:240px"><canvas id="dashWeekChart"></canvas></div>
+          <div class="card-title"><span><i class="fa-solid fa-chart-line"></i> সাপ্তাহিক ট্রেন্ড</span></div>
+          <div style="position:relative;height:220px"><canvas id="dashWeekChart"></canvas></div>
         </div>
       </div>
 
+      <!-- Bottom cards -->
       <div class="card-grid">
         <div class="card">
           <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
           <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
         </div>
         <div class="card">
-          <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> অপেক্ষমাণ ছুটি</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
+          <div class="card-title"><span><i class="fa-solid fa-clock-rotate-left"></i> অপেক্ষমাণ ছুটি</span><button class="btn btn-outline btn-sm" onclick="navigate('inbox')">ইনবক্স</button></div>
           <div id="dashPendingLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title"><span><i class="fa-solid fa-fire"></i> সাম্প্রতিক কর্মকাণ্ড</span></div>
+        <div class="card-title"><span><i class="fa-solid fa-bolt"></i> সাম্প্রতিক কার্যক্রম</span></div>
         <div id="dashActivity"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
     `;
   }
 
-  // Employee dashboard — NO clock here (attendance page only). Show personalized summary.
-  const motivationalQuotes = [
-    'প্রত্যেক দিন নতুন সুযোগ নিয়ে আসে।',
-    'আজকের পরিশ্রম আগামীকালের সাফল্য।',
-    'সময়ের কাজ সময়ে করুন।',
-    'টিমওয়ার্কেই বড় সাফল্য আসে।',
-    'ছোট ছোট প্রচেষ্টাই বড় অর্জনে রূপ নেয়।',
-    'যেখানে দৃঢ় সংকল্প, সেখানেই সাফল্য।',
+  // ═══ EMPLOYEE DASHBOARD ═══
+  const quotes = [
+    'প্রত্যেক দিন নতুন সুযোগ নিয়ে আসে।', 'আজকের পরিশ্রম আগামীকালের সাফল্য।',
+    'সময়ের কাজ সময়ে করুন।', 'টিমওয়ার্কেই বড় সাফল্য আসে।',
+    'ছোট ছোট প্রচেষ্টাই বড় অর্জনে রূপ নেয়।', 'যেখানে দৃঢ় সংকল্প, সেখানেই সাফল্য।',
     'প্রতিদিন একটু একটু করে এগোলেই বড় পরিবর্তন আসে।'
   ];
-  const quote = motivationalQuotes[new Date().getDate() % motivationalQuotes.length];
+  const quote = quotes[new Date().getDate() % quotes.length];
   const ot = App.myOfficeTime;
-  const officeTimeText = ot ? `${ot.check_in_time.slice(0,5)} - ${ot.check_out_time.slice(0,5)}` : '—';
+  const officeTimeText = ot ? `${ot.check_in_time.slice(0,5)} — ${ot.check_out_time.slice(0,5)}` : 'নির্ধারিত নয়';
+  const p = App.profile || {};
 
   return `
-    <div class="welcome-banner">
-      <h1>👋 আসসালামু আলাইকুম, ${name}!</h1>
-      <p>${dayName(today())}, ${formatBnDate(today())} · ${escapeHtml(quote)}</p>
+    <!-- Employee Hero -->
+    <div style="background:linear-gradient(135deg,#1a0533 0%,#3b1a6a 45%,#7b1fa2 100%);color:white;padding:28px 32px;border-radius:24px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(91,45,138,.3)">
+      <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 70%);border-radius:50%"></div>
+      <div style="position:absolute;bottom:-40px;left:5%;width:140px;height:140px;background:radial-gradient(circle,rgba(233,30,99,.2) 0%,transparent 70%);border-radius:50%"></div>
+      <div style="position:relative;z-index:1;display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#f472b6);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;font-family:var(--font-en);border:3px solid rgba(255,255,255,.3);flex-shrink:0;overflow:hidden;text-transform:uppercase">
+          ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;height:100%;object-fit:cover">` : (p.full_name||'আ').charAt(0)}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;opacity:.65;font-weight:700;text-transform:uppercase;letter-spacing:1.5px">👤 কর্মী পোর্টাল</div>
+          <h1 style="font-size:22px;font-weight:800;margin:4px 0">আস্সালামু আলাইকুম, ${name}!</h1>
+          <p style="opacity:.8;font-size:13px">${dayName(today())}, ${formatBnDate(today())} · <i>"${escapeHtml(quote)}"</i></p>
+        </div>
+        <button class="btn" style="background:white;color:#5b2d8a;font-weight:800;flex-shrink:0" onclick="navigate('attendance')">
+          <i class="fa-solid fa-clock"></i> এটেন্ডেন্স
+        </button>
+      </div>
     </div>
 
+    <!-- My Stats -->
     <div class="stats-grid">
-      <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num">${bnDigits(stats.myMonthPresent||0)}</h3><p>এই মাসে উপস্থিত</p><div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত দেখুন</div></div>
-      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">${bnDigits(stats.myMonthLate||0)}</h3><p>লেট হয়েছেন</p></div>
-      <div class="stat-card" onclick="navigate('leaves')" style="cursor:pointer"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num">${bnDigits(stats.myMonthLeave||0)}</h3><p>ছুটি (এ মাস)</p></div>
-      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">${bnDigits(stats.myMonthHours||0)}</h3><p>কাজের ঘন্টা</p></div>
+      <div class="stat-card" onclick="navigate('attendance')" style="cursor:pointer;border-left:4px solid var(--emerald-500)">
+        <div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div>
+        <h3 class="num">${bnDigits(stats.myMonthPresent||0)}</h3><p>এই মাসে উপস্থিত</p>
+        <div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--amber-500)">
+        <div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div>
+        <h3 class="num">${bnDigits(stats.myMonthLate||0)}</h3><p>লেট হয়েছেন</p>
+      </div>
+      <div class="stat-card" onclick="navigate('leaves')" style="cursor:pointer;border-left:4px solid var(--pink-500)">
+        <div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div>
+        <h3 class="num">${bnDigits(stats.myMonthLeave||0)}</h3><p>ছুটি (এ মাস)</p>
+        <div class="stat-trend" style="color:var(--gray-500)"><i class="fa-solid fa-arrow-right"></i> আবেদন করুন</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--purple-500)">
+        <div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div>
+        <h3 class="num">${bnDigits(stats.myMonthHours||0)}</h3><p>মোট কাজের ঘন্টা</p>
+      </div>
     </div>
 
     <div class="card-grid">
-      <div class="card">
-        <div class="card-title"><span><i class="fa-solid fa-calendar-day"></i> আজকের তথ্য</span></div>
+      <!-- Today Info -->
+      <div class="card" style="border-top:3px solid var(--purple-500)">
+        <div class="card-title"><span><i class="fa-solid fa-calendar-day" style="color:var(--purple-600)"></i> আজকের তথ্য</span></div>
         <div class="info-row"><div class="info-label">তারিখ</div><div class="info-value">${formatBnDate(today())}</div></div>
         <div class="info-row"><div class="info-label">দিন</div><div class="info-value">${dayName(today())}</div></div>
-        <div class="info-row"><div class="info-label">অফিস টাইম</div><div class="info-value num">${officeTimeText}</div></div>
-        ${ot ? `<div class="info-row"><div class="info-label">গ্রেস টাইম</div><div class="info-value num">${bnDigits(ot.grace_minutes||0)} মিনিট</div></div>` : ''}
-        <div class="info-row" id="todayCheckInfo"><div class="info-label">আজকের স্ট্যাটাস</div><div class="info-value" style="color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
-        <div style="margin-top:14px"><button class="btn btn-primary btn-block" onclick="navigate('attendance')"><i class="fa-solid fa-clock"></i> এটেন্ডেন্স পেজে যান</button></div>
+        <div class="info-row"><div class="info-label">অফিস সময়</div><div class="info-value num" style="font-weight:800">${officeTimeText}</div></div>
+        ${ot ? `<div class="info-row"><div class="info-label">গ্রেস টাইম</div><div class="info-value"><span class="num" style="background:var(--amber-100);color:var(--amber-500);padding:2px 8px;border-radius:6px;font-weight:800">${bnDigits(ot.grace_minutes||0)} মিনিট</span></div></div>` : ''}
+        <div class="info-row" id="todayCheckInfo">
+          <div class="info-label">আজকের স্ট্যাটাস</div>
+          <div class="info-value" style="color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
+        </div>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button class="btn btn-primary" onclick="navigate('attendance')" style="font-size:13px"><i class="fa-solid fa-clock"></i> এটেন্ডেন্স</button>
+          <button class="btn btn-outline" onclick="openLeaveModal()" style="font-size:13px"><i class="fa-solid fa-calendar-plus"></i> ছুটি আবেদন</button>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="card-title"><span><i class="fa-solid fa-umbrella-beach"></i> ছুটির ব্যালেন্স</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব দেখুন</button></div>
+      <!-- Leave Balance -->
+      <div class="card" style="border-top:3px solid var(--pink-500)">
+        <div class="card-title"><span><i class="fa-solid fa-umbrella-beach" style="color:var(--pink-600)"></i> ছুটির ব্যালেন্স</span><button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব</button></div>
         <div id="dashLeaveBalance"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
     </div>
 
     <div class="card-grid">
-      <div class="card">
-        <div class="card-title"><span><i class="fa-solid fa-calendar-plus"></i> আমার ছুটির আবেদন</span><button class="btn btn-primary btn-sm" style="width:auto" onclick="openLeaveModal()"><i class="fa-solid fa-plus"></i> নতুন আবেদন</button></div>
+      <!-- My Leaves -->
+      <div class="card" style="border-top:3px solid var(--emerald-500)">
+        <div class="card-title"><span><i class="fa-solid fa-calendar-plus" style="color:var(--emerald-500)"></i> আমার ছুটির আবেদন</span>
+          <button class="btn btn-primary btn-sm" style="width:auto" onclick="openLeaveModal()"><i class="fa-solid fa-plus"></i> নতুন</button>
+        </div>
         <div id="dashMyLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
 
-      <div class="card">
-        <div class="card-title"><span><i class="fa-solid fa-bullhorn"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button></div>
+      <!-- Recent Notices -->
+      <div class="card" style="border-top:3px solid var(--amber-500)">
+        <div class="card-title"><span><i class="fa-solid fa-bullhorn" style="color:var(--amber-500)"></i> সাম্প্রতিক নোটিশ</span><button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব</button></div>
         <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
     </div>
@@ -1889,8 +1960,8 @@ async function loadDashboardLists() {
     }
   } catch (e) { console.warn(e); }
 
-  // Pending leaves (admin) OR my recent leaves (employee)
-  if (App.isAdmin) {
+  // Pending leaves (admin/editor) OR my recent leaves (employee)
+  if (App.isAdmin || App.isEditor) {
     try {
       const { data: leaves } = await sb.from('leaves').select('*, profiles!user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(3);
       const el = document.getElementById('dashPendingLeaves');
@@ -2109,18 +2180,20 @@ async function drawAdminDashCharts() {
 }
 
 async function getDashboardStats() {
-  const result = { totalEmp: 0, todayPresent: 0, todayOnLeave: 0, pendingLeaves: 0,
+  const result = { totalEmp: 0, todayPresent: 0, todayOnLeave: 0, todayLate: 0, pendingLeaves: 0,
                    myMonthPresent: 0, myMonthLate: 0, myMonthLeave: 0, myMonthHours: 0 };
   try {
-    if (App.isAdmin) {
-      const [emp, att, lv] = await Promise.all([
+    if (App.isAdmin || App.isEditor) {
+      const [emp, lv] = await Promise.all([
         sb.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true),
-        sb.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today()),
         sb.from('leaves').select('id', { count: 'exact', head: true }).eq('status', 'pending')
       ]);
       result.totalEmp      = emp.count || 0;
-      result.todayPresent  = att.count || 0;
       result.pendingLeaves = lv.count || 0;
+      // Today attendance details
+      const { data: todayAtt } = await sb.from('attendance').select('late_minutes').eq('date', today());
+      result.todayPresent = (todayAtt||[]).length;
+      result.todayLate    = (todayAtt||[]).filter(a => (a.late_minutes||0) > 0).length;
       // today on leave
       const { count: olCount } = await sb.from('leaves').select('id', { count:'exact', head:true })
         .eq('status', 'approved').lte('start_date', today()).gte('end_date', today());
@@ -2138,6 +2211,7 @@ async function getDashboardStats() {
   } catch (e) { console.warn('stats error:', e); }
   return result;
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // LIVE CLOCK + LATE INDICATOR
@@ -2779,8 +2853,9 @@ function renderAttendance() {
 let _noticeFilter = 'all';
 
 function renderNotices() {
-  const adminBtn = App.isAdmin
-    ? `<button class="btn btn-primary" onclick="openNoticeModal()" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন নোটিশ</button>`
+  const isAdminOrEditor = App.isAdmin || App.isEditor;
+  const adminBtn = isAdminOrEditor
+    ? `<button class="btn" style="background:white;color:#5b2d8a;font-weight:800;flex-shrink:0" onclick="openNoticeModal()"><i class="fa-solid fa-plus"></i> নতুন নোটিশ</button>`
     : '';
 
   return `
@@ -2958,19 +3033,47 @@ let _leavesType = '';
 
 function renderLeaves() {
   return `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-      <div class="tabs" style="border:none;margin:0" id="leaveTabs">
-        <div class="tab active" data-tab="my">আমার ছুটি</div>
-        ${App.isAdmin ? '<div class="tab" data-tab="pending">অপেক্ষমাণ <span class="num" id="pendingBadge">০</span></div><div class="tab" data-tab="all">সকল আবেদন</div>' : ''}
+    <!-- Leaves Hero -->
+    <div style="background:linear-gradient(135deg,#022c22 0%,#065f46 45%,#5b2d8a 100%);color:white;padding:26px 32px;border-radius:22px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(6,95,70,.35)">
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,255,255,.07),transparent 70%);border-radius:50%"></div>
+      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+        <div>
+          <div style="font-size:11px;font-weight:800;opacity:.6;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">🌴 ছুটি ব্যবস্থাপনা</div>
+          <h1 style="font-size:24px;font-weight:800;margin-bottom:5px">ছুটির আবেদন</h1>
+          <p style="opacity:.8;font-size:13px">আপনার সমস্ত ছুটির ইতিহাস ও নতুন আবেদন করুন</p>
+        </div>
+        <button class="btn" style="background:white;color:#065f46;font-weight:800;flex-shrink:0" onclick="openLeaveModal()">
+          <i class="fa-solid fa-plus"></i> নতুন আবেদন
+        </button>
       </div>
-      <button class="btn btn-primary" style="width:auto" onclick="openLeaveModal()"><i class="fa-solid fa-plus"></i> নতুন আবেদন</button>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-calendar"></i></div><h3 class="num">২০</h3><p>বার্ষিক ছুটি</p></div>
-      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-calendar-day"></i></div><h3 class="num" id="lvUsed">০</h3><p>ব্যবহৃত</p></div>
-      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-plus"></i></div><h3 class="num" id="lvRemaining">২০</h3><p>অবশিষ্ট</p></div>
-      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-hourglass-half"></i></div><h3 class="num" id="lvPending">০</h3><p>অপেক্ষমাণ</p></div>
+    <!-- Leave Tabs (admin only) -->
+    ${App.isAdmin || App.isEditor ? `
+    <div style="background:white;border-radius:14px;border:1px solid var(--border);padding:5px;display:flex;gap:4px;margin-bottom:16px;box-shadow:var(--shadow-sm)" id="leaveTabs">
+      <div style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;background:linear-gradient(135deg,#5b2d8a,#e91e63);color:white" data-tab="my">আমার ছুটি</div>
+      <div style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;color:var(--gray-600)" data-tab="pending">অপেক্ষমাণ <span id="pendingBadge" style="background:var(--pink-500);color:white;padding:1px 7px;border-radius:99px;font-size:11px">০</span></div>
+      <div style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;color:var(--gray-600)" data-tab="all">সকল আবেদন</div>
+    </div>` : `<div id="leaveTabs" style="display:none"></div>`}
+
+    <!-- Stats -->
+    <div class="stats-grid" style="margin-bottom:20px">
+      <div class="stat-card" style="border-left:4px solid var(--purple-500)">
+        <div class="stat-icon purple"><i class="fa-solid fa-calendar"></i></div>
+        <h3 class="num">২০</h3><p>বার্ষিক ছুটি</p>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--amber-500)">
+        <div class="stat-icon amber"><i class="fa-solid fa-calendar-day"></i></div>
+        <h3 class="num" id="lvUsed">০</h3><p>ব্যবহৃত</p>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--emerald-500)">
+        <div class="stat-icon emerald"><i class="fa-solid fa-calendar-plus"></i></div>
+        <h3 class="num" id="lvRemaining">২০</h3><p>অবশিষ্ট</p>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--pink-500)">
+        <div class="stat-icon pink"><i class="fa-solid fa-hourglass-half"></i></div>
+        <h3 class="num" id="lvPending">০</h3><p>অপেক্ষমাণ</p>
+      </div>
     </div>
 
     <div class="card">
@@ -3206,18 +3309,30 @@ async function submitLeave() {
     closeModal();
     refreshLeavesList();
 
-    // Send email to all admins (best-effort, don't block UI)
-    notifyAdminsOfLeave({
+    const emailData = {
       employee:  App.profile.full_name,
       leaveType: leaveTypeLabel(leave_code.toLowerCase(), leave_code),
       startDate: formatBnDate(start_date),
       endDate:   formatBnDate(end_date),
       days:      bnDigits(days),
       reason
-    }).then(() => {
-      // Refresh notifications so admin badges update instantly via realtime — but also force one immediate reload
+    };
+
+    // Send email to all admins (best-effort, don't block UI)
+    notifyAdminsOfLeave(emailData).then(() => {
       try { loadNotifications(); } catch {}
     }).catch(e => console.warn('Admin email notify failed:', e));
+
+    // Send confirmation email to the applicant themselves
+    if (App.profile.email) {
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'leave_confirmation', to: App.profile.email, data: emailData })
+      }).then(r => {
+        if (r.ok) showToast('📧 আপনার ইমেইলে confirmation পাঠানো হয়েছে', 'success');
+      }).catch(e => console.warn('Confirmation email failed:', e));
+    }
   } catch (e) {
     showToast('❌ ' + e.message, 'error');
   } finally {
@@ -3247,7 +3362,7 @@ async function notifyAdminsOfLeave(data) {
     } catch {}
 
     // 3) Hardcoded fallback — guarantees the system never silently misses admin
-    ['admin@ordhekdeen.com', 'mahedihasanrokib83@gmail.com'].forEach(e => emails.push(e));
+    ['admin@ordhekdeen.com', 'mahedihasanrokib47@gmail.com'].forEach(e => emails.push(e));
 
     // Dedupe
     emails = [...new Set(emails)].filter(Boolean);
@@ -3296,7 +3411,7 @@ async function reviewLeave(id, decision) {
     // Update sidebar badges immediately
     try { loadNotifications(); } catch {}
 
-    // Send decision email to the employee
+    // Send decision email to the employee + CC to admin
     try {
       const { data: leave } = await sb.from('leaves').select('*, profiles!user_id(email, full_name)').eq('id', id).maybeSingle();
       if (leave?.profiles?.email) {
@@ -3319,7 +3434,7 @@ async function reviewLeave(id, decision) {
           })
         });
         if (res.ok) {
-          showToast('📧 কর্মীর ইমেইলে আপডেট পাঠানো হয়েছে', 'success');
+          showToast('📧 কর্মীর ইমেইলে আপডেট পাঠানো হয়েছে (এডমিনেও কপি)', 'success');
         } else {
           const t = await res.text().catch(() => '');
           let hint = '';
@@ -3608,20 +3723,40 @@ let _inboxFilter = 'pending';
 
 function renderInbox() {
   return `
-    <div class="welcome-banner" style="background:linear-gradient(135deg,#5b2d8a,#8b5cf6,#e91e63)">
-      <h1>📥 ইনবক্স</h1>
-      <p>কর্মীদের ছুটির আবেদন, পাসওয়ার্ড অনুরোধ ও অন্যান্য বার্তা এক জায়গায়।</p>
+    <!-- Inbox Hero -->
+    <div style="background:linear-gradient(135deg,#1a0a2e 0%,#4a1570 50%,#be185d 100%);color:white;padding:28px 32px;border-radius:22px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(91,45,138,.35)">
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);border-radius:50%"></div>
+      <div style="position:absolute;bottom:-50px;left:5%;width:160px;height:160px;background:radial-gradient(circle,rgba(233,30,99,.2),transparent 70%);border-radius:50%"></div>
+      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="font-size:11px;font-weight:800;opacity:.65;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">📥 ব্যবস্থাপনা · ইনবক্স</div>
+          <h1 style="font-size:24px;font-weight:800;margin-bottom:6px">ছুটির আবেদন পর্যালোচনা</h1>
+          <p style="opacity:.8;font-size:13px">কর্মীদের সব ছুটির আবেদন এখানে দেখুন ও সিদ্ধান্ত নিন।</p>
+        </div>
+        <button class="btn" style="background:white;color:#5b2d8a;font-weight:800;flex-shrink:0" onclick="navigate('employees')">
+          <i class="fa-solid fa-users"></i> কর্মী তালিকা
+        </button>
+      </div>
     </div>
 
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="inboxTabs">
-      <button class="btn btn-${_inboxFilter==='pending'?'primary':'outline'} btn-sm" onclick="setInboxFilter('pending')"><i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ</button>
-      <button class="btn btn-${_inboxFilter==='approved'?'primary':'outline'} btn-sm" onclick="setInboxFilter('approved')"><i class="fa-solid fa-circle-check"></i> অনুমোদিত</button>
-      <button class="btn btn-${_inboxFilter==='rejected'?'primary':'outline'} btn-sm" onclick="setInboxFilter('rejected')"><i class="fa-solid fa-circle-xmark"></i> প্রত্যাখ্যাত</button>
-      <button class="btn btn-${_inboxFilter==='all'?'primary':'outline'} btn-sm" onclick="setInboxFilter('all')"><i class="fa-solid fa-list"></i> সব</button>
+    <!-- Filter Tabs -->
+    <div style="background:white;border-radius:16px;border:1px solid var(--border);padding:6px;display:flex;gap:4px;margin-bottom:18px;box-shadow:var(--shadow-sm)">
+      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='pending'?'background:linear-gradient(135deg,#5b2d8a,#e91e63);color:white;box-shadow:0 4px 12px rgba(91,45,138,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('pending')">
+        <i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ
+      </button>
+      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='approved'?'background:linear-gradient(135deg,#059669,#10b981);color:white;box-shadow:0 4px 12px rgba(16,185,129,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('approved')">
+        <i class="fa-solid fa-circle-check"></i> অনুমোদিত
+      </button>
+      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='rejected'?'background:linear-gradient(135deg,#dc2626,#ef4444);color:white;box-shadow:0 4px 12px rgba(239,68,68,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('rejected')">
+        <i class="fa-solid fa-circle-xmark"></i> প্রত্যাখ্যাত
+      </button>
+      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='all'?'background:var(--gray-800);color:white;box-shadow:0 4px 12px rgba(15,23,42,.2)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('all')">
+        <i class="fa-solid fa-list"></i> সব
+      </button>
     </div>
 
-    <div class="card" id="inboxList">
-      <div style="padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    <div id="inboxList">
+      <div style="padding:40px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px"></i><p style="margin-top:12px;font-weight:600">লোড হচ্ছে...</p></div>
     </div>
   `;
 }
@@ -3635,7 +3770,7 @@ async function refreshInboxList() {
   const card = document.getElementById('inboxList');
   if (!card) return;
   try {
-    let q = sb.from('leaves').select('*, profiles!user_id(full_name, email, photo_url, designation, department), reviewer:reviewed_by(full_name)').order('created_at', { ascending: false });
+    let q = sb.from('leaves').select('*, profiles!user_id(full_name, email, photo_url, designation), reviewer:reviewed_by(full_name)').order('created_at', { ascending: false });
     if (_inboxFilter !== 'all') q = q.eq('status', _inboxFilter);
     const { data, error } = await q;
     if (error) throw error;
@@ -3697,7 +3832,7 @@ async function refreshInboxList() {
 // PRINT LEAVE LETTER — Ordhekdeen letterhead PDF
 // ═══════════════════════════════════════════════════════════
 async function printLeaveLetter(leaveId) {
-  const { data: leave } = await sb.from('leaves').select('*, profiles!user_id(full_name, email, designation, department, employee_types(name_bn))').eq('id', leaveId).maybeSingle();
+  const { data: leave } = await sb.from('leaves').select('*, profiles!user_id(full_name, email, designation, employee_types(name_bn))').eq('id', leaveId).maybeSingle();
   if (!leave) return showToast('আবেদন পাওয়া যায়নি', 'error');
 
   const today = new Date();
@@ -3711,33 +3846,8 @@ async function printLeaveLetter(leaveId) {
     ? `<div style="background:#fee2e2;color:#991b1b;padding:14px;border-radius:8px;margin:18px 0;font-weight:700;border-left:4px solid #dc2626">✗ এই ছুটি প্রত্যাখ্যাত হয়েছে।</div>`
     : `<div style="background:#fef3c7;color:#92400e;padding:14px;border-radius:8px;margin:18px 0;font-weight:700;border-left:4px solid #f59e0b">⏳ এই আবেদন এখনো অপেক্ষমাণ।</div>`;
 
-  // Letter body — all classes scoped under .ll-letter-doc to avoid clash with main app CSS
+  // Letter body — CSS is now global in <head>, no inline style needed
   const letterBody = `
-<style>
-  .ll-letter-doc{font-family:'Hind Siliguri',sans-serif;color:#1e293b;background:#fff}
-  .ll-letter-doc *{box-sizing:border-box}
-  .ll-letter-doc .ll-doc-page{position:relative;min-height:297mm;width:100%;background:#fff}
-  .ll-letter-doc .ll-doc-header{display:flex;justify-content:space-between;align-items:center;padding:24px 36px;border-bottom:3px solid #5b2d8a;position:relative}
-  .ll-letter-doc .ll-doc-header::after{content:'';position:absolute;top:0;right:0;width:120px;height:8px;background:linear-gradient(90deg,#5b2d8a,#e91e63)}
-  .ll-letter-doc .ll-doc-brand{display:flex;align-items:center;gap:14px}
-  .ll-letter-doc .ll-doc-logo{width:48px;height:48px;flex-shrink:0}
-  .ll-letter-doc .ll-doc-name{font-size:30px;font-weight:800;background:linear-gradient(90deg,#5b2d8a,#e91e63);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-1px}
-  .ll-letter-doc .ll-doc-contact{font-size:12px;color:#64748b;text-align:right;line-height:1.7}
-  .ll-letter-doc .ll-doc-watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:280px;height:280px;opacity:.05;pointer-events:none;z-index:0}
-  .ll-letter-doc .ll-doc-body{padding:40px 56px 100px;position:relative;z-index:1}
-  .ll-letter-doc .ll-doc-ref{display:flex;justify-content:space-between;font-size:13px;color:#475569;margin-bottom:30px;flex-wrap:wrap;gap:8px}
-  .ll-letter-doc .ll-doc-title{font-size:22px;color:#5b2d8a;text-align:center;margin:20px 0 10px;text-decoration:underline;font-weight:700}
-  .ll-letter-doc .ll-doc-meta{background:#faf5ff;border:1px solid #e4d6f8;padding:18px;border-radius:10px;margin:18px 0}
-  .ll-letter-doc .ll-doc-meta-row{display:flex;padding:6px 0;font-size:14px;flex-wrap:wrap}
-  .ll-letter-doc .ll-doc-meta-row .lbl{width:160px;color:#64748b;font-weight:600}
-  .ll-letter-doc .ll-doc-meta-row .val{flex:1;min-width:200px;color:#1e293b;font-weight:700}
-  .ll-letter-doc p.ll-text{font-size:14px;line-height:1.9;margin:14px 0;text-align:justify}
-  .ll-letter-doc .ll-reason-box{background:#fff;border:1px solid #e4d6f8;padding:16px 20px;border-radius:8px;margin:14px 0;font-style:italic;color:#475569}
-  .ll-letter-doc .ll-signatures{margin-top:60px;display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap}
-  .ll-letter-doc .ll-sig{flex:1;min-width:180px;border-top:2px solid #1e293b;padding-top:8px;text-align:center;font-size:13px;font-weight:600}
-  .ll-letter-doc .ll-sig small{display:block;color:#64748b;margin-top:4px;font-weight:500}
-  .ll-letter-doc .ll-doc-footer{position:absolute;bottom:0;left:0;right:0;background:#5b2d8a;color:#fff;padding:14px 36px;display:flex;justify-content:space-between;font-size:12px;font-weight:600;flex-wrap:wrap;gap:6px}
-</style>
 <div class="ll-letter-doc">
 <div class="ll-doc-page">
   <svg class="ll-doc-watermark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
@@ -3836,36 +3946,51 @@ function doPrintLeaveLetter() {
 // EMPLOYEES (admin)
 // ═══════════════════════════════════════════════════════════
 function renderEmployees() {
+  const isAdminOrEditor = App.isAdmin || App.isEditor;
   return `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px">
-      <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1">
-        <div class="topbar-search" style="min-width:240px;background:white;border:1px solid var(--border)">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input id="empSearch" placeholder="নাম, পদবি, ইমেইল দিয়ে খুঁজুন..." oninput="refreshEmployeesList()">
+    <!-- Employees Hero -->
+    <div style="background:linear-gradient(135deg,#0a0a2e 0%,#1e3a8a 45%,#5b2d8a 100%);color:white;padding:26px 32px;border-radius:22px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(30,58,138,.35)">
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,255,255,.07),transparent 70%);border-radius:50%"></div>
+      <div style="position:absolute;bottom:-50px;left:5%;width:140px;height:140px;background:radial-gradient(circle,rgba(91,45,138,.3),transparent 70%);border-radius:50%"></div>
+      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+        <div>
+          <div style="font-size:11px;font-weight:800;opacity:.6;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">👥 HR · কর্মী ব্যবস্থাপনা</div>
+          <h1 style="font-size:24px;font-weight:800;margin-bottom:5px">কর্মীর তালিকা</h1>
+          <p style="opacity:.8;font-size:13px">সকল সক্রিয় কর্মীর তথ্য, পদবি ও যোগাযোগ দেখুন</p>
         </div>
-        <select class="form-select" style="width:auto;min-width:140px" id="empTypeFilter" onchange="refreshEmployeesList()">
-          <option value="">সকল ধরন</option>
-        </select>
-        <select class="form-select" style="width:auto;min-width:120px" id="empStatusFilter" onchange="refreshEmployeesList()">
-          <option value="active">সক্রিয়</option>
-          <option value="all">সকল</option>
-          <option value="inactive">নিষ্ক্রিয়</option>
-        </select>
-        <select class="form-select" style="width:auto;min-width:140px" id="empSort" onchange="refreshEmployeesList()">
-          <option value="full_name">নাম (A-Z)</option>
-          <option value="full_name_desc">নাম (Z-A)</option>
-          <option value="joined_at_desc">নতুন প্রথমে</option>
-          <option value="joined_at">পুরাতন প্রথমে</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" onclick="exportEmployees()" title="CSV"><i class="fa-solid fa-file-csv"></i> এক্সপোর্ট</button>
-        <button class="btn btn-primary" onclick="openEmployeeModal()" style="width:auto"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:12px;padding:9px 14px;border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-magnifying-glass" style="opacity:.7;font-size:13px"></i>
+            <input id="empSearch" placeholder="নাম, পদবি, ইমেইল..." oninput="refreshEmployeesList()" style="background:transparent;border:none;outline:none;color:white;font-family:var(--font-bn);font-size:13px;font-weight:600;width:170px">
+          </div>
+          ${isAdminOrEditor ? `<button class="btn" style="background:white;color:#1e3a8a;font-weight:800;flex-shrink:0" onclick="openEmployeeModal()"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী</button>` : ''}
+        </div>
       </div>
     </div>
 
-    <div class="card" id="employeesCard">
-      <div style="padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
+    <!-- Filters Bar -->
+    <div style="background:white;border-radius:14px;border:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;box-shadow:var(--shadow-sm)">
+      <select class="form-select" style="width:auto;min-width:140px;min-height:38px" id="empTypeFilter" onchange="refreshEmployeesList()">
+        <option value="">সকল ধরন</option>
+      </select>
+      <select class="form-select" style="width:auto;min-width:120px;min-height:38px" id="empStatusFilter" onchange="refreshEmployeesList()">
+        <option value="active">সক্রিয়</option>
+        <option value="all">সকল</option>
+        <option value="inactive">নিষ্ক্রিয়</option>
+      </select>
+      <select class="form-select" style="width:auto;min-width:140px;min-height:38px" id="empSort" onchange="refreshEmployeesList()">
+        <option value="full_name">নাম (A-Z)</option>
+        <option value="full_name_desc">নাম (Z-A)</option>
+        <option value="joined_at_desc">নতুন প্রথমে</option>
+        <option value="joined_at">পুরাতন প্রথমে</option>
+      </select>
+      <div style="margin-left:auto">
+        <button class="btn btn-outline btn-sm" onclick="exportEmployees()"><i class="fa-solid fa-file-csv"></i> এক্সপোর্ট</button>
+      </div>
+    </div>
+
+    <div id="employeesCard">
+      <div style="padding:40px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px"></i><p style="margin-top:12px;font-weight:600">লোড হচ্ছে...</p></div>
     </div>
   `;
 }
