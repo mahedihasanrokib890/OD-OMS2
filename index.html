@@ -403,6 +403,14 @@
   .data-table tr.row-ok td:first-child  {box-shadow:inset 6px 0 0 #16a34a}
   .data-table tr.row-ok td .leave-status{background:#16a34a !important;color:white !important}
   .data-table tr.row-ok:hover td{background:#bbf7d0 !important}
+  /* Check-in time emphasis */
+  .ci-late  {color:#b91c1c;font-weight:900;font-family:var(--font-en);letter-spacing:.3px}
+  .ci-late small{color:#b91c1c;font-weight:800;margin-left:4px;font-family:var(--font-bn)}
+  .ci-ontime{color:#15803d;font-weight:900;font-family:var(--font-en);letter-spacing:.3px}
+  body.theme-dark .ci-late{color:#fecaca}
+  body.theme-dark .ci-ontime{color:#bbf7d0}
+  /* Monthly attendance % pill (admin attendance table) */
+  .att-pct-pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;letter-spacing:.3px;width:fit-content;font-family:var(--font-en)}
 
   .note-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border-left:4px solid var(--amber-500);padding:14px 18px;border-radius:var(--r-md);margin:16px 0;font-size:13px;color:var(--gray-800);font-weight:600}
   .empty-state{padding:60px 20px;text-align:center;color:var(--gray-500)}
@@ -3271,15 +3279,46 @@ async function refreshAttendanceList() {
       tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-database" style="font-size:32px;margin-bottom:8px;display:block"></i> এই মাসে কোনো রেকর্ড নেই</td></tr>`;
       return;
     }
+
+    // Pre-compute monthly attendance % per employee (admin view only)
+    const totalDays = lastDay; // calendar days in month
+    const passedDays = (today() >= start && today() <= end) ? new Date().getDate() : lastDay;
+    const denominator = Math.max(1, passedDays);
+    const empPct = {};
+    if (App.isAdmin) {
+      const grouped = {};
+      (data||[]).forEach(r => {
+        if (!grouped[r.user_id]) grouped[r.user_id] = { present: 0 };
+        if (r.status === 'present' || r.status === 'late') grouped[r.user_id].present++;
+      });
+      Object.keys(grouped).forEach(uid => {
+        empPct[uid] = Math.round((grouped[uid].present / denominator) * 100);
+      });
+    }
+
     tbody.innerHTML = data.map(r => {
       const isLate = r.late_minutes > 0;
       const isLeave = r.status === 'leave' || r.status === 'absent' || r.status === 'holiday';
       const rowClass = isLeave ? '' : (isLate ? 'row-late' : 'row-ok');
       const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
+      // Check-in cell: bold red if late, bold green if on-time
+      const checkInCell = (() => {
+        if (!r.check_in) return '<span style="color:var(--gray-300)">—</span>';
+        const cls = isLate ? 'ci-late' : 'ci-ontime';
+        const tt = isLate ? `${bnDigits(r.late_minutes||0)} মিনিট লেট` : 'অন-টাইম';
+        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isLate?` <small>+${bnDigits(r.late_minutes||0)}মি</small>`:''}</span>`;
+      })();
+      // Admin: small percentage pill near employee name
+      const pct = App.isAdmin ? (empPct[r.user_id] ?? 0) : 0;
+      const pctClr = pct >= 85 ? '#059669' : pct >= 60 ? '#d97706' : '#dc2626';
+      const pctBg  = pct >= 85 ? '#d1fae5' : pct >= 60 ? '#fef3c7' : '#fee2e2';
       const empCell = App.isAdmin ? `
         <td><div style="display:flex;align-items:center;gap:8px">
           <div class="avatar" style="width:30px;height:30px;border-radius:8px;background:var(--gradient-brand);color:white;font-weight:800;font-family:var(--font-en);font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">${r.profiles?.photo_url?`<img src="${r.profiles.photo_url}" style="width:100%;height:100%;object-fit:cover">`:initial(r.profiles?.full_name)}</div>
-          <span style="font-weight:700">${escapeHtml(r.profiles?.full_name||'—')}</span>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+            <span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.profiles?.full_name||'—')}</span>
+            <span class="att-pct-pill num" style="background:${pctBg};color:${pctClr}" title="এ মাসে ${bnDigits(pct)}% উপস্থিত">${bnDigits(pct)}%</span>
+          </div>
         </div></td>` : '';
       const actionCell = App.isAdmin ? `<td><button class="icon-btn" onclick="editAttendance(${r.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button></td>` : '';
       let statusCell;
@@ -3296,7 +3335,7 @@ async function refreshAttendanceList() {
         <tr class="${rowClass}">
           ${empCell}
           <td>${formatBnDate(r.date)}</td>
-          <td class="num" style="font-size:12px">${fmtT(r.check_in)}</td>
+          <td class="num" style="font-size:12px">${checkInCell}</td>
           <td class="num" style="font-size:12px">${fmtT(r.lunch_out)}</td>
           <td class="num" style="font-size:12px">${fmtT(r.lunch_in)}</td>
           <td class="num" style="font-size:12px">${fmtT(r.personal_out)}</td>
