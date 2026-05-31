@@ -3114,10 +3114,8 @@ async function markAttendance(type) {
     if (type === 'check_in') {
       const officeTime = await getMyOfficeTime();
       if (officeTime) {
-        const [oh, om] = officeTime.check_in_time.split(':').map(Number);
-        const officeStart = new Date(now); officeStart.setHours(oh, om + (officeTime.grace_minutes || 0), 0, 0);
-        const diff = new Date(now) - officeStart;
-        if (diff > 0) { lateMinutes = Math.floor(diff / 60000); status = 'late'; }
+        lateMinutes = computeLateMinutes(now, officeTime);
+        if (lateMinutes > 0) status = 'late';
       }
     }
 
@@ -3162,12 +3160,28 @@ async function markAttendance(type) {
 
 async function getMyOfficeTime() {
   if (App.myOfficeTime) return App.myOfficeTime;
-  if (!App.profile?.employee_type_id) return null;
   try {
-    const { data } = await sb.from('office_times').select('*').eq('employee_type_id', App.profile.employee_type_id).maybeSingle();
-    App.myOfficeTime = data;
-    return data;
-  } catch { return null; }
+    // 1. Try the user's own employee type
+    if (App.profile?.employee_type_id) {
+      const { data } = await sb.from('office_times').select('*').eq('employee_type_id', App.profile.employee_type_id).maybeSingle();
+      if (data) { App.myOfficeTime = data; return data; }
+    }
+    // 2. Fallback — admins / users without a type: use the earliest configured office_time
+    const { data: any } = await sb.from('office_times').select('*').order('id').limit(1).maybeSingle();
+    if (any) { App.myOfficeTime = any; return any; }
+  } catch (e) { console.warn('office time load failed', e); }
+  return null;
+}
+
+// Compute late minutes for a given check-in timestamp against office time
+function computeLateMinutes(checkInIso, officeTime) {
+  if (!checkInIso || !officeTime || !officeTime.check_in_time) return 0;
+  const [oh, om] = officeTime.check_in_time.split(':').map(Number);
+  const ci = new Date(checkInIso);
+  const officeStart = new Date(ci);
+  officeStart.setHours(oh, (om || 0) + (officeTime.grace_minutes || 0), 0, 0);
+  const diff = ci - officeStart;
+  return diff > 0 ? Math.floor(diff / 60000) : 0;
 }
 
 async function refreshTodayClockStatus() {
@@ -3260,33 +3274,20 @@ async function refreshAttendanceList() {
     const { data, error } = await q;
     if (error) throw error;
 
-    // Pre-fetch office_times once so we can recompute lateness live (per employee_type)
-    let officeMap = {};
+    // Load office times keyed by employee_type_id (for accurate late recompute)
+    const otMap = {};
     try {
       const { data: ots } = await sb.from('office_times').select('*');
-      (ots||[]).forEach(o => { officeMap[o.employee_type_id] = o; });
+      (ots||[]).forEach(o => { otMap[o.employee_type_id] = o; });
+      otMap._default = (ots && ots.length) ? ots[0] : null;
     } catch {}
-    // Helper: time-of-day minutes from ISO datetime string
-    const minutesOfDay = (iso) => {
-      if (!iso) return null;
-      const d = new Date(iso);
-      return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60;
-    };
-    const officeStartMin = (ot) => {
-      if (!ot) return null;
-      const [h, m] = (ot.check_in_time||'00:00').split(':').map(Number);
-      return h*60 + (m||0) + (ot.grace_minutes||0);
-    };
-    // Compute live late minutes for a row
-    const liveLate = (r) => {
+    // Helper: effective late minutes for a record (recompute from office time)
+    const effLate = (r) => {
+      if (r.status === 'leave' || r.status === 'absent' || r.status === 'holiday') return 0;
       if (!r.check_in) return 0;
-      const ot = officeMap[r.profiles?.employee_type_id];
-      const start = officeStartMin(ot);
-      if (start == null) return r.late_minutes || 0;
-      const cm = minutesOfDay(r.check_in);
-      if (cm == null) return 0;
-      const diff = cm - start;
-      return diff > 0 ? Math.round(diff) : 0;
+      const ot = otMap[r.profiles?.employee_type_id] || App.myOfficeTime || otMap._default;
+      const computed = ot ? computeLateMinutes(r.check_in, ot) : (r.late_minutes || 0);
+      return Math.max(computed, r.late_minutes || 0);
     };
 
     const myData = App.isAdmin ? (data||[]).filter(r => r.user_id === App.user.id) : (data||[]);
@@ -3298,7 +3299,7 @@ async function refreshAttendanceList() {
       el.textContent = bnDigits(val);
     };
     _setStat('aStatPresent', myData.filter(r => r.status === 'present' || r.status === 'late').length);
-    _setStat('aStatLate',    myData.filter(r => r.late_minutes > 0).length);
+    _setStat('aStatLate',    myData.filter(r => effLate(r) > 0).length);
     _setStat('aStatLeave',   myData.filter(r => r.status === 'leave' || r.status === 'absent').length);
     _setStat('aStatHours',   Math.round(myData.reduce((s, r) => s + (r.total_hours || 0), 0)));
     // Animate any uncounted numbers
@@ -3326,17 +3327,17 @@ async function refreshAttendanceList() {
     }
 
     tbody.innerHTML = data.map(r => {
-      const computedLate = liveLate(r);
-      const isLate = computedLate > 0;
+      const lateMin = effLate(r);
+      const isLate = lateMin > 0;
       const isLeave = r.status === 'leave' || r.status === 'absent' || r.status === 'holiday';
       const rowClass = isLeave ? '' : (isLate ? 'row-late' : 'row-ok');
       const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
-      // Check-in cell: bold red if late, bold green if on-time (uses LIVE late, not stored)
+      // Check-in cell: bold red if late, bold green if on-time
       const checkInCell = (() => {
         if (!r.check_in) return '<span style="color:var(--gray-300)">—</span>';
         const cls = isLate ? 'ci-late' : 'ci-ontime';
-        const tt = isLate ? `${bnDigits(computedLate)} মিনিট লেট` : 'অন-টাইম';
-        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isLate?` <small>+${bnDigits(computedLate)}মি</small>`:''}</span>`;
+        const tt = isLate ? `${bnDigits(lateMin)} মিনিট লেট` : 'অন-টাইম';
+        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isLate?` <small>+${bnDigits(lateMin)}মি</small>`:''}</span>`;
       })();
       // Admin: small percentage pill near employee name
       const pct = App.isAdmin ? (empPct[r.user_id] ?? 0) : 0;
@@ -3357,7 +3358,7 @@ async function refreshAttendanceList() {
         const cc = codeColors[r.leave_code] || '#94a3b8';
         statusCell = `<span class="leave-status" style="background:${cc}22;color:${cc}">🏖️ ${r.leave_code || (r.status==='holiday'?'PH':'—')}</span>`;
       } else if (isLate) {
-        statusCell = `<span class="leave-status pending">⚠️ লেট ${bnDigits(computedLate)}মি</span>`;
+        statusCell = `<span class="leave-status pending">⚠️ লেট ${bnDigits(lateMin)}মি</span>`;
       } else {
         statusCell = `<span class="leave-status approved">✓ নিয়মিত</span>`;
       }
@@ -5763,6 +5764,18 @@ async function renderReports() {
         </div>
       </div>
       <div id="empReportSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px"></div>
+
+      <!-- Attendance % leaderboard table -->
+      <div style="margin-bottom:18px">
+        <div style="font-size:13px;font-weight:800;color:var(--gray-700);margin-bottom:8px;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-ranking-star" style="color:var(--purple-600)"></i> সকল এমপ্লয়ীর উপস্থিতি শতাংশ</div>
+        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
+          <table class="data-table" style="width:100%;min-width:560px">
+            <thead><tr><th>#</th><th>এমপ্লয়ী</th><th>উপস্থিত</th><th>লেট</th><th>ছুটি</th><th>উপস্থিতি %</th></tr></thead>
+            <tbody id="empReportPctBody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
       <div id="empReportGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
         <div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
       </div>
@@ -5826,16 +5839,22 @@ async function loadEmpReport() {
   if (grid) grid.innerHTML = `<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>`;
 
   try {
-    const [profRes, polRes, lvRes, attRes] = await Promise.all([
-      sb.from('profiles').select('id, full_name, email, photo_url, designation, department, employee_types(name_bn)').eq('is_active', true).order('full_name'),
+    const [profRes, polRes, lvRes, attRes, otRes] = await Promise.all([
+      sb.from('profiles').select('id, full_name, email, photo_url, designation, department, employee_type_id, employee_types(name_bn)').eq('is_active', true).order('full_name'),
       sb.from('leave_policies').select('*').eq('is_active', true).order('display_order'),
       sb.from('leaves').select('user_id, leave_code, total_days, status, start_date').eq('status', 'approved').gte('start_date', yearStart).lte('start_date', yearEnd),
-      sb.from('attendance').select('user_id, status, late_minutes, total_hours, date').gte('date', yearStart).lte('date', yearEnd)
+      sb.from('attendance').select('user_id, status, late_minutes, total_hours, date, check_in').gte('date', yearStart).lte('date', yearEnd),
+      sb.from('office_times').select('*')
     ]);
     const profiles = profRes.data || [];
     const policies = (polRes.data || []).filter(p => p.yearly_limit);
     const leaves   = lvRes.data || [];
     const atts     = attRes.data || [];
+    const otMap = {};
+    (otRes.data||[]).forEach(o => { otMap[o.employee_type_id] = o; });
+    const otDefault = (otRes.data && otRes.data.length) ? otRes.data[0] : null;
+    const typeOfUser = {};
+    profiles.forEach(p => { typeOfUser[p.id] = p.employee_type_id; });
 
     // Aggregate per user
     const byUser = {};
@@ -5858,35 +5877,39 @@ async function loadEmpReport() {
       const u = byUser[a.user_id]; if (!u) return;
       u.workDays++;
       u.hours += Number(a.total_hours||0);
-      if ((a.late_minutes||0) > 0) { u.late++; u.lateMinutes += a.late_minutes; }
+      // Recompute late from office time (fallback to stored)
+      const ot = otMap[typeOfUser[a.user_id]] || otDefault;
+      let lm = a.late_minutes || 0;
+      if (a.check_in && ot && a.status !== 'leave' && a.status !== 'absent' && a.status !== 'holiday') {
+        lm = Math.max(lm, computeLateMinutes(a.check_in, ot));
+      }
+      if (lm > 0) { u.late++; u.lateMinutes += lm; }
       if (a.status === 'present' || a.status === 'late') u.present++;
       else if (a.status === 'absent') u.absent++;
     });
 
-    // Compute current-month attendance % per user
-    const monthStart = today().slice(0,7) + '-01';
-    const todayDate  = new Date();
-    const monthDayCount = new Date(todayDate.getFullYear(), todayDate.getMonth()+1, 0).getDate();
-    const dayPassed     = (today().slice(0,7) === year + '-' + String(todayDate.getMonth()+1).padStart(2,'0'))
-      ? todayDate.getDate()
-      : monthDayCount;
-    Object.values(byUser).forEach(u => { u.monthPresent = 0; });
-    atts.forEach(a => {
-      if (a.date >= monthStart) {
-        const u = byUser[a.user_id]; if (!u) return;
-        if (a.status === 'present' || a.status === 'late') u.monthPresent++;
-      }
-    });
+    // Compute attendance % per user.
+    // Denominator = elapsed days in the selected year (cap at year length), excluding nothing for simplicity.
+    const now = new Date();
+    const yStart = new Date(`${year}-01-01`);
+    let elapsedDays;
+    if (year < now.getFullYear()) {
+      elapsedDays = Math.round((new Date(`${year}-12-31`) - yStart) / 86400000) + 1;
+    } else if (year > now.getFullYear()) {
+      elapsedDays = 1;
+    } else {
+      elapsedDays = Math.round((now - yStart) / 86400000) + 1;
+    }
+    const denom = Math.max(1, elapsedDays);
     Object.values(byUser).forEach(u => {
-      u.monthPct = Math.round(((u.monthPresent||0) / Math.max(1, dayPassed)) * 100);
-      // Yearly punctuality % = (present - late) / present
-      u.yearPunct = u.present ? Math.round(((u.present - u.late) / u.present) * 100) : 0;
+      u.attPct = Math.min(100, Math.round((u.present / denom) * 100));
     });
 
     // Cache for filter / export
-    _empReportCache = { year, rows: Object.values(byUser), policies };
+    _empReportCache = { year, rows: Object.values(byUser), policies, elapsedDays: denom };
 
     renderEmpReportSummary(_empReportCache);
+    renderEmpReportPctTable(_empReportCache);
     renderEmpReportGrid(_empReportCache);
   } catch (e) {
     if (grid) grid.innerHTML = `<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--red-500)"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(e.message||'লোড ব্যর্থ')}</div>`;
@@ -5900,23 +5923,63 @@ function renderEmpReportSummary(cache) {
   const totalLeave = cache.rows.reduce((s,r) => s + r.totalLeaveUsed, 0);
   const totalLate  = cache.rows.reduce((s,r) => s + r.late, 0);
   const totalHours = Math.round(cache.rows.reduce((s,r) => s + r.hours, 0));
-  const avgPct = cache.rows.length ? Math.round(cache.rows.reduce((s,r) => s + (r.monthPct||0), 0) / cache.rows.length) : 0;
-  const tile = (icon, color, value, label, suffix='') => `
+  const tile = (icon, color, value, label) => `
     <div style="background:white;padding:14px 16px;border-radius:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
       <div style="width:40px;height:40px;border-radius:11px;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fa-solid fa-${icon}"></i></div>
       <div style="flex:1;min-width:0">
-        <div class="num" style="font-size:22px;font-weight:800;color:var(--gray-900);line-height:1">${bnDigits(value)}${suffix}</div>
+        <div class="num" style="font-size:22px;font-weight:800;color:var(--gray-900);line-height:1">${bnDigits(value)}</div>
         <div style="font-size:12px;color:var(--gray-500);font-weight:600">${label}</div>
       </div>
     </div>
   `;
   el.innerHTML = [
     tile('users', 'linear-gradient(135deg,#8b5cf6,#5b2d8a)', totalEmp, 'মোট এমপ্লয়ী'),
-    tile('chart-line', 'linear-gradient(135deg,#3b82f6,#1d4ed8)', avgPct, 'গড় মাসিক উপস্থিতি', '%'),
     tile('umbrella-beach', 'linear-gradient(135deg,#ec4899,#be185d)', totalLeave, 'মোট ছুটি (দিন)'),
     tile('clock', 'linear-gradient(135deg,#f59e0b,#d97706)', totalLate, 'মোট লেট ঘটনা'),
     tile('business-time', 'linear-gradient(135deg,#10b981,#059669)', totalHours, 'মোট কাজের ঘন্টা')
   ].join('');
+}
+
+// Attendance % leaderboard table — all employees, sorted high→low
+function renderEmpReportPctTable(cache) {
+  const body = document.getElementById('empReportPctBody');
+  if (!body) return;
+  const rows = (cache.rows || []).slice().sort((a,b) => b.attPct - a.attPct);
+  if (rows.length === 0) {
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">কোনো এমপ্লয়ী নেই</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map((u, i) => {
+    const p = u.profile;
+    const pct = u.attPct || 0;
+    const clr = pct >= 85 ? '#059669' : pct >= 60 ? '#d97706' : '#dc2626';
+    const bg  = pct >= 85 ? 'linear-gradient(90deg,#10b981,#059669)' : pct >= 60 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)';
+    const init = (p.full_name||'এ').charAt(0).toUpperCase();
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : bnDigits(i+1);
+    return `
+      <tr style="cursor:pointer" onclick="openEmpReportModal('${p.id}')">
+        <td style="font-weight:800;text-align:center">${medal}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar" style="width:30px;height:30px;border-radius:8px;background:var(--gradient-brand);color:#fff;font-weight:800;font-size:11px;font-family:var(--font-en);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">${p.photo_url?`<img src="${escapeHtml(p.photo_url)}" style="width:100%;height:100%;object-fit:cover">`:init}</div>
+            <div style="min-width:0">
+              <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.full_name||'—')}</div>
+              <div style="font-size:11px;color:var(--gray-400)">${escapeHtml(p.designation || p.employee_types?.name_bn || '')}</div>
+            </div>
+          </div>
+        </td>
+        <td class="num" style="font-weight:700;color:#059669">${bnDigits(u.present)}</td>
+        <td class="num" style="font-weight:700;color:#dc2626">${bnDigits(u.late)}</td>
+        <td class="num" style="font-weight:700;color:#be185d">${bnDigits(u.totalLeaveUsed)}</td>
+        <td style="min-width:160px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${bg};border-radius:99px;transition:width .8s"></div></div>
+            <span class="num" style="font-weight:800;color:${clr};min-width:42px;text-align:right">${bnDigits(pct)}%</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function renderEmpReportGrid(cache) {
@@ -5974,41 +6037,26 @@ function renderEmpReportGrid(cache) {
             <div style="font-size:11px;opacity:.85;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.designation || p.employee_types?.name_bn || 'এমপ্লয়ী')}</div>
           </div>
           <div style="text-align:right">
-            <div class="num" style="font-size:22px;font-weight:800;line-height:1">${bnDigits(u.monthPct ?? 0)}<span style="font-size:12px;opacity:.8">%</span></div>
-            <div style="font-size:10px;font-weight:700;opacity:.85;letter-spacing:.5px;text-transform:uppercase">এ মাস উপস্থিত</div>
+            <div class="num" style="font-size:22px;font-weight:800;line-height:1">${bnDigits(remainingPct)}<span style="font-size:12px;opacity:.8">%</span></div>
+            <div style="font-size:10px;font-weight:700;opacity:.85;letter-spacing:.5px;text-transform:uppercase">ছুটি বাকি</div>
           </div>
         </div>
 
         <!-- Body -->
         <div style="padding:14px 16px">
           <!-- Top stats row -->
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
-            <div style="text-align:center;padding:8px 4px;background:#ecfdf5;border-radius:10px" title="এ বছর উপস্থিত দিন">
-              <div class="num" style="font-size:17px;font-weight:800;color:#059669">${bnDigits(u.present)}</div>
-              <div style="font-size:10px;color:var(--gray-500);font-weight:700">উপস্থিত</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+            <div style="text-align:center;padding:8px 4px;background:#f0fdf4;border-radius:10px">
+              <div class="num" style="font-size:18px;font-weight:800;color:#059669">${bnDigits(u.totalLeaveUsed)}</div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">নেওয়া (দিন)</div>
             </div>
-            <div style="text-align:center;padding:8px 4px;background:#fef3c7;border-radius:10px" title="ছুটি নেওয়া">
-              <div class="num" style="font-size:17px;font-weight:800;color:#d97706">${bnDigits(u.totalLeaveUsed)}</div>
-              <div style="font-size:10px;color:var(--gray-500);font-weight:700">ছুটি</div>
+            <div style="text-align:center;padding:8px 4px;background:#fef3c7;border-radius:10px">
+              <div class="num" style="font-size:18px;font-weight:800;color:#d97706">${bnDigits(remaining)}</div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">বাকি (দিন)</div>
             </div>
-            <div style="text-align:center;padding:8px 4px;background:#fee2e2;border-radius:10px" title="মোট লেট ঘটনা">
-              <div class="num" style="font-size:17px;font-weight:800;color:#dc2626">${bnDigits(u.late)}</div>
+            <div style="text-align:center;padding:8px 4px;background:#fee2e2;border-radius:10px">
+              <div class="num" style="font-size:18px;font-weight:800;color:#dc2626">${bnDigits(u.late)}</div>
               <div style="font-size:10px;color:var(--gray-500);font-weight:700">লেট</div>
-            </div>
-            <div style="text-align:center;padding:8px 4px;background:#dbeafe;border-radius:10px" title="পাংচুয়ালিটি স্কোর">
-              <div class="num" style="font-size:17px;font-weight:800;color:#1d4ed8">${bnDigits(u.yearPunct ?? 0)}<span style="font-size:11px">%</span></div>
-              <div style="font-size:10px;color:var(--gray-500);font-weight:700">পাংচুয়াল</div>
-            </div>
-          </div>
-
-          <!-- Monthly progress bar -->
-          <div style="margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:4px">
-              <span><i class="fa-solid fa-chart-simple"></i> এ মাসের উপস্থিতি</span>
-              <span class="num">${bnDigits(u.monthPct ?? 0)}%</span>
-            </div>
-            <div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden">
-              <div style="height:100%;width:${u.monthPct||0}%;background:${(u.monthPct||0) >= 85 ? 'linear-gradient(90deg,#10b981,#059669)' : (u.monthPct||0) >= 60 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)'};border-radius:99px;transition:width .8s"></div>
             </div>
           </div>
 
@@ -6017,7 +6065,7 @@ function renderEmpReportGrid(cache) {
 
           <!-- Footer line -->
           <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px dashed var(--gray-200);font-size:11px;color:var(--gray-500);font-weight:700">
-            <span><i class="fa-solid fa-umbrella-beach" style="color:#ec4899"></i> বাকি ${bnDigits(remaining)}</span>
+            <span><i class="fa-solid fa-calendar-check" style="color:#10b981"></i> ${bnDigits(u.present)} উপস্থিত</span>
             <span><i class="fa-solid fa-business-time" style="color:#8b5cf6"></i> ${bnDigits(Math.round(u.hours))} ঘ.</span>
             <span style="color:var(--purple-600)">বিস্তারিত <i class="fa-solid fa-arrow-right"></i></span>
           </div>
