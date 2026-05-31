@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#5b2d8a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="description" content="অর্ধেকদ্বীন HR ম্যানেজমেন্ট সিস্টেম — কর্মী, এটেন্ডেন্স, ছুটি ব্যবস্থাপনা">
+<meta name="description" content="অর্ধেকদ্বীন HR ম্যানেজমেন্ট সিস্টেম — এমপ্লয়ী, এটেন্ডেন্স, ছুটি ব্যবস্থাপনা">
 <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="pragma" content="no-cache">
 <meta http-equiv="expires" content="0">
@@ -706,7 +706,7 @@
           <span class="nav-badge pink" id="inboxBadge" style="display:none">০</span>
         </div>
         <div class="nav-item" data-route="employees" onclick="navigate('employees')">
-          <span class="nav-item-left"><i class="fa-solid fa-users"></i> কর্মী তালিকা</span>
+          <span class="nav-item-left"><i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা</span>
         </div>
       </div>
       <div class="admin-only">
@@ -824,8 +824,8 @@ const App = {
   currentPage: 'dashboard',
   employeeTypes: [
     { id: 1, code: 'admin',  name_bn: 'অ্যাডমিন',     is_admin: true },
-    { id: 2, code: 'type_1', name_bn: 'কর্মী টাইপ ১', is_admin: false },
-    { id: 3, code: 'type_2', name_bn: 'কর্মী টাইপ ২', is_admin: false }
+    { id: 2, code: 'type_1', name_bn: 'এমপ্লয়ী টাইপ ১', is_admin: false },
+    { id: 3, code: 'type_2', name_bn: 'এমপ্লয়ী টাইপ ২', is_admin: false }
   ],
   departments: [],
   myOfficeTime: null,   // cached for the live clock comparison
@@ -1397,7 +1397,7 @@ async function loadUserAndStart() {
     email: user.email,
     full_name: meta.full_name || user.email.split('@')[0],
     phone: meta.phone || '',
-    designation: meta.designation || 'কর্মী',
+    designation: meta.designation || 'এমপ্লয়ী',
     employee_type: meta.employee_type || 'type_1',
     joined_at: user.created_at
   };
@@ -1509,7 +1509,7 @@ async function loadNotifications() {
         type: 'leave',
         icon: 'calendar-plus',
         iconBg: 'background:var(--amber-100);color:var(--amber-500)',
-        title: `নতুন ছুটির আবেদন · ${l.profiles?.full_name||'কর্মী'}`,
+        title: `নতুন ছুটির আবেদন · ${l.profiles?.full_name||'এমপ্লয়ী'}`,
         desc: `${bnDigits(l.total_days||1)} দিনের ছুটি — ${l.reason||''}`,
         time: l.created_at,
         action: () => navigate('inbox')
@@ -1636,7 +1636,7 @@ async function handleResetRequest(reqId, email) {
       </div>
 
       <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:12px 14px;border-radius:10px;font-size:13px;color:var(--gray-700);line-height:1.7;border-left:4px solid var(--amber-500)">
-        <p style="font-weight:700;margin-bottom:6px;color:var(--amber-600)">📞 কর্মীকে পাঠান:</p>
+        <p style="font-weight:700;margin-bottom:6px;color:var(--amber-600)">📞 এমপ্লয়ীকে পাঠান:</p>
         <p style="font-size:12px;margin-bottom:4px">১) WhatsApp / SMS / ফোনে কোডটি দিন</p>
         <p style="font-size:12px;margin-bottom:4px">২) তিনি লগইন স্ক্রিনে "<b>কোড আছে? পাসওয়ার্ড রিসেট</b>" ক্লিক করবেন</p>
         <p style="font-size:12px">৩) কোড + নতুন পাসওয়ার্ড দিয়ে নিজেই reset করবেন</p>
@@ -1712,7 +1712,7 @@ const routes = {
   notices:    { title: 'নোটিশ বোর্ড',    subtitle: 'অফিসের সকল ঘোষণা',           renderFn: 'renderNotices' },
   leaves:     { title: 'ছুটির আবেদন',    subtitle: 'আপনার ছুটি ব্যবস্থাপনা',     renderFn: 'renderLeaves' },
   profile:    { title: 'আমার প্রোফাইল',  subtitle: 'ব্যক্তিগত ও কাজের তথ্য',     renderFn: 'renderProfile' },
-  employees:  { title: 'কর্মী ডিরেক্টরি', subtitle: 'সকল কর্মীর তালিকা',           renderFn: 'renderEmployees', editorOrAdmin: true },
+  employees:  { title: 'এমপ্লয়ী ডিরেক্টরি', subtitle: 'সকল এমপ্লয়ীর তালিকা',           renderFn: 'renderEmployees', editorOrAdmin: true },
   inbox:      { title: 'ইনবক্স',          subtitle: 'অপেক্ষমাণ ছুটি ও অনুরোধ',     renderFn: 'renderInbox',     editorOrAdmin: true },
   reports:    { title: 'রিপোর্ট',        subtitle: 'বিশ্লেষণ ও সারাংশ',          renderFn: 'renderReports', admin: true },
   import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     renderFn: 'renderImport', admin: true },
@@ -1818,7 +1818,7 @@ async function renderDashboard() {
             <div class="hero-meta">
               <span class="hero-pill"><span class="live-dot"></span> লাইভ মনিটরিং</span>
               <span class="hero-pill"><i class="fa-regular fa-clock"></i> <span class="hero-clock" id="dashHeroClock">--:--:--</span></span>
-              <span class="hero-pill"><i class="fa-solid fa-users"></i> ${bnDigits(total)} সক্রিয় কর্মী</span>
+              <span class="hero-pill"><i class="fa-solid fa-users"></i> ${bnDigits(total)} সক্রিয় এমপ্লয়ী</span>
             </div>
           </div>
           <div style="text-align:right;min-width:160px">
@@ -1838,7 +1838,7 @@ async function renderDashboard() {
             <span class="kpi-trend neutral"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত</span>
           </div>
           <div class="kpi-value">${bnDigits(total)}</div>
-          <div class="kpi-label">সক্রিয় কর্মী</div>
+          <div class="kpi-label">সক্রিয় এমপ্লয়ী</div>
         </div>
         <div class="kpi-card clickable" onclick="navigate('attendance')" style="--accent:linear-gradient(135deg,#10b981,#059669);--accent-shadow:rgba(5,150,105,.4)">
           <div class="kpi-head">
@@ -1968,7 +1968,7 @@ async function renderDashboard() {
           ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;height:100%;object-fit:cover">` : (p.full_name||'আ').charAt(0)}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:11px;opacity:.75;font-weight:800;letter-spacing:2px;text-transform:uppercase">👤 কর্মী পোর্টাল</div>
+          <div style="font-size:11px;opacity:.75;font-weight:800;letter-spacing:2px;text-transform:uppercase">👤 এমপ্লয়ী পোর্টাল</div>
           <h1 style="font-size:24px;font-weight:800;margin:5px 0 4px">${greet}, ${escapeHtml(name)}!</h1>
           <p style="opacity:.85;font-size:13px;font-weight:500">${dayName(today())}, ${formatBnDate(today())} · <i style="opacity:.85">"${escapeHtml(tip)}"</i></p>
           <div class="hero-meta">
@@ -2091,7 +2091,7 @@ function renderAdminInsights(stats, c) {
       <div class="insight-card danger" onclick="navigate('attendance')">
         <div class="ins-icon"><i class="fa-solid fa-stopwatch"></i></div>
         <div class="ins-body">
-          <h5>${bnDigits(c.late)} জন কর্মী আজ লেট</h5>
+          <h5>${bnDigits(c.late)} জন এমপ্লয়ী আজ লেট</h5>
           <p>লেট সংক্রান্ত বিস্তারিত ও ট্রেন্ড দেখুন</p>
         </div>
         <i class="fa-solid fa-chevron-right ins-arrow"></i>
@@ -2104,7 +2104,7 @@ function renderAdminInsights(stats, c) {
         <div class="ins-icon"><i class="fa-solid fa-user-clock"></i></div>
         <div class="ins-body">
           <h5>${bnDigits(c.absent)} জন এখনও চেক-ইন করেননি</h5>
-          <p>কর্মী লিস্ট থেকে চেক করুন বা এডমিন মার্ক করুন</p>
+          <p>এমপ্লয়ী লিস্ট থেকে চেক করুন বা এডমিন মার্ক করুন</p>
         </div>
         <i class="fa-solid fa-chevron-right ins-arrow"></i>
       </div>
@@ -2128,7 +2128,7 @@ function renderAdminInsights(stats, c) {
         <div class="ins-icon"><i class="fa-solid fa-trophy"></i></div>
         <div class="ins-body">
           <h5>চমৎকার! আজ ১০০% হাজিরা</h5>
-          <p>সব কর্মী সঠিক সময়ে উপস্থিত — দারুণ পারফরম্যান্স</p>
+          <p>সব এমপ্লয়ী সঠিক সময়ে উপস্থিত — দারুণ পারফরম্যান্স</p>
         </div>
         <i class="fa-solid fa-chevron-right ins-arrow"></i>
       </div>
@@ -2194,7 +2194,7 @@ async function loadDashboardLists() {
           el.innerHTML = leaves.map(l => `
             <div class="leave-card pending">
               <span class="leave-status pending"><i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ</span>
-              <h4>${escapeHtml(l.profiles?.full_name || 'কর্মী')}</h4>
+              <h4>${escapeHtml(l.profiles?.full_name || 'এমপ্লয়ী')}</h4>
               <div class="leave-dates"><span><i class="fa-regular fa-calendar"></i> ${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</span> <span class="num">(${bnDigits(l.total_days)} দিন)</span></div>
               <div class="leave-reason">${escapeHtml(l.reason||'')}</div>
               <div style="display:flex;gap:8px;margin-top:12px">
@@ -2217,7 +2217,7 @@ async function loadDashboardLists() {
       const map = {};
       (lateRows||[]).forEach(r => {
         const id = r.user_id;
-        if (!map[id]) map[id] = { name: r.profiles?.full_name || 'কর্মী', photo: r.profiles?.photo_url, count: 0, mins: 0 };
+        if (!map[id]) map[id] = { name: r.profiles?.full_name || 'এমপ্লয়ী', photo: r.profiles?.photo_url, count: 0, mins: 0 };
         map[id].count++;
         map[id].mins += (r.late_minutes||0);
       });
@@ -2251,8 +2251,8 @@ async function loadDashboardLists() {
         sb.from('notices').select('*, profiles!posted_by(full_name)').order('created_at', { ascending: false }).limit(3)
       ]);
       const acts = [];
-      (recentAtt||[]).forEach(a => acts.push({ time: a.created_at, icon: 'right-to-bracket', color: '#10b981', text: `<b>${escapeHtml(a.profiles?.full_name||'কর্মী')}</b> এটেন্ডেন্স দিয়েছেন` }));
-      (recentLeaves||[]).forEach(l => acts.push({ time: l.created_at, icon: 'calendar-plus', color: '#f59e0b', text: `<b>${escapeHtml(l.profiles?.full_name||'কর্মী')}</b> ${bnDigits(l.total_days)} দিনের ছুটির আবেদন করেছেন` }));
+      (recentAtt||[]).forEach(a => acts.push({ time: a.created_at, icon: 'right-to-bracket', color: '#10b981', text: `<b>${escapeHtml(a.profiles?.full_name||'এমপ্লয়ী')}</b> এটেন্ডেন্স দিয়েছেন` }));
+      (recentLeaves||[]).forEach(l => acts.push({ time: l.created_at, icon: 'calendar-plus', color: '#f59e0b', text: `<b>${escapeHtml(l.profiles?.full_name||'এমপ্লয়ী')}</b> ${bnDigits(l.total_days)} দিনের ছুটির আবেদন করেছেন` }));
       (recentNotices||[]).forEach(n => acts.push({ time: n.created_at, icon: 'bullhorn', color: '#8b5cf6', text: `<b>${escapeHtml(n.profiles?.full_name||'অ্যাডমিন')}</b> নতুন নোটিশ: <i>${escapeHtml(n.title)}</i>` }));
       acts.sort((a,b) => new Date(b.time) - new Date(a.time));
       const actEl = document.getElementById('dashActivity');
@@ -2854,7 +2854,7 @@ async function quickMarkLeave(code) {
   const colors = { CL:'#3b82f6', SL:'#ef4444', EL:'#10b981', CoL:'#a78bfa', ML:'#ec4899', PH:'#f59e0b', UL:'#94a3b8', IL:'#dc2626' };
 
   const { data: employees } = await sb.from('profiles').select('id, full_name, email').eq('is_active', true).order('full_name');
-  if (!employees || employees.length === 0) return showToast('কোনো কর্মী নেই', 'warning');
+  if (!employees || employees.length === 0) return showToast('কোনো এমপ্লয়ী নেই', 'warning');
 
   const empOptions = employees.map(e => `<option value="${e.id}">${escapeHtml(e.full_name)} · ${escapeHtml(e.email)}</option>`).join('');
 
@@ -2862,24 +2862,24 @@ async function quickMarkLeave(code) {
     `<i class="fa-solid fa-umbrella-beach" style="color:${colors[code]}"></i> ${labels[code]} (<b>${code}</b>) দিন`,
     `<div style="padding:4px 0">
       <div style="background:${colors[code]}20;border-left:4px solid ${colors[code]};padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;color:var(--gray-700)">
-        <b>${code}</b> · ${labels[code]}<br><small style="color:var(--gray-500)">${code === 'PH' ? 'সকলের জন্য (সরকারি ছুটি)' : 'নির্দিষ্ট কর্মীর জন্য'}</small>
+        <b>${code}</b> · ${labels[code]}<br><small style="color:var(--gray-500)">${code === 'PH' ? 'সকলের জন্য (সরকারি ছুটি)' : 'নির্দিষ্ট এমপ্লয়ীর জন্য'}</small>
       </div>
 
       ${code === 'PH' ? `
         <div class="form-group">
           <label><i class="fa-solid fa-users"></i> কাদের জন্য?</label>
           <select class="form-select" id="qmlScope">
-            <option value="all">সকল সক্রিয় কর্মীর জন্য</option>
-            <option value="single">শুধু একজন কর্মীর জন্য</option>
+            <option value="all">সকল সক্রিয় এমপ্লয়ীর জন্য</option>
+            <option value="single">শুধু একজন এমপ্লয়ীর জন্য</option>
           </select>
         </div>
         <div class="form-group" id="qmlEmpRow" style="display:none">
-          <label><i class="fa-solid fa-user"></i> কর্মী</label>
+          <label><i class="fa-solid fa-user"></i> এমপ্লয়ী</label>
           <select class="form-select" id="qmlEmp">${empOptions}</select>
         </div>
       ` : `
         <div class="form-group">
-          <label><i class="fa-solid fa-user"></i> কর্মী নির্বাচন করুন</label>
+          <label><i class="fa-solid fa-user"></i> এমপ্লয়ী নির্বাচন করুন</label>
           <select class="form-select" id="qmlEmp">${empOptions}</select>
         </div>
       `}
@@ -2924,7 +2924,7 @@ async function saveQuickLeave(code) {
       userIds = (emps||[]).map(e => e.id);
     } else {
       const empSel = document.getElementById('qmlEmp');
-      if (!empSel?.value) { showToast('কর্মী সিলেক্ট করুন', 'error'); setBtnLoading(btn, false); return; }
+      if (!empSel?.value) { showToast('এমপ্লয়ী সিলেক্ট করুন', 'error'); setBtnLoading(btn, false); return; }
       userIds = [empSel.value];
     }
 
@@ -2964,13 +2964,13 @@ async function saveQuickLeave(code) {
 async function openMarkOthersAttendance() {
   if (!App.isAdmin) return;
   const { data: employees } = await sb.from('profiles').select('id, full_name, email').eq('is_active', true).order('full_name');
-  if (!employees || employees.length === 0) return showToast('কোনো কর্মী নেই', 'warning');
+  if (!employees || employees.length === 0) return showToast('কোনো এমপ্লয়ী নেই', 'warning');
   const empOptions = employees.map(e => `<option value="${e.id}">${escapeHtml(e.full_name)} · ${escapeHtml(e.email)}</option>`).join('');
 
   showModal(
-    '<i class="fa-solid fa-clipboard-check" style="color:var(--purple-600)"></i> অন্য কর্মীর এটেন্ডেন্স দিন',
+    '<i class="fa-solid fa-clipboard-check" style="color:var(--purple-600)"></i> অন্য এমপ্লয়ীর এটেন্ডেন্স দিন',
     `
-    <div class="form-group"><label>কর্মী নির্বাচন করুন</label>
+    <div class="form-group"><label>এমপ্লয়ী নির্বাচন করুন</label>
       <select class="form-select" id="moaEmp">${empOptions}</select>
     </div>
     <div class="form-group"><label>তারিখ</label>
@@ -3120,9 +3120,9 @@ function renderAttendance() {
     ${App.isAdmin ? `
     <div class="card" style="background:linear-gradient(135deg,#faf5ff 0%,#fce7f3 100%);border:1px solid var(--purple-200)">
       <div class="card-title" style="border:none;padding-bottom:8px;margin-bottom:8px">
-        <span><i class="fa-solid fa-clipboard-check" style="color:var(--purple-600)"></i> অ্যাডমিন: কর্মীদের ছুটি/অনুপস্থিতি দিন</span>
+        <span><i class="fa-solid fa-clipboard-check" style="color:var(--purple-600)"></i> অ্যাডমিন: এমপ্লয়ীদের ছুটি/অনুপস্থিতি দিন</span>
       </div>
-      <p style="font-size:12px;color:var(--gray-600);margin-bottom:14px">কর্মী সিলেক্ট করে ছুটির ধরন (CL/SL/EL/CoL/ML/PH/UL/IL) এক ক্লিকে দিতে পারবেন।</p>
+      <p style="font-size:12px;color:var(--gray-600);margin-bottom:14px">এমপ্লয়ী সিলেক্ট করে ছুটির ধরন (CL/SL/EL/CoL/ML/PH/UL/IL) এক ক্লিকে দিতে পারবেন।</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
         <button class="btn btn-sm" style="background:#3b82f6;color:white" onclick="quickMarkLeave('CL')"><b>CL</b> · নৈমিত্তিক</button>
         <button class="btn btn-sm" style="background:#ef4444;color:white" onclick="quickMarkLeave('SL')"><b>SL</b> · অসুস্থতা</button>
@@ -3139,7 +3139,7 @@ function renderAttendance() {
 
     <div class="card">
       <div class="card-title">
-        <span><i class="fa-solid fa-history"></i> ${App.isAdmin ? 'সকল কর্মীর এটেন্ডেন্স' : 'আমার এটেন্ডেন্স রেকর্ড'}</span>
+        <span><i class="fa-solid fa-history"></i> ${App.isAdmin ? 'সকল এমপ্লয়ীর এটেন্ডেন্স' : 'আমার এটেন্ডেন্স রেকর্ড'}</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input class="form-input" type="month" id="attMonth" value="${curMonth}" onchange="refreshAttendanceList()" style="width:auto;min-height:38px;padding:8px 12px">
           <select class="form-select" id="attStatusFilter" onchange="refreshAttendanceList()" style="width:auto;min-height:38px">
@@ -3153,7 +3153,7 @@ function renderAttendance() {
       <div style="overflow-x:auto">
         <table class="data-table" id="attendanceTable" style="min-width:900px">
           <thead><tr>
-            ${App.isAdmin ? '<th>কর্মী</th>' : ''}
+            ${App.isAdmin ? '<th>এমপ্লয়ী</th>' : ''}
             <th>তারিখ</th>
             <th>ইন</th>
             <th>লাঞ্চ আউট</th>
@@ -3222,13 +3222,16 @@ async function refreshNoticesList() {
   const search = (document.getElementById('noticeSearch')?.value || '').toLowerCase().trim();
 
   try {
-    const [{ data: notices, error }, { data: reads }, { data: hides }] = await Promise.all([
+    const [noticeRes, readRes, hideRes] = await Promise.all([
       sb.from('notices').select('*, profiles!posted_by(full_name)').eq('is_active', true).order('created_at', { ascending: false }),
       sb.from('notice_reads').select('notice_id').eq('user_id', App.user.id),
       App.isAdmin
         ? Promise.resolve({ data: [] })
-        : sb.from('notice_hides').select('notice_id').eq('user_id', App.user.id)
+        : sb.from('notice_hides').select('notice_id').eq('user_id', App.user.id).then(r => r, () => ({ data: [] }))
     ]);
+    const notices = noticeRes.data, error = noticeRes.error;
+    const reads   = readRes.data || [];
+    const hides   = (hideRes && hideRes.data) ? hideRes.data : [];
     if (error) throw error;
     const readSet = new Set((reads||[]).map(r => r.notice_id));
     const hideSet = new Set((hides||[]).map(r => r.notice_id));
@@ -3381,7 +3384,12 @@ async function hideNoticeForMe(noticeId) {
   if (!confirm('এই নোটিশটি আপনার তালিকা থেকে সরাবেন?\n\nℹ️ অন্যদের কাছে নোটিশটি থাকবে।')) return;
   try {
     const { error } = await sb.from('notice_hides').upsert({ notice_id: noticeId, user_id: App.user.id });
-    if (error) throw error;
+    if (error) {
+      if (/notice_hides|relation.*does not exist/i.test(error.message||'')) {
+        return showToast('⚠️ Supabase v8 SQL এখনো চালানো হয়নি। এডমিনকে বলুন supabase_v8_soft_hide.sql চালাতে।', 'error');
+      }
+      throw error;
+    }
     showToast('✅ আপনার তালিকা থেকে সরানো হয়েছে');
     refreshNoticesList();
   } catch (e) {
@@ -3516,9 +3524,20 @@ async function _renderLeavesContent() {
     if (status) q = q.eq('status', status);
     if (ltype)  q = q.eq('leave_code', ltype);
     // Employees never see their own soft-hidden leaves; admins always see all.
+    // Tolerate missing column (v8 SQL not yet applied) by retrying without filter.
     if (!App.isAdmin) q = q.or('hidden_for_user.is.null,hidden_for_user.eq.false');
 
-    const { data, error } = await q;
+    let { data, error } = await q;
+    if (error && /hidden_for_user/i.test(error.message||'')) {
+      // Column missing — fall back to unfiltered query
+      let q2 = sb.from('leaves').select('*, profiles!user_id(full_name, email)').order('created_at', { ascending: false });
+      if (_leavesTab === 'my')           q2 = q2.eq('user_id', App.user.id);
+      else if (_leavesTab === 'pending') q2 = q2.eq('status', 'pending');
+      if (status) q2 = q2.eq('status', status);
+      if (ltype)  q2 = q2.eq('leave_code', ltype);
+      const r2 = await q2;
+      data = r2.data; error = r2.error;
+    }
     if (error) throw error;
 
     if (!data || data.length === 0) {
@@ -3802,15 +3821,15 @@ async function reviewLeave(id, decision) {
           })
         });
         if (res.ok) {
-          showToast('📧 কর্মীর ইমেইলে আপডেট পাঠানো হয়েছে (এডমিনেও কপি)', 'success');
+          showToast('📧 এমপ্লয়ীর ইমেইলে আপডেট পাঠানো হয়েছে (এডমিনেও কপি)', 'success');
         } else {
           const t = await res.text().catch(() => '');
           let hint = '';
           try { const j = JSON.parse(t); hint = j.hint || j.error || ''; } catch { hint = t.slice(0,140); }
-          showToast('⚠️ কর্মীর ইমেইলে পাঠানো যায়নি — ' + (hint || 'Vercel env vars দেখুন'), 'warning');
+          showToast('⚠️ এমপ্লয়ীর ইমেইলে পাঠানো যায়নি — ' + (hint || 'Vercel env vars দেখুন'), 'warning');
         }
       } else {
-        showToast('⚠️ কর্মীর ইমেইল খুঁজে পাওয়া যায়নি', 'warning');
+        showToast('⚠️ এমপ্লয়ীর ইমেইল খুঁজে পাওয়া যায়নি', 'warning');
       }
     } catch (e) {
       console.warn('Email notify error:', e);
@@ -3840,7 +3859,7 @@ async function deleteLeave(id) {
 
     if (App.isAdmin) {
       // Admin → real DB delete (affects everyone, including employee's view)
-      const who = isOwn ? 'আপনার' : (leave.profiles?.full_name || 'এই কর্মীর');
+      const who = isOwn ? 'আপনার' : (leave.profiles?.full_name || 'এই এমপ্লয়ীর');
       const msg = `${who} এই ছুটির আবেদন (${bnDigits(leave.total_days||0)} দিন) ডেটাবেজ থেকে স্থায়ীভাবে মুছবেন?\n\n⚠️ এই কাজ undo করা যাবে না।`;
       if (!confirm(msg)) return;
       const { error } = await sb.from('leaves').delete().eq('id', id);
@@ -3851,7 +3870,12 @@ async function deleteLeave(id) {
       const msg = `আপনার এই আবেদন (${bnDigits(leave.total_days||0)} দিন) আপনার তালিকা থেকে সরিয়ে ফেলবেন?\n\nℹ️ এডমিনের কাছে রেকর্ডটি থাকবে।`;
       if (!confirm(msg)) return;
       const { error } = await sb.from('leaves').update({ hidden_for_user: true }).eq('id', id).eq('user_id', App.user.id);
-      if (error) throw error;
+      if (error) {
+        if (/hidden_for_user/i.test(error.message||'')) {
+          return showToast('⚠️ Supabase v8 SQL এখনো চালানো হয়নি। এডমিনকে বলুন supabase_v8_soft_hide.sql চালাতে।', 'error');
+        }
+        throw error;
+      }
       showToast('✅ আপনার তালিকা থেকে সরানো হয়েছে');
     }
 
@@ -3911,7 +3935,7 @@ async function renderProfile() {
       </div>
       <div class="profile-info">
         <h2>${escapeHtml(p.full_name || '—')}</h2>
-        <p>${escapeHtml(p.position_title || p.designation || 'কর্মী')}${p.department?` · <i class="fa-solid fa-building" style="opacity:.7"></i> ${escapeHtml(p.department)}`:''}</p>
+        <p>${escapeHtml(p.position_title || p.designation || 'এমপ্লয়ী')}${p.department?` · <i class="fa-solid fa-building" style="opacity:.7"></i> ${escapeHtml(p.department)}`:''}</p>
         <div class="badges">
           <span class="verify-badge"><i class="fa-solid fa-circle-check"></i> ভেরিফাইড</span>
           ${App.isAdmin ? '<span class="verify-badge" style="background:var(--purple-100);color:var(--purple-700)"><i class="fa-solid fa-shield-halved"></i> Admin</span>' : App.isEditor ? '<span class="verify-badge" style="background:var(--blue-100);color:var(--blue-500)"><i class="fa-solid fa-pen"></i> Editor</span>' : '<span class="verify-badge" style="background:var(--gray-100);color:var(--gray-700)"><i class="fa-solid fa-user"></i> Employee</span>'}
@@ -3938,7 +3962,7 @@ async function renderProfile() {
         <div class="info-row"><div class="info-label">পদবি</div><div class="info-value">${escapeHtml(p.position_title || p.designation || '—')}</div></div>
         <div class="info-row"><div class="info-label">ডিপার্টমেন্ট</div><div class="info-value">${p.department ? escapeHtml(p.department) : '<span style="color:var(--gray-400)">—</span>'}</div></div>
         <div class="info-row"><div class="info-label">ভূমিকা</div><div class="info-value"><span class="type-badge" style="${App.isAdmin?'background:var(--purple-100);color:var(--purple-700)':App.isEditor?'background:var(--blue-100);color:var(--blue-500)':''}">${roleLabel(p.role||App.role)}</span></div></div>
-        <div class="info-row"><div class="info-label">কর্মী ধরন</div><div class="info-value">${escapeHtml(p.employee_types?.name_bn || '—')}</div></div>
+        <div class="info-row"><div class="info-label">এমপ্লয়ী ধরন</div><div class="info-value">${escapeHtml(p.employee_types?.name_bn || '—')}</div></div>
         <div class="info-row"><div class="info-label">র‍্যাঙ্কিং</div><div class="info-value num">${bnDigits(p.position_rank||5)}</div></div>
         <div class="info-row"><div class="info-label">যোগদান</div><div class="info-value">${p.joined_at ? formatBnDate(p.joined_at) : '<span style="color:var(--gray-400)">—</span>'}</div></div>
         ${p.salary ? `<div class="info-row"><div class="info-label">বেতন</div><div class="info-value"><span class="num" style="color:var(--purple-700);font-weight:800">৳ ${bnDigits(p.salary)}</span></div></div>` : ''}
@@ -4133,10 +4157,10 @@ function renderInbox() {
         <div>
           <div style="font-size:11px;font-weight:800;opacity:.65;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">📥 ব্যবস্থাপনা · ইনবক্স</div>
           <h1 style="font-size:24px;font-weight:800;margin-bottom:6px">ছুটির আবেদন পর্যালোচনা</h1>
-          <p style="opacity:.8;font-size:13px">কর্মীদের সব ছুটির আবেদন এখানে দেখুন ও সিদ্ধান্ত নিন।</p>
+          <p style="opacity:.8;font-size:13px">এমপ্লয়ীদের সব ছুটির আবেদন এখানে দেখুন ও সিদ্ধান্ত নিন।</p>
         </div>
         <button class="btn" style="background:white;color:#5b2d8a;font-weight:800;flex-shrink:0" onclick="navigate('employees')">
-          <i class="fa-solid fa-users"></i> কর্মী তালিকা
+          <i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা
         </button>
       </div>
     </div>
@@ -4200,7 +4224,7 @@ async function refreshInboxList() {
           <div style="flex:1;min-width:200px">
             <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:center">
               <div>
-                <h4 style="font-weight:800;color:var(--gray-800);font-size:15px">${escapeHtml(l.profiles?.full_name||'কর্মী')}</h4>
+                <h4 style="font-weight:800;color:var(--gray-800);font-size:15px">${escapeHtml(l.profiles?.full_name||'এমপ্লয়ী')}</h4>
                 <p style="font-size:12px;color:var(--gray-500)">${escapeHtml(l.profiles?.designation||'')}${l.profiles?.department?` · ${escapeHtml(l.profiles.department)}`:''}</p>
               </div>
               <span class="leave-status ${l.status}">${statusIcon(l.status)} ${statusLabel(l.status)}</span>
@@ -4281,8 +4305,8 @@ async function printLeaveLetter(leaveId) {
     </div>
     <h2 class="ll-doc-title">ছুটির আবেদন</h2>
     <div class="ll-doc-meta">
-      <div class="ll-doc-meta-row"><div class="lbl">কর্মীর নাম:</div><div class="val">${escapeHtml(leave.profiles?.full_name||'—')}</div></div>
-      <div class="ll-doc-meta-row"><div class="lbl">পদবি:</div><div class="val">${escapeHtml(leave.profiles?.designation||'কর্মী')}</div></div>
+      <div class="ll-doc-meta-row"><div class="lbl">এমপ্লয়ীর নাম:</div><div class="val">${escapeHtml(leave.profiles?.full_name||'—')}</div></div>
+      <div class="ll-doc-meta-row"><div class="lbl">পদবি:</div><div class="val">${escapeHtml(leave.profiles?.designation||'এমপ্লয়ী')}</div></div>
       ${leave.profiles?.department ? `<div class="ll-doc-meta-row"><div class="lbl">ডিপার্টমেন্ট:</div><div class="val">${escapeHtml(leave.profiles.department)}</div></div>` : ''}
       <div class="ll-doc-meta-row"><div class="lbl">ইমেইল:</div><div class="val">${escapeHtml(leave.profiles?.email||'—')}</div></div>
       <div class="ll-doc-meta-row"><div class="lbl">ছুটির ধরন:</div><div class="val">${leaveTypeLabel(leave.leave_type, leave.leave_code)}</div></div>
@@ -4291,13 +4315,13 @@ async function printLeaveLetter(leaveId) {
     <p class="ll-text">বরাবর,<br><b>প্রতিষ্ঠান প্রধান / এইচআর ম্যানেজার</b><br>অর্ধেকদ্বীন</p>
     <p class="ll-text"><b>বিষয়:</b> ${leaveTypeLabel(leave.leave_type, leave.leave_code)}-এর জন্য আবেদন।</p>
     <p class="ll-text">জনাব,</p>
-    <p class="ll-text">আসসালামু আলাইকুম। সবিনয় নিবেদন এই যে, আমি <b>${escapeHtml(leave.profiles?.full_name||'')}</b>, পদবি: <b>${escapeHtml(leave.profiles?.designation||'কর্মী')}</b>${leave.profiles?.department?`, ডিপার্টমেন্ট: <b>${escapeHtml(leave.profiles.department)}</b>`:''}; বিশেষ কারণে আগামী <b>${startBn}</b> হতে <b>${endBn}</b> তারিখ পর্যন্ত মোট <b>${bnDigits(leave.total_days)} দিনের ${leaveTypeLabel(leave.leave_type, leave.leave_code)}</b> প্রয়োজন। ছুটির কারণ নিম্নরূপ:</p>
+    <p class="ll-text">আসসালামু আলাইকুম। সবিনয় নিবেদন এই যে, আমি <b>${escapeHtml(leave.profiles?.full_name||'')}</b>, পদবি: <b>${escapeHtml(leave.profiles?.designation||'এমপ্লয়ী')}</b>${leave.profiles?.department?`, ডিপার্টমেন্ট: <b>${escapeHtml(leave.profiles.department)}</b>`:''}; বিশেষ কারণে আগামী <b>${startBn}</b> হতে <b>${endBn}</b> তারিখ পর্যন্ত মোট <b>${bnDigits(leave.total_days)} দিনের ${leaveTypeLabel(leave.leave_type, leave.leave_code)}</b> প্রয়োজন। ছুটির কারণ নিম্নরূপ:</p>
     <div class="ll-reason-box">"${escapeHtml(leave.reason||'')}"</div>
     <p class="ll-text">অতএব, মহোদয়ের নিকট বিনীত প্রার্থনা, উল্লিখিত সময়ের জন্য ছুটি মঞ্জুর করিয়া বাধিত করিবেন।</p>
     ${statusLine}
-    <p class="ll-text" style="margin-top:24px">নিবেদক,<br><br><b>${escapeHtml(leave.profiles?.full_name||'')}</b><br>${escapeHtml(leave.profiles?.designation||'কর্মী')}</p>
+    <p class="ll-text" style="margin-top:24px">নিবেদক,<br><br><b>${escapeHtml(leave.profiles?.full_name||'')}</b><br>${escapeHtml(leave.profiles?.designation||'এমপ্লয়ী')}</p>
     <div class="ll-signatures">
-      <div class="ll-sig">কর্মীর স্বাক্ষর<small>${escapeHtml(leave.profiles?.full_name||'')}</small></div>
+      <div class="ll-sig">এমপ্লয়ীর স্বাক্ষর<small>${escapeHtml(leave.profiles?.full_name||'')}</small></div>
       <div class="ll-sig">অনুমোদনকারী<small>এইচআর ম্যানেজার</small></div>
     </div>
   </div>
@@ -4357,16 +4381,16 @@ function renderEmployees() {
       <div style="position:absolute;bottom:-50px;left:5%;width:140px;height:140px;background:radial-gradient(circle,rgba(91,45,138,.3),transparent 70%);border-radius:50%"></div>
       <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
         <div>
-          <div style="font-size:11px;font-weight:800;opacity:.6;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">👥 HR · কর্মী ব্যবস্থাপনা</div>
-          <h1 style="font-size:24px;font-weight:800;margin-bottom:5px">কর্মীর তালিকা</h1>
-          <p style="opacity:.8;font-size:13px">সকল সক্রিয় কর্মীর তথ্য, পদবি ও যোগাযোগ দেখুন</p>
+          <div style="font-size:11px;font-weight:800;opacity:.6;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">👥 HR · এমপ্লয়ী ব্যবস্থাপনা</div>
+          <h1 style="font-size:24px;font-weight:800;margin-bottom:5px">এমপ্লয়ীর তালিকা</h1>
+          <p style="opacity:.8;font-size:13px">সকল সক্রিয় এমপ্লয়ীর তথ্য, পদবি ও যোগাযোগ দেখুন</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:12px;padding:9px 14px;border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;gap:8px">
             <i class="fa-solid fa-magnifying-glass" style="opacity:.7;font-size:13px"></i>
             <input id="empSearch" placeholder="নাম, পদবি, ইমেইল..." oninput="refreshEmployeesList()" style="background:transparent;border:none;outline:none;color:white;font-family:var(--font-bn);font-size:13px;font-weight:600;width:170px">
           </div>
-          ${isAdminOrEditor ? `<button class="btn" style="background:white;color:#1e3a8a;font-weight:800;flex-shrink:0" onclick="openEmployeeModal()"><i class="fa-solid fa-user-plus"></i> নতুন কর্মী</button>` : ''}
+          ${isAdminOrEditor ? `<button class="btn" style="background:white;color:#1e3a8a;font-weight:800;flex-shrink:0" onclick="openEmployeeModal()"><i class="fa-solid fa-user-plus"></i> নতুন এমপ্লয়ী</button>` : ''}
         </div>
       </div>
     </div>
@@ -4438,7 +4462,7 @@ async function refreshEmployeesList() {
     );
 
     if (filtered.length === 0) {
-      card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-users"></i><h3>কোনো কর্মী পাওয়া যায়নি</h3><p>"নতুন কর্মী" বাটন থেকে যোগ করুন।</p></div>`;
+      card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-users"></i><h3>কোনো এমপ্লয়ী পাওয়া যায়নি</h3><p>"নতুন এমপ্লয়ী" বাটন থেকে যোগ করুন।</p></div>`;
       return;
     }
 
@@ -4453,7 +4477,7 @@ async function refreshEmployeesList() {
         <div class="emp-desg">${escapeHtml(e.position_title || e.designation || '—')}</div>
         ${e.department ? `<div style="font-size:11px;color:var(--gray-400);margin-bottom:6px"><i class="fa-solid fa-building"></i> ${escapeHtml(e.department)}</div>` : ''}
         <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">
-          <span class="type-badge">${escapeHtml(e.employee_types?.name_bn || 'কর্মী')}</span>
+          <span class="type-badge">${escapeHtml(e.employee_types?.name_bn || 'এমপ্লয়ী')}</span>
           ${roleBadge}
         </div>
         ${App.isAdmin ? `<div style="margin-top:10px;display:flex;gap:6px;justify-content:center"><button class="icon-btn" onclick="event.stopPropagation();editEmployee('${e.id}')" title="এডিট"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" onclick="event.stopPropagation();deleteEmployee('${e.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button></div>` : ''}
@@ -4489,7 +4513,7 @@ function openEmployeeModal(emp = null) {
     const depts = `<option value="">— নির্বাচন করুন —</option>` + App.departments.map(d => `<option value="${escapeHtml(d.name_bn)}" ${isEdit && emp.department===d.name_bn?'selected':''}>${escapeHtml(d.name_bn)}</option>`).join('');
     const role = isEdit ? (emp.role || 'employee') : 'employee';
     showModal(
-      `<i class="fa-solid fa-user-plus" style="color:var(--purple-600)"></i> ${isEdit ? 'কর্মী এডিট' : 'নতুন কর্মী যোগ'}`,
+      `<i class="fa-solid fa-user-plus" style="color:var(--purple-600)"></i> ${isEdit ? 'এমপ্লয়ী এডিট' : 'নতুন এমপ্লয়ী যোগ'}`,
       `
       <div class="form-group"><label>পূর্ণ নাম *</label><input class="form-input" id="empName" placeholder="পূর্ণ নাম" value="${isEdit?escapeHtml(emp.full_name||''):''}"></div>
       <div class="form-grid">
@@ -4506,10 +4530,10 @@ function openEmployeeModal(emp = null) {
           <select class="form-select" id="empRole">
             <option value="admin"    ${role==='admin'?'selected':''}>👑 অ্যাডমিন (পূর্ণ অ্যাক্সেস)</option>
             <option value="editor"   ${role==='editor'?'selected':''}>✍️ এডিটর (নোটিশ/ছুটি ম্যানেজ)</option>
-            <option value="employee" ${role==='employee'?'selected':''}>👤 সাধারণ কর্মী</option>
+            <option value="employee" ${role==='employee'?'selected':''}>👤 সাধারণ এমপ্লয়ী</option>
           </select>
         </div>
-        <div class="form-group"><label>কর্মী ধরন</label><select class="form-select" id="empType">${types}</select></div>
+        <div class="form-group"><label>এমপ্লয়ী ধরন</label><select class="form-select" id="empType">${types}</select></div>
       </div>
       <div class="form-grid">
         <div class="form-group"><label>র‍্যাঙ্কিং (১=সর্বোচ্চ)</label><input class="form-input num" type="number" id="empRank" min="1" max="100" value="${isEdit?(emp.position_rank||5):5}"></div>
@@ -4520,7 +4544,7 @@ function openEmployeeModal(emp = null) {
         <div class="form-group"><label>ব্যাংক একাউন্ট</label><input class="form-input" id="empBank" placeholder="এক্স ব্যাংক · ১২৩৪৫৬" value="${isEdit?escapeHtml(emp.bank_account||''):''}"></div>
       </div>
       <div class="form-group"><label>ঠিকানা</label><textarea class="form-textarea" id="empAddress" style="min-height:60px">${isEdit?escapeHtml(emp.address||''):''}</textarea></div>
-      ${!isEdit?'<div class="note-banner" style="font-size:12px"><i class="fa-solid fa-info-circle"></i> নতুন কর্মীকে আলাদাভাবে রেজিস্ট্রেশন পেজ থেকে অ্যাকাউন্ট তৈরি করতে বলুন। এই অ্যাকাউন্ট দিয়ে তিনি login করলে এই profile-এর সাথে link হবে।</div>':''}
+      ${!isEdit?'<div class="note-banner" style="font-size:12px"><i class="fa-solid fa-info-circle"></i> নতুন এমপ্লয়ীকে আলাদাভাবে রেজিস্ট্রেশন পেজ থেকে অ্যাকাউন্ট তৈরি করতে বলুন। এই অ্যাকাউন্ট দিয়ে তিনি login করলে এই profile-এর সাথে link হবে।</div>':''}
       `,
       `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
        <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee(${isEdit?`'${emp.id}'`:'null'})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>`
@@ -4553,12 +4577,12 @@ async function saveEmployee(id) {
     if (id) {
       const { error } = await sb.from('profiles').update(data).eq('id', id);
       if (error) throw error;
-      showToast('✅ কর্মী আপডেট হয়েছে');
+      showToast('✅ এমপ্লয়ী আপডেট হয়েছে');
     } else {
       const placeholder = { ...data, id: crypto.randomUUID(), is_active: true };
       const { error } = await sb.from('profiles').insert(placeholder);
       if (error) throw error;
-      showToast('✅ কর্মী যোগ হয়েছে');
+      showToast('✅ এমপ্লয়ী যোগ হয়েছে');
     }
     closeModal();
     refreshEmployeesList();
@@ -4575,11 +4599,11 @@ async function editEmployee(id) {
 }
 
 async function deleteEmployee(id) {
-  if (!confirm('এই কর্মীকে ডিলিট করবেন? (এটি অপরিবর্তনীয়)')) return;
+  if (!confirm('এই এমপ্লয়ীকে ডিলিট করবেন? (এটি অপরিবর্তনীয়)')) return;
   // Soft delete: set is_active = false
   const { error } = await sb.from('profiles').update({ is_active: false }).eq('id', id);
   if (error) return showToast('❌ ' + error.message, 'error');
-  showToast('✅ কর্মী নিষ্ক্রিয় হয়েছে');
+  showToast('✅ এমপ্লয়ী নিষ্ক্রিয় হয়েছে');
   refreshEmployeesList();
 }
 
@@ -4727,7 +4751,7 @@ async function loadEmpQuickStats(userId) {
 
 // Admin: send password reset email to an employee (also stores temp password)
 async function resetEmpPassword(userId, email) {
-  if (!confirm(`${email} এর পাসওয়ার্ড রিসেট করবেন?\n\n• ইমেইলে রিসেট কোড পাঠানো হবে (যদি SMTP কাজ করে)\n• অথবা আপনি একটা নতুন temporary password set করে কর্মীকে জানিয়ে দিতে পারেন।`)) return;
+  if (!confirm(`${email} এর পাসওয়ার্ড রিসেট করবেন?\n\n• ইমেইলে রিসেট কোড পাঠানো হবে (যদি SMTP কাজ করে)\n• অথবা আপনি একটা নতুন temporary password set করে এমপ্লয়ীকে জানিয়ে দিতে পারেন।`)) return;
   const action = prompt('১ = ইমেইলে রিসেট কোড পাঠান\n২ = নতুন temporary password তৈরি করে copy করুন\n\nকোনটা চান? (1/2)', '2');
   if (action === '1') {
     try {
@@ -4743,17 +4767,17 @@ async function resetEmpPassword(userId, email) {
     showModal(
       '<i class="fa-solid fa-key" style="color:var(--amber-600)"></i> Temporary Password',
       `<div style="text-align:center;padding:8px 0">
-        <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">এই temporary password টা কর্মীকে দিন। তিনি login করার পর প্রোফাইল থেকে নিজে পাসওয়ার্ড বদলে নিতে পারবেন।</p>
+        <p style="font-size:14px;color:var(--gray-600);margin-bottom:14px">এই temporary password টা এমপ্লয়ীকে দিন। তিনি login করার পর প্রোফাইল থেকে নিজে পাসওয়ার্ড বদলে নিতে পারবেন।</p>
         <div style="background:var(--purple-50);border:2px dashed var(--purple-400);padding:18px;border-radius:12px;margin:14px 0">
           <p style="font-size:11px;color:var(--gray-500);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Temporary Password</p>
           <div class="num en" style="font-size:22px;font-weight:900;color:var(--purple-700);letter-spacing:2px">${tempPass}</div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${tempPass}');showToast('✅ Copied!')"><i class="fa-solid fa-copy"></i> কপি করুন</button>
-        <p style="font-size:11px;color:var(--amber-600);margin-top:14px;background:var(--amber-100);padding:8px;border-radius:6px;font-weight:600">⚠️ এই password শুধু এই বার দেখানো হবে। কপি করে কর্মীকে SMS/WhatsApp এ পাঠান।</p>
+        <p style="font-size:11px;color:var(--amber-600);margin-top:14px;background:var(--amber-100);padding:8px;border-radius:6px;font-weight:600">⚠️ এই password শুধু এই বার দেখানো হবে। কপি করে এমপ্লয়ীকে SMS/WhatsApp এ পাঠান।</p>
       </div>`,
       `<button class="btn btn-primary" onclick="closeModal()">ঠিক আছে — কপি করেছি</button>`
     );
-    showToast('💡 Note: কর্মীর প্রকৃত password পরিবর্তন করতে Supabase Dashboard থেকে manually করতে হবে — এটা security এর জন্য', 'warning');
+    showToast('💡 Note: এমপ্লয়ীর প্রকৃত password পরিবর্তন করতে Supabase Dashboard থেকে manually করতে হবে — এটা security এর জন্য', 'warning');
   }
 }
 
@@ -4815,11 +4839,11 @@ async function renderReports() {
   return `
     <div class="welcome-banner" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">
       <h1>📊 রিপোর্ট ও বিশ্লেষণ</h1>
-      <p>কর্মীদের পারফরম্যান্স, এটেন্ডেন্স ট্রেন্ড এবং বিভিন্ন বিশ্লেষণ এক জায়গায়।</p>
+      <p>এমপ্লয়ীদের পারফরম্যান্স, এটেন্ডেন্স ট্রেন্ড এবং বিভিন্ন বিশ্লেষণ এক জায়গায়।</p>
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-users"></i></div><h3 class="num">${bnDigits(overview.totalEmp)}</h3><p>মোট সক্রিয় কর্মী</p></div>
+      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-users"></i></div><h3 class="num">${bnDigits(overview.totalEmp)}</h3><p>মোট সক্রিয় এমপ্লয়ী</p></div>
       <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num">${bnDigits(overview.avgLate)}</h3><p>গড় লেট (মিনিট)</p></div>
       <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella"></i></div><h3 class="num">${bnDigits(overview.totalLeaves)}</h3><p>মোট অনুমোদিত ছুটি (দিন)</p></div>
       <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num">${bnDigits(overview.avgHours)}</h3><p>গড় কাজের ঘন্টা</p></div>
@@ -4831,7 +4855,7 @@ async function renderReports() {
         <div style="position:relative;height:280px"><canvas id="chartMonthly"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> কর্মী ধরন বিতরণ</span></div>
+        <div class="card-title"><span><i class="fa-solid fa-chart-pie"></i> এমপ্লয়ী ধরন বিতরণ</span></div>
         <div style="position:relative;height:280px"><canvas id="chartTypes"></canvas></div>
       </div>
     </div>
@@ -4839,17 +4863,17 @@ async function renderReports() {
     <div class="card">
       <div class="card-title"><span><i class="fa-solid fa-download"></i> ডাটা এক্সপোর্ট</span></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-outline" onclick="exportEmployees()" style="width:auto"><i class="fa-solid fa-users"></i> কর্মী তালিকা</button>
+        <button class="btn btn-outline" onclick="exportEmployees()" style="width:auto"><i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা</button>
         <button class="btn btn-outline" onclick="exportAttendance()" style="width:auto"><i class="fa-solid fa-calendar-check"></i> এটেন্ডেন্স</button>
         <button class="btn btn-outline" onclick="exportLeaves()" style="width:auto"><i class="fa-solid fa-umbrella"></i> ছুটি</button>
-        <button class="btn btn-outline" onclick="exportEmpReportCSV()" style="width:auto"><i class="fa-solid fa-file-csv"></i> কর্মী-ভিত্তিক বার্ষিক রিপোর্ট</button>
+        <button class="btn btn-outline" onclick="exportEmpReportCSV()" style="width:auto"><i class="fa-solid fa-file-csv"></i> এমপ্লয়ী-ভিত্তিক বার্ষিক রিপোর্ট</button>
       </div>
     </div>
 
     <!-- ═══ PER-EMPLOYEE REPORT ═══ -->
     <div class="card" style="margin-top:18px">
       <div class="card-title">
-        <span><i class="fa-solid fa-id-card-clip" style="color:var(--purple-600)"></i> প্রতিটি কর্মীর ছুটি ও উপস্থিতি রিপোর্ট</span>
+        <span><i class="fa-solid fa-id-card-clip" style="color:var(--purple-600)"></i> প্রতিটি এমপ্লয়ীর ছুটি ও উপস্থিতি রিপোর্ট</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="form-select" id="empRptYear" onchange="loadEmpReport()" style="width:auto;min-height:38px;padding:8px 30px 8px 12px;font-size:13px"></select>
           <input class="form-input" id="empRptSearch" placeholder="🔍 নাম/ইমেইল/ডিপার্টমেন্ট" oninput="filterEmpReport()" style="width:240px;min-height:38px;padding:8px 14px;font-size:13px">
@@ -4984,7 +5008,7 @@ function renderEmpReportSummary(cache) {
     </div>
   `;
   el.innerHTML = [
-    tile('users', 'linear-gradient(135deg,#8b5cf6,#5b2d8a)', totalEmp, 'মোট কর্মী'),
+    tile('users', 'linear-gradient(135deg,#8b5cf6,#5b2d8a)', totalEmp, 'মোট এমপ্লয়ী'),
     tile('umbrella-beach', 'linear-gradient(135deg,#ec4899,#be185d)', totalLeave, 'মোট ছুটি (দিন)'),
     tile('clock', 'linear-gradient(135deg,#f59e0b,#d97706)', totalLate, 'মোট লেট ঘটনা'),
     tile('business-time', 'linear-gradient(135deg,#10b981,#059669)', totalHours, 'মোট কাজের ঘন্টা')
@@ -4996,7 +5020,7 @@ function renderEmpReportGrid(cache) {
   if (!grid) return;
   const rows = cache.rows;
   if (!rows || rows.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1" class="empty-state"><i class="fa-solid fa-users-slash"></i><h3>কোনো কর্মী পাওয়া যায়নি</h3></div>`;
+    grid.innerHTML = `<div style="grid-column:1/-1" class="empty-state"><i class="fa-solid fa-users-slash"></i><h3>কোনো এমপ্লয়ী পাওয়া যায়নি</h3></div>`;
     return;
   }
   // Color palette for cards
@@ -5042,8 +5066,8 @@ function renderEmpReportGrid(cache) {
             ${p.photo_url ? `<img src="${escapeHtml(p.photo_url)}" style="width:100%;height:100%;object-fit:cover">` : init}
           </div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.full_name||'কর্মী')}</div>
-            <div style="font-size:11px;opacity:.85;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.designation || p.employee_types?.name_bn || 'কর্মী')}</div>
+            <div style="font-size:15px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.full_name||'এমপ্লয়ী')}</div>
+            <div style="font-size:11px;opacity:.85;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.designation || p.employee_types?.name_bn || 'এমপ্লয়ী')}</div>
           </div>
           <div style="text-align:right">
             <div class="num" style="font-size:22px;font-weight:800;line-height:1">${bnDigits(remainingPct)}<span style="font-size:12px;opacity:.8">%</span></div>
@@ -5154,7 +5178,7 @@ async function openEmpReportModal(userId) {
         ${p.photo_url ? `<img src="${escapeHtml(p.photo_url)}" style="width:100%;height:100%;object-fit:cover">` : init}
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:18px;font-weight:800;color:var(--gray-900)">${escapeHtml(p.full_name||'কর্মী')}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--gray-900)">${escapeHtml(p.full_name||'এমপ্লয়ী')}</div>
         <div style="font-size:12px;color:var(--gray-600);font-weight:600">${escapeHtml(p.designation || '')}${p.department?` · ${escapeHtml(p.department)}`:''}</div>
         <div style="font-size:11px;color:var(--gray-500);margin-top:2px">${escapeHtml(p.email||'')}</div>
       </div>
@@ -5264,7 +5288,7 @@ function renderImport() {
   return `
     <div class="card">
       <div class="card-title"><span><i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট</span></div>
-      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> CSV ফাইল থেকে কর্মীদের তথ্য ইম্পোর্ট করুন। কলামগুলো স্বয়ংক্রিয়ভাবে ম্যাপ হবে।</div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> CSV ফাইল থেকে এমপ্লয়ীদের তথ্য ইম্পোর্ট করুন। কলামগুলো স্বয়ংক্রিয়ভাবে ম্যাপ হবে।</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
         <label style="padding:24px;border:2px dashed var(--purple-300);border-radius:var(--r-lg);text-align:center;cursor:pointer;transition:all .25s;display:block" onmouseover="this.style.borderColor='var(--purple-500)';this.style.background='var(--purple-50)'" onmouseout="this.style.borderColor='var(--purple-300)';this.style.background='transparent'">
@@ -5355,7 +5379,7 @@ function showImportPreview({ headers, rows }) {
     email:        ['email','ইমেইল','mail'],
     phone:        ['phone','mobile','ফোন','মোবাইল','contact'],
     designation:  ['designation','title','পদবি','position'],
-    employee_type:['type','employee_type','কর্মী ধরন','category'],
+    employee_type:['type','employee_type','এমপ্লয়ী ধরন','category'],
     joined_at:    ['joined_at','join_date','joining_date','যোগদান'],
     salary:       ['salary','বেতন','wage'],
     address:      ['address','ঠিকানা']
@@ -5498,12 +5522,12 @@ async function renderSettings() {
   return `
     <div class="card">
       <div class="card-title">
-        <span><i class="fa-solid fa-users-gear"></i> কর্মী ধরন (Employee Types)</span>
+        <span><i class="fa-solid fa-users-gear"></i> এমপ্লয়ী ধরন (Employee Types)</span>
         <button class="btn btn-primary" onclick="openTypeModal()" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন ধরন</button>
       </div>
-      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> আপনি যত ইচ্ছা কর্মী ধরন যোগ করতে পারবেন। প্রতিটি ধরনের জন্য আলাদা অফিস টাইম সেট করা যায়।</div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> আপনি যত ইচ্ছা এমপ্লয়ী ধরন যোগ করতে পারবেন। প্রতিটি ধরনের জন্য আলাদা অফিস টাইম সেট করা যায়।</div>
       ${types || '<div class="empty-state"><i class="fa-solid fa-users"></i><p>কোনো ধরন নেই</p></div>'}
-      <button class="btn btn-outline" style="width:100%;margin-top:12px;padding:18px;border-style:dashed;color:var(--purple-700)" onclick="openTypeModal()"><i class="fa-solid fa-plus"></i> নতুন কর্মী ধরন যোগ করুন</button>
+      <button class="btn btn-outline" style="width:100%;margin-top:12px;padding:18px;border-style:dashed;color:var(--purple-700)" onclick="openTypeModal()"><i class="fa-solid fa-plus"></i> নতুন এমপ্লয়ী ধরন যোগ করুন</button>
     </div>
 
     <div class="card">
@@ -5511,12 +5535,12 @@ async function renderSettings() {
         <span><i class="fa-solid fa-building"></i> ডিপার্টমেন্ট</span>
         <button class="btn btn-primary" onclick="openDeptModal()" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন ডিপার্টমেন্ট</button>
       </div>
-      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> কর্মীদের ডিপার্টমেন্ট হিসেবে অর্গানাইজ করুন (যেমন: প্রশাসন, IT, হিসাব)।</div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> এমপ্লয়ীদের ডিপার্টমেন্ট হিসেবে অর্গানাইজ করুন (যেমন: প্রশাসন, IT, হিসাব)।</div>
       ${depts || '<div class="empty-state" style="padding:20px"><i class="fa-solid fa-building"></i><p>কোনো ডিপার্টমেন্ট নেই</p></div>'}
     </div>
 
     <div class="card">
-      <div class="card-title"><span><i class="fa-solid fa-clock"></i> অফিস টাইম সেটিংস (প্রতিটি কর্মী ধরনের জন্য)</span></div>
+      <div class="card-title"><span><i class="fa-solid fa-clock"></i> অফিস টাইম সেটিংস (প্রতিটি এমপ্লয়ী ধরনের জন্য)</span></div>
       <div id="officeTimesContainer"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
     </div>
   `;
@@ -5592,7 +5616,7 @@ async function loadOfficeTimes() {
     const { data, error } = await sb.from('office_times').select('*, employee_types(name_bn, code)').order('id');
     if (error) throw error;
     if (!data || data.length === 0) {
-      c.innerHTML = '<p style="color:var(--gray-500);padding:14px">কোনো টাইপের অফিস টাইম সেট নেই। প্রথমে উপরে কর্মী ধরন যোগ করুন।</p>';
+      c.innerHTML = '<p style="color:var(--gray-500);padding:14px">কোনো টাইপের অফিস টাইম সেট নেই। প্রথমে উপরে এমপ্লয়ী ধরন যোগ করুন।</p>';
       return;
     }
     c.innerHTML = data.map(o => `
@@ -5635,10 +5659,10 @@ async function saveOfficeTime(id) {
 function openTypeModal(type = null) {
   const isEdit = !!type;
   showModal(
-    `<i class="fa-solid fa-${isEdit?'pen':'plus'}" style="color:var(--purple-600)"></i> ${isEdit?'কর্মী ধরন এডিট':'নতুন কর্মী ধরন'}`,
+    `<i class="fa-solid fa-${isEdit?'pen':'plus'}" style="color:var(--purple-600)"></i> ${isEdit?'এমপ্লয়ী ধরন এডিট':'নতুন এমপ্লয়ী ধরন'}`,
     `
     <div class="form-group"><label>কোড (ইংরেজি, যেমন type_3) *</label><input class="form-input en" id="tpCode" placeholder="type_3" value="${isEdit?escapeHtml(type.code):''}" ${isEdit?'readonly':''}></div>
-    <div class="form-group"><label>বাংলা নাম *</label><input class="form-input" id="tpNameBn" placeholder="যেমন: কর্মী টাইপ ৩" value="${isEdit?escapeHtml(type.name_bn):''}"></div>
+    <div class="form-group"><label>বাংলা নাম *</label><input class="form-input" id="tpNameBn" placeholder="যেমন: এমপ্লয়ী টাইপ ৩" value="${isEdit?escapeHtml(type.name_bn):''}"></div>
     <div class="form-group"><label>ইংরেজি নাম *</label><input class="form-input en" id="tpNameEn" placeholder="যেমন: Employee Type 3" value="${isEdit?escapeHtml(type.name_en||''):''}"></div>
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -5682,7 +5706,7 @@ async function editType(id) {
 }
 
 async function deleteType(id) {
-  if (!confirm('এই ধরনটি ডিলিট করবেন? এর সাথে যুক্ত কর্মীদের ধরন রিসেট হবে।')) return;
+  if (!confirm('এই ধরনটি ডিলিট করবেন? এর সাথে যুক্ত এমপ্লয়ীদের ধরন রিসেট হবে।')) return;
   const { error } = await sb.from('employee_types').delete().eq('id', id);
   if (error) return showToast('❌ ' + error.message, 'error');
   App.employeeTypes = [];
