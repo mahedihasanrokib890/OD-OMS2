@@ -3501,7 +3501,10 @@ async function _renderLeavesContent() {
       card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-calendar-check"></i><h3>${_leavesTab==='my'?'আপনি এখনো আবেদন করেননি':'কোনো আবেদন নেই'}</h3></div>`;
       return;
     }
-    card.innerHTML = data.map(l => `
+    card.innerHTML = data.map(l => {
+      const isOwn = l.user_id === App.user.id;
+      const canDelete = App.isAdmin || isOwn;
+      return `
       <div class="leave-card ${l.status}">
         <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px">
           <span class="leave-status ${l.status}">${statusIcon(l.status)} ${statusLabel(l.status)}</span>
@@ -3512,19 +3515,17 @@ async function _renderLeavesContent() {
         <div class="leave-reason">"${escapeHtml(l.reason)}"</div>
         ${l.review_comment ? `<div style="margin-top:8px;font-size:12px;background:var(--gray-50);padding:8px 12px;border-radius:8px"><b>মন্তব্য:</b> ${escapeHtml(l.review_comment)}</div>` : ''}
         <div style="margin-top:8px;font-size:12px;color:var(--gray-400)"><i class="fa-regular fa-clock"></i> আবেদন: ${formatBnDate(l.created_at)}</div>
-        ${App.isAdmin && l.status === 'pending' ? `
-          <div style="display:flex;gap:8px;margin-top:12px">
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          ${App.isAdmin && l.status === 'pending' ? `
             <button class="btn btn-success btn-sm" onclick="reviewLeave(${l.id},'approved')"><i class="fa-solid fa-check"></i> অনুমোদন</button>
             <button class="btn btn-danger btn-sm" onclick="reviewLeave(${l.id},'rejected')"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
-          </div>
-        ` : ''}
-        ${l.user_id === App.user.id && l.status === 'pending' ? `
-          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="cancelLeave(${l.id})">আবেদন বাতিল</button><button class="btn btn-outline btn-sm" onclick="printLeaveLetter(${l.id})"><i class="fa-solid fa-print"></i> চিঠি প্রিন্ট</button></div>
-        ` : `
-          <div style="margin-top:8px"><button class="btn btn-outline btn-sm" onclick="printLeaveLetter(${l.id})"><i class="fa-solid fa-print"></i> চিঠি প্রিন্ট</button></div>
-        `}
+          ` : ''}
+          ${isOwn && l.status === 'pending' ? `<button class="btn btn-outline btn-sm" onclick="cancelLeave(${l.id})"><i class="fa-solid fa-ban"></i> বাতিল</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="printLeaveLetter(${l.id})"><i class="fa-solid fa-print"></i> চিঠি প্রিন্ট</button>
+          ${canDelete ? `<button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="deleteLeave(${l.id})" title="স্থায়ীভাবে মুছুন"><i class="fa-solid fa-trash"></i> মুছুন</button>` : ''}
+        </div>
       </div>
-    `).join('');
+    `}).join('');
   } catch (e) {
     card.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড করতে সমস্যা</h3><p>${e.message}</p></div>`;
   }
@@ -3802,6 +3803,31 @@ async function cancelLeave(id) {
   if (error) return showToast('❌ ' + error.message, 'error');
   showToast('✅ আবেদন বাতিল হয়েছে');
   refreshLeavesList();
+}
+
+// Permanent delete (admin can delete any; employee can delete own)
+async function deleteLeave(id) {
+  try {
+    // Permission check
+    const { data: leave, error: e1 } = await sb.from('leaves').select('user_id, status, total_days, profiles!user_id(full_name)').eq('id', id).maybeSingle();
+    if (e1) throw e1;
+    if (!leave) return showToast('আবেদন পাওয়া যায়নি', 'error');
+    const isOwn = leave.user_id === App.user.id;
+    if (!App.isAdmin && !isOwn) return showToast('⚠️ আপনার এই আবেদন মুছার অনুমতি নেই', 'error');
+
+    const who = isOwn ? 'আপনার' : (leave.profiles?.full_name || 'এই কর্মীর');
+    const msg = `${who} এই ছুটির আবেদন (${bnDigits(leave.total_days||0)} দিন) স্থায়ীভাবে মুছে ফেলবেন?\n\n⚠️ এটি undo করা যাবে না।`;
+    if (!confirm(msg)) return;
+
+    const { error } = await sb.from('leaves').delete().eq('id', id);
+    if (error) throw error;
+    showToast('🗑️ আবেদন মুছে ফেলা হয়েছে');
+    if (App.currentPage === 'leaves')   refreshLeavesList();
+    if (App.currentPage === 'inbox')    refreshInboxList?.();
+    if (App.currentPage === 'dashboard') loadDashboardLists();
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'মুছা ব্যর্থ'), 'error');
+  }
 }
 </script>
 
@@ -4159,6 +4185,7 @@ async function refreshInboxList() {
                   <button class="btn btn-success btn-sm" onclick="reviewLeave(${l.id},'approved')"><i class="fa-solid fa-check"></i> অনুমোদন</button>
                   <button class="btn btn-danger btn-sm" onclick="reviewLeave(${l.id},'rejected')"><i class="fa-solid fa-xmark"></i> প্রত্যাখ্যান</button>
                 ` : ''}
+                <button class="btn btn-danger btn-sm" onclick="deleteLeave(${l.id})" title="স্থায়ীভাবে মুছুন"><i class="fa-solid fa-trash"></i> মুছুন</button>
               </div>
             </div>
           </div>
