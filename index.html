@@ -3253,12 +3253,41 @@ async function refreshAttendanceList() {
   const colCount = App.isAdmin ? 11 : 9;
 
   try {
-    let q = sb.from('attendance').select('*, profiles!user_id(full_name, photo_url)').gte('date', start).lte('date', end).order('date', { ascending: false });
+    let q = sb.from('attendance').select('*, profiles!user_id(full_name, photo_url, employee_type_id)').gte('date', start).lte('date', end).order('date', { ascending: false });
     if (!App.isAdmin) q = q.eq('user_id', App.user.id);
     if (statusFilter) q = q.eq('status', statusFilter);
 
     const { data, error } = await q;
     if (error) throw error;
+
+    // Pre-fetch office_times once so we can recompute lateness live (per employee_type)
+    let officeMap = {};
+    try {
+      const { data: ots } = await sb.from('office_times').select('*');
+      (ots||[]).forEach(o => { officeMap[o.employee_type_id] = o; });
+    } catch {}
+    // Helper: time-of-day minutes from ISO datetime string
+    const minutesOfDay = (iso) => {
+      if (!iso) return null;
+      const d = new Date(iso);
+      return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60;
+    };
+    const officeStartMin = (ot) => {
+      if (!ot) return null;
+      const [h, m] = (ot.check_in_time||'00:00').split(':').map(Number);
+      return h*60 + (m||0) + (ot.grace_minutes||0);
+    };
+    // Compute live late minutes for a row
+    const liveLate = (r) => {
+      if (!r.check_in) return 0;
+      const ot = officeMap[r.profiles?.employee_type_id];
+      const start = officeStartMin(ot);
+      if (start == null) return r.late_minutes || 0;
+      const cm = minutesOfDay(r.check_in);
+      if (cm == null) return 0;
+      const diff = cm - start;
+      return diff > 0 ? Math.round(diff) : 0;
+    };
 
     const myData = App.isAdmin ? (data||[]).filter(r => r.user_id === App.user.id) : (data||[]);
     const _setStat = (id, val) => {
@@ -3297,16 +3326,17 @@ async function refreshAttendanceList() {
     }
 
     tbody.innerHTML = data.map(r => {
-      const isLate = r.late_minutes > 0;
+      const computedLate = liveLate(r);
+      const isLate = computedLate > 0;
       const isLeave = r.status === 'leave' || r.status === 'absent' || r.status === 'holiday';
       const rowClass = isLeave ? '' : (isLate ? 'row-late' : 'row-ok');
       const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
-      // Check-in cell: bold red if late, bold green if on-time
+      // Check-in cell: bold red if late, bold green if on-time (uses LIVE late, not stored)
       const checkInCell = (() => {
         if (!r.check_in) return '<span style="color:var(--gray-300)">—</span>';
         const cls = isLate ? 'ci-late' : 'ci-ontime';
-        const tt = isLate ? `${bnDigits(r.late_minutes||0)} মিনিট লেট` : 'অন-টাইম';
-        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isLate?` <small>+${bnDigits(r.late_minutes||0)}মি</small>`:''}</span>`;
+        const tt = isLate ? `${bnDigits(computedLate)} মিনিট লেট` : 'অন-টাইম';
+        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isLate?` <small>+${bnDigits(computedLate)}মি</small>`:''}</span>`;
       })();
       // Admin: small percentage pill near employee name
       const pct = App.isAdmin ? (empPct[r.user_id] ?? 0) : 0;
@@ -3327,7 +3357,7 @@ async function refreshAttendanceList() {
         const cc = codeColors[r.leave_code] || '#94a3b8';
         statusCell = `<span class="leave-status" style="background:${cc}22;color:${cc}">🏖️ ${r.leave_code || (r.status==='holiday'?'PH':'—')}</span>`;
       } else if (isLate) {
-        statusCell = `<span class="leave-status pending">⚠️ লেট ${bnDigits(r.late_minutes)}মি</span>`;
+        statusCell = `<span class="leave-status pending">⚠️ লেট ${bnDigits(computedLate)}মি</span>`;
       } else {
         statusCell = `<span class="leave-status approved">✓ নিয়মিত</span>`;
       }
@@ -5833,6 +5863,26 @@ async function loadEmpReport() {
       else if (a.status === 'absent') u.absent++;
     });
 
+    // Compute current-month attendance % per user
+    const monthStart = today().slice(0,7) + '-01';
+    const todayDate  = new Date();
+    const monthDayCount = new Date(todayDate.getFullYear(), todayDate.getMonth()+1, 0).getDate();
+    const dayPassed     = (today().slice(0,7) === year + '-' + String(todayDate.getMonth()+1).padStart(2,'0'))
+      ? todayDate.getDate()
+      : monthDayCount;
+    Object.values(byUser).forEach(u => { u.monthPresent = 0; });
+    atts.forEach(a => {
+      if (a.date >= monthStart) {
+        const u = byUser[a.user_id]; if (!u) return;
+        if (a.status === 'present' || a.status === 'late') u.monthPresent++;
+      }
+    });
+    Object.values(byUser).forEach(u => {
+      u.monthPct = Math.round(((u.monthPresent||0) / Math.max(1, dayPassed)) * 100);
+      // Yearly punctuality % = (present - late) / present
+      u.yearPunct = u.present ? Math.round(((u.present - u.late) / u.present) * 100) : 0;
+    });
+
     // Cache for filter / export
     _empReportCache = { year, rows: Object.values(byUser), policies };
 
@@ -5850,17 +5900,19 @@ function renderEmpReportSummary(cache) {
   const totalLeave = cache.rows.reduce((s,r) => s + r.totalLeaveUsed, 0);
   const totalLate  = cache.rows.reduce((s,r) => s + r.late, 0);
   const totalHours = Math.round(cache.rows.reduce((s,r) => s + r.hours, 0));
-  const tile = (icon, color, value, label) => `
+  const avgPct = cache.rows.length ? Math.round(cache.rows.reduce((s,r) => s + (r.monthPct||0), 0) / cache.rows.length) : 0;
+  const tile = (icon, color, value, label, suffix='') => `
     <div style="background:white;padding:14px 16px;border-radius:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
       <div style="width:40px;height:40px;border-radius:11px;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fa-solid fa-${icon}"></i></div>
       <div style="flex:1;min-width:0">
-        <div class="num" style="font-size:22px;font-weight:800;color:var(--gray-900);line-height:1">${bnDigits(value)}</div>
+        <div class="num" style="font-size:22px;font-weight:800;color:var(--gray-900);line-height:1">${bnDigits(value)}${suffix}</div>
         <div style="font-size:12px;color:var(--gray-500);font-weight:600">${label}</div>
       </div>
     </div>
   `;
   el.innerHTML = [
     tile('users', 'linear-gradient(135deg,#8b5cf6,#5b2d8a)', totalEmp, 'মোট এমপ্লয়ী'),
+    tile('chart-line', 'linear-gradient(135deg,#3b82f6,#1d4ed8)', avgPct, 'গড় মাসিক উপস্থিতি', '%'),
     tile('umbrella-beach', 'linear-gradient(135deg,#ec4899,#be185d)', totalLeave, 'মোট ছুটি (দিন)'),
     tile('clock', 'linear-gradient(135deg,#f59e0b,#d97706)', totalLate, 'মোট লেট ঘটনা'),
     tile('business-time', 'linear-gradient(135deg,#10b981,#059669)', totalHours, 'মোট কাজের ঘন্টা')
@@ -5922,26 +5974,41 @@ function renderEmpReportGrid(cache) {
             <div style="font-size:11px;opacity:.85;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.designation || p.employee_types?.name_bn || 'এমপ্লয়ী')}</div>
           </div>
           <div style="text-align:right">
-            <div class="num" style="font-size:22px;font-weight:800;line-height:1">${bnDigits(remainingPct)}<span style="font-size:12px;opacity:.8">%</span></div>
-            <div style="font-size:10px;font-weight:700;opacity:.85;letter-spacing:.5px;text-transform:uppercase">ছুটি বাকি</div>
+            <div class="num" style="font-size:22px;font-weight:800;line-height:1">${bnDigits(u.monthPct ?? 0)}<span style="font-size:12px;opacity:.8">%</span></div>
+            <div style="font-size:10px;font-weight:700;opacity:.85;letter-spacing:.5px;text-transform:uppercase">এ মাস উপস্থিত</div>
           </div>
         </div>
 
         <!-- Body -->
         <div style="padding:14px 16px">
           <!-- Top stats row -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-            <div style="text-align:center;padding:8px 4px;background:#f0fdf4;border-radius:10px">
-              <div class="num" style="font-size:18px;font-weight:800;color:#059669">${bnDigits(u.totalLeaveUsed)}</div>
-              <div style="font-size:10px;color:var(--gray-500);font-weight:700">নেওয়া (দিন)</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+            <div style="text-align:center;padding:8px 4px;background:#ecfdf5;border-radius:10px" title="এ বছর উপস্থিত দিন">
+              <div class="num" style="font-size:17px;font-weight:800;color:#059669">${bnDigits(u.present)}</div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">উপস্থিত</div>
             </div>
-            <div style="text-align:center;padding:8px 4px;background:#fef3c7;border-radius:10px">
-              <div class="num" style="font-size:18px;font-weight:800;color:#d97706">${bnDigits(remaining)}</div>
-              <div style="font-size:10px;color:var(--gray-500);font-weight:700">বাকি (দিন)</div>
+            <div style="text-align:center;padding:8px 4px;background:#fef3c7;border-radius:10px" title="ছুটি নেওয়া">
+              <div class="num" style="font-size:17px;font-weight:800;color:#d97706">${bnDigits(u.totalLeaveUsed)}</div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">ছুটি</div>
             </div>
-            <div style="text-align:center;padding:8px 4px;background:#fee2e2;border-radius:10px">
-              <div class="num" style="font-size:18px;font-weight:800;color:#dc2626">${bnDigits(u.late)}</div>
+            <div style="text-align:center;padding:8px 4px;background:#fee2e2;border-radius:10px" title="মোট লেট ঘটনা">
+              <div class="num" style="font-size:17px;font-weight:800;color:#dc2626">${bnDigits(u.late)}</div>
               <div style="font-size:10px;color:var(--gray-500);font-weight:700">লেট</div>
+            </div>
+            <div style="text-align:center;padding:8px 4px;background:#dbeafe;border-radius:10px" title="পাংচুয়ালিটি স্কোর">
+              <div class="num" style="font-size:17px;font-weight:800;color:#1d4ed8">${bnDigits(u.yearPunct ?? 0)}<span style="font-size:11px">%</span></div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">পাংচুয়াল</div>
+            </div>
+          </div>
+
+          <!-- Monthly progress bar -->
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:4px">
+              <span><i class="fa-solid fa-chart-simple"></i> এ মাসের উপস্থিতি</span>
+              <span class="num">${bnDigits(u.monthPct ?? 0)}%</span>
+            </div>
+            <div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:${u.monthPct||0}%;background:${(u.monthPct||0) >= 85 ? 'linear-gradient(90deg,#10b981,#059669)' : (u.monthPct||0) >= 60 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)'};border-radius:99px;transition:width .8s"></div>
             </div>
           </div>
 
@@ -5950,7 +6017,7 @@ function renderEmpReportGrid(cache) {
 
           <!-- Footer line -->
           <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px dashed var(--gray-200);font-size:11px;color:var(--gray-500);font-weight:700">
-            <span><i class="fa-solid fa-calendar-check" style="color:#10b981"></i> ${bnDigits(u.present)} উপস্থিত</span>
+            <span><i class="fa-solid fa-umbrella-beach" style="color:#ec4899"></i> বাকি ${bnDigits(remaining)}</span>
             <span><i class="fa-solid fa-business-time" style="color:#8b5cf6"></i> ${bnDigits(Math.round(u.hours))} ঘ.</span>
             <span style="color:var(--purple-600)">বিস্তারিত <i class="fa-solid fa-arrow-right"></i></span>
           </div>
