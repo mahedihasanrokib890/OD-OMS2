@@ -1970,6 +1970,7 @@ function navigate(route) {
     if (route === 'inbox')     refreshInboxList();
     if (route === 'settings') loadOfficeTimes();
     if (route === 'reports')  loadEmpReport();
+    if (route === 'reports')  loadImportedActivity();
 
     // Premium polish: counters + reveal animations on every page
     setTimeout(() => {
@@ -5864,6 +5865,18 @@ async function renderReports() {
         <div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
       </div>
     </div>
+
+    <!-- ═══ IMPORTED MONTHLY ACTIVITY (from Google Sheet) ═══ -->
+    <div class="card" style="margin-top:18px">
+      <div class="card-title">
+        <span><i class="fa-solid fa-chart-simple" style="color:#0f9d58"></i> মাসিক অ্যাক্টিভিটি (শিট থেকে ইম্পোর্টকৃত)</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="form-select" id="actViewMonth" onchange="loadImportedActivity()" style="width:auto;min-height:38px;padding:8px 30px 8px 12px;font-size:13px"></select>
+          <button class="btn btn-outline btn-sm" onclick="loadImportedActivity()"><i class="fa-solid fa-arrows-rotate"></i></button>
+        </div>
+      </div>
+      <div id="importedActivityBox"><div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+    </div>
   `;
 }
 
@@ -6064,6 +6077,61 @@ function renderEmpReportPctTable(cache) {
       </tr>
     `;
   }).join('');
+}
+
+// Render imported monthly_activity table in Reports
+async function loadImportedActivity() {
+  const box = document.getElementById('importedActivityBox');
+  if (!box) return;
+  const sel = document.getElementById('actViewMonth');
+  try {
+    if (sel && !sel.options.length) {
+      const { data: months } = await sb.from('monthly_activity').select('month, month_label').order('month', { ascending: false });
+      const seen = new Set(); const opts = [];
+      (months||[]).forEach(m => { if (!seen.has(m.month)) { seen.add(m.month); opts.push(m); } });
+      if (opts.length === 0) {
+        box.innerHTML = `<div class="empty-state" style="padding:30px"><i class="fa-solid fa-cloud-arrow-up"></i><h3>এখনো কোনো অ্যাক্টিভিটি ইম্পোর্ট করা হয়নি</h3><p>ডাটা ইম্পোর্ট পেজ থেকে Google Sheet লিংক দিয়ে ইম্পোর্ট করুন</p><button class="btn btn-primary" style="margin-top:12px;width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>`;
+        return;
+      }
+      sel.innerHTML = opts.map(m => `<option value="${m.month}">${escapeHtml(m.month_label||m.month)}</option>`).join('');
+    }
+    const month = sel?.value || sel?.options[0]?.value;
+    if (!month) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>কোনো ডাটা নেই</h3></div>`; return; }
+    const { data: rows } = await sb.from('monthly_activity').select('*').eq('month', month).order('activity_pct', { ascending: false });
+    if (!rows || rows.length === 0) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>এই মাসে কোনো ডাটা নেই</h3></div>`; return; }
+    box.innerHTML = `
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
+        <table class="data-table" style="width:100%;min-width:820px">
+          <thead><tr><th>#</th><th>এমপ্লয়ী</th><th>উপস্থিত</th><th>লেট</th><th>কাজ (ঘ.)</th><th>CL</th><th>SL</th><th>EL</th><th>PH</th><th>ছুটি</th><th>অ্যাক্টিভিটি%</th></tr></thead>
+          <tbody>
+            ${rows.map((r,i) => {
+              const pct = Number(r.activity_pct)||0;
+              const clr = pct>=85?'#059669':pct>=60?'#d97706':'#dc2626';
+              const bg = pct>=85?'linear-gradient(90deg,#10b981,#059669)':pct>=60?'linear-gradient(90deg,#f59e0b,#d97706)':'linear-gradient(90deg,#ef4444,#dc2626)';
+              const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':bnDigits(i+1);
+              return `
+              <tr>
+                <td style="text-align:center;font-weight:800">${medal}</td>
+                <td><b>${escapeHtml(r.employee_name)}</b>${r.emp_code?`<br><small style="color:var(--gray-400)">${escapeHtml(r.emp_code)}</small>`:''}</td>
+                <td class="num" style="font-weight:700;color:#059669">${bnDigits(r.present_days)}</td>
+                <td class="num" style="font-weight:700;color:#dc2626">${bnDigits(r.late_count)}</td>
+                <td class="num">${bnDigits(Number(r.worked_hours||0).toFixed(1))}</td>
+                <td class="num">${bnDigits(r.cl_days)}</td>
+                <td class="num">${bnDigits(r.sl_days)}</td>
+                <td class="num">${bnDigits(r.el_days)}</td>
+                <td class="num">${bnDigits(r.ph_days)}</td>
+                <td class="num" style="font-weight:700;color:#be185d">${bnDigits(r.total_leave)}</td>
+                <td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:${bg};border-radius:99px"></div></div><span class="num" style="font-weight:800;color:${clr};min-width:42px;text-align:right">${bnDigits(Math.round(pct))}%</span></div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--gray-500);text-align:right">মোট ${bnDigits(rows.length)} জন</div>
+    `;
+  } catch (e) {
+    box.innerHTML = `<div class="empty-state" style="padding:24px;color:var(--red-500)"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড ব্যর্থ</h3><p>${escapeHtml(e.message||'')} — supabase_v10 SQL চালানো হয়েছে কিনা দেখুন</p></div>`;
+  }
 }
 
 function renderEmpReportGrid(cache) {
@@ -6337,46 +6405,37 @@ let _importData = null;
 
 function renderImport() {
   return `
-    <div class="card">
-      <div class="card-title"><span><i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট</span></div>
-      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> CSV ফাইল থেকে এমপ্লয়ীদের তথ্য ইম্পোর্ট করুন। কলামগুলো স্বয়ংক্রিয়ভাবে ম্যাপ হবে।</div>
+    <!-- ═══ SMART GOOGLE SHEET ACTIVITY IMPORTER ═══ -->
+    <div class="card" style="border:1px solid var(--purple-200);background:linear-gradient(135deg,#faf5ff,#fdf2f8)">
+      <div class="card-title"><span><i class="fa-brands fa-google-drive" style="color:#0f9d58"></i> স্মার্ট অ্যাক্টিভিটি ইম্পোর্ট (Google Sheet → অ্যাপ)</span></div>
+      <div class="note-banner" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:#3b82f6;color:var(--gray-800)">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> আপনার মাসিক অ্যাটেন্ডেন্স শিটের লিংক দিন। প্রতিটি এমপ্লয়ীর ট্যাব থেকে নাম, পদবি, প্রতিদিনের চেক-ইন/আউট, ছুটি, লেট ও অ্যাক্টিভিটি% স্বয়ংক্রিয়ভাবে পড়ে অ্যাপে সেভ হবে — এরপর আর শিটের দরকার নেই।
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-link"></i> Google Sheet লিংক (Anyone with link / public)</label>
+        <input class="form-input en" id="actSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." value="https://docs.google.com/spreadsheets/d/19K-DIY9P-b3A94LO5_JfPv9BpW_hGZlP_VeZC1OE2cY/edit?usp=sharing">
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" id="actScanBtn" onclick="scanActivitySheet()" style="width:auto"><i class="fa-solid fa-magnifying-glass-chart"></i> শিট স্ক্যান করুন</button>
+        <span style="font-size:12px;color:var(--gray-500)">ট্যাবগুলো খুঁজে প্রিভিউ দেখাবে, তারপর সেভ করবেন</span>
+      </div>
+      <div id="actScanResult" style="margin-top:18px"></div>
+    </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-        <label style="padding:24px;border:2px dashed var(--purple-300);border-radius:var(--r-lg);text-align:center;cursor:pointer;transition:all .25s;display:block" onmouseover="this.style.borderColor='var(--purple-500)';this.style.background='var(--purple-50)'" onmouseout="this.style.borderColor='var(--purple-300)';this.style.background='transparent'">
-          <i class="fa-solid fa-file-csv" style="font-size:36px;color:var(--purple-500);margin-bottom:10px"></i>
+    <!-- ═══ EMPLOYEE PROFILE CSV (legacy) ═══ -->
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-file-import"></i> এমপ্লয়ী প্রোফাইল CSV ইম্পোর্ট</span></div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> শুধু এমপ্লয়ী তালিকা (নাম, ইমেইল, পদবি) CSV থেকে যোগ করতে চাইলে এটি ব্যবহার করুন।</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:12px">
+        <label style="padding:20px;border:2px dashed var(--purple-300);border-radius:var(--r-lg);text-align:center;cursor:pointer;transition:all .25s;display:block" onmouseover="this.style.borderColor='var(--purple-500)';this.style.background='var(--purple-50)'" onmouseout="this.style.borderColor='var(--purple-300)';this.style.background='transparent'">
+          <i class="fa-solid fa-file-csv" style="font-size:30px;color:var(--purple-500);margin-bottom:8px"></i>
           <h4 style="font-weight:800;color:var(--gray-800);margin-bottom:4px">CSV ফাইল আপলোড</h4>
           <p style="font-size:13px;color:var(--gray-500)">.csv ফাইল সিলেক্ট করুন</p>
           <input type="file" accept=".csv" style="display:none" onchange="handleCsvFile(event)">
         </label>
-        <div style="padding:24px;border:2px dashed var(--pink-300);border-radius:var(--r-lg);text-align:center;cursor:pointer;transition:all .25s" onclick="openSheetUrlModal()" onmouseover="this.style.borderColor='var(--pink-500)';this.style.background='var(--pink-50)'" onmouseout="this.style.borderColor='var(--pink-300)';this.style.background='transparent'">
-          <i class="fa-brands fa-google-drive" style="font-size:36px;color:var(--pink-500);margin-bottom:10px"></i>
-          <h4 style="font-weight:800;color:var(--gray-800);margin-bottom:4px">Google Sheets URL</h4>
-          <p style="font-size:13px;color:var(--gray-500)">Public sheet link পেস্ট করুন</p>
-        </div>
       </div>
-
-      <div id="importResult" style="display:none"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><span><i class="fa-solid fa-circle-info"></i> CSV ফরম্যাট</span></div>
-      <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px">CSV-তে এই কলামগুলো থাকতে হবে (ইংরেজি বা বাংলা):</p>
-      <div class="data-table" style="overflow-x:auto">
-        <table class="data-table">
-          <thead><tr><th>কলাম</th><th>উদাহরণ</th><th>প্রয়োজন?</th></tr></thead>
-          <tbody>
-            <tr><td><b>full_name</b> / নাম</td><td>আব্দুল্লাহ মামুন</td><td><span class="leave-status rejected">আবশ্যক</span></td></tr>
-            <tr><td><b>email</b> / ইমেইল</td><td>abdullah@example.com</td><td><span class="leave-status rejected">আবশ্যক</span></td></tr>
-            <tr><td><b>phone</b> / ফোন</td><td>01711234567</td><td>—</td></tr>
-            <tr><td><b>designation</b> / পদবি</td><td>সিনিয়র ডেভেলপার</td><td>—</td></tr>
-            <tr><td><b>employee_type</b> / ধরন</td><td>type_1</td><td>—</td></tr>
-            <tr><td><b>joined_at</b> / যোগদান</td><td>2024-01-15</td><td>—</td></tr>
-            <tr><td><b>salary</b> / বেতন</td><td>50000</td><td>—</td></tr>
-            <tr><td><b>address</b> / ঠিকানা</td><td>ঢাকা, বাংলাদেশ</td><td>—</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <button class="btn btn-outline" style="margin-top:14px;width:auto" onclick="downloadSampleCsv()"><i class="fa-solid fa-download"></i> Sample CSV ডাউনলোড</button>
+      <button class="btn btn-outline btn-sm" style="width:auto" onclick="downloadSampleCsv()"><i class="fa-solid fa-download"></i> Sample CSV</button>
+      <div id="importResult" style="display:none;margin-top:14px"></div>
     </div>
   `;
 }
@@ -6536,6 +6595,220 @@ async function loadSheetCsv() {
     _importData = parsed;
     showImportPreview(parsed);
   } catch (e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SMART ACTIVITY SHEET IMPORTER
+// Parses a multi-tab monthly attendance sheet (one tab per employee)
+// and stores a per-employee monthly summary into monthly_activity.
+// ═══════════════════════════════════════════════════════════
+let _activityParsed = null;
+
+function parseSheetId(url) {
+  const m = (url||'').match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+function parseCsvLine(line) {
+  const out = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+    else if (c === '"') inQ = !inQ;
+    else if (c === ',' && !inQ) { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur); return out;
+}
+function csvToRows(text) {
+  return text.replace(/^\ufeff/,'').split(/\r?\n/).map(parseCsvLine);
+}
+function hmsToHours(s) {
+  if (!s) return 0;
+  const p = String(s).trim().split(':').map(Number);
+  if (p.some(isNaN) || p.length < 2) return 0;
+  const [h, m, sec=0] = p;
+  return Math.round((h + m/60 + sec/3600) * 100) / 100;
+}
+function leaveCodeOf(cell) {
+  const v = String(cell||'').trim().toUpperCase();
+  if (!v) return null;
+  if (v === 'CL') return 'CL';
+  if (v === 'SL') return 'SL';
+  if (v === 'EL') return 'EL';
+  if (v.startsWith('COL')) return 'CoL';
+  if (v === 'ML') return 'ML';
+  if (v === 'PH') return 'PH';
+  if (v === 'UL') return 'UL';
+  if (v === 'IL') return 'IL';
+  return null;
+}
+function parseSheetTime(s) {
+  const m = String(s).trim().match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1],10); const min = parseInt(m[2],10); const sec = m[3]?parseInt(m[3],10):0;
+  const ap = (m[4]||'').toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h*3600 + min*60 + sec;
+}
+
+// Step 1: scan sheet → list employee tabs
+async function scanActivitySheet() {
+  const url = document.getElementById('actSheetUrl').value.trim();
+  const sheetId = parseSheetId(url);
+  if (!sheetId) return showToast('সঠিক Google Sheet লিংক দিন', 'error');
+  const btn = document.getElementById('actScanBtn');
+  setBtnLoading(btn, true);
+  const res = document.getElementById('actScanResult');
+  res.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> শিট স্ক্যান হচ্ছে...</div>`;
+  try {
+    const html = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/htmlview`).then(r => r.text());
+    let tabs = [...html.matchAll(/items\.push\(\{name:\s*"([^"]*)"/g)].map(x => x[1]).filter(Boolean);
+    tabs = [...new Set(tabs)];
+    if (tabs.length === 0) throw new Error('কোনো ট্যাব পাওয়া যায়নি — শিটটি public (Anyone with link) কিনা যাচাই করুন');
+    const skip = ['overall','summary','sheet1','template','master'];
+    const empTabs = tabs.filter(t => !skip.includes(t.trim().toLowerCase()));
+    window._actSheetId = sheetId;
+    window._actTabs = empTabs;
+    res.innerHTML = `
+      <div class="note-banner" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-color:var(--emerald-500);color:var(--gray-800)">
+        <i class="fa-solid fa-check-circle"></i> ${bnDigits(tabs.length)} টি ট্যাব পাওয়া গেছে — ${bnDigits(empTabs.length)} টি এমপ্লয়ী
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0">
+        ${empTabs.map(t => `<span class="type-badge" style="background:var(--purple-100);color:var(--purple-700)"><i class="fa-solid fa-user"></i> ${escapeHtml(t)}</span>`).join('')}
+      </div>
+      <div class="form-group" style="max-width:260px">
+        <label><i class="fa-regular fa-calendar"></i> কোন মাসের ডাটা?</label>
+        <input class="form-input num" type="month" id="actMonth" value="${today().slice(0,7)}">
+      </div>
+      <button class="btn btn-primary" id="actParseBtn" onclick="parseActivityTabs()" style="width:auto"><i class="fa-solid fa-table-list"></i> সব ট্যাব পড়ে প্রিভিউ দেখান</button>
+      <div id="actParsePreview" style="margin-top:16px"></div>
+    `;
+  } catch (e) {
+    res.innerHTML = `<div class="note-banner" style="background:#fee2e2;border-color:#ef4444;color:#7f1d1d"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(e.message)}</div>`;
+  } finally { setBtnLoading(btn, false); }
+}
+
+// Step 2: fetch & parse every employee tab
+async function parseActivityTabs() {
+  const sheetId = window._actSheetId;
+  const tabs = window._actTabs || [];
+  const month = document.getElementById('actMonth')?.value || today().slice(0,7);
+  const monthLabel = new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const btn = document.getElementById('actParseBtn');
+  setBtnLoading(btn, true);
+  const prev = document.getElementById('actParsePreview');
+  prev.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> ${bnDigits(tabs.length)} টি ট্যাব পড়া হচ্ছে...</div>`;
+  const parsed = [];
+  for (const tab of tabs) {
+    try {
+      const csv = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`).then(r => r.text());
+      const rec = parseEmployeeTab(tab, csvToRows(csv), month, monthLabel);
+      if (rec) parsed.push(rec);
+    } catch (e) { console.warn('tab parse failed', tab, e); }
+  }
+  _activityParsed = { month, monthLabel, records: parsed };
+  setBtnLoading(btn, false);
+  if (parsed.length === 0) {
+    prev.innerHTML = `<div class="note-banner" style="background:#fee2e2;border-color:#ef4444;color:#7f1d1d">কোনো ডাটা পড়া যায়নি</div>`;
+    return;
+  }
+  prev.innerHTML = `
+    <div class="note-banner" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:#3b82f6;color:var(--gray-800)">
+      <i class="fa-solid fa-circle-check"></i> ${bnDigits(parsed.length)} জন এমপ্লয়ীর <b>${escapeHtml(monthLabel)}</b> মাসের ডাটা পড়া হয়েছে
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:12px 0">
+      <table class="data-table" style="width:100%;min-width:760px">
+        <thead><tr><th>এমপ্লয়ী</th><th>উপস্থিত</th><th>লেট</th><th>কাজ (ঘ.)</th><th>CL</th><th>SL</th><th>ছুটি মোট</th><th>অ্যাক্টিভিটি%</th></tr></thead>
+        <tbody>
+          ${parsed.map(r => `
+            <tr>
+              <td><b>${escapeHtml(r.employee_name)}</b>${r.emp_code?`<br><small style="color:var(--gray-400)">${escapeHtml(r.emp_code)}</small>`:''}</td>
+              <td class="num">${bnDigits(r.present_days)}</td>
+              <td class="num" style="color:#dc2626;font-weight:700">${bnDigits(r.late_count)}</td>
+              <td class="num">${bnDigits(r.worked_hours.toFixed(1))}</td>
+              <td class="num">${bnDigits(r.cl_days)}</td>
+              <td class="num">${bnDigits(r.sl_days)}</td>
+              <td class="num">${bnDigits(r.total_leave)}</td>
+              <td><span class="att-pct-pill num" style="background:${r.activity_pct>=85?'#d1fae5':r.activity_pct>=60?'#fef3c7':'#fee2e2'};color:${r.activity_pct>=85?'#059669':r.activity_pct>=60?'#d97706':'#dc2626'}">${bnDigits(Math.round(r.activity_pct))}%</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="document.getElementById('actParsePreview').innerHTML='';_activityParsed=null">বাতিল</button>
+      <button class="btn btn-success" id="actSaveBtn" onclick="saveActivityImport()"><i class="fa-solid fa-cloud-arrow-up"></i> ${bnDigits(parsed.length)} জনের ডাটা অ্যাপে সেভ করুন</button>
+    </div>
+  `;
+}
+
+function parseEmployeeTab(tabName, rows, month, monthLabel) {
+  if (!rows || rows.length < 4) return null;
+  let employeeName = tabName, designation = '', empCode = '';
+  const r0 = rows[0] || [];
+  if (r0[1]) employeeName = String(r0[1]).trim();
+  const r1 = rows[1] || [];
+  if (r1[1]) empCode = String(r1[1]).trim();
+  let headerIdx = rows.findIndex(r => r.some(c => /start time/i.test(c||'')));
+  if (headerIdx < 0) headerIdx = 2;
+  const dataRows = rows.slice(headerIdx + 1).filter(r => r[0] && /\d/.test(r[0]));
+  let present = 0, lateCount = 0, worked = 0;
+  const lv = { CL:0, SL:0, EL:0, CoL:0, ML:0, PH:0, UL:0, IL:0 };
+  dataRows.forEach(r => {
+    const startCell = (r[1]||'').trim();
+    const totalCell = (r[6]||'').trim();
+    const code = leaveCodeOf(startCell);
+    if (code) { lv[code] = (lv[code]||0) + 1; }
+    else if (/\d/.test(startCell) && /(am|pm|:)/i.test(startCell)) {
+      present++;
+      worked += hmsToHours(totalCell);
+      const t = parseSheetTime(startCell);
+      if (t !== null && t > (8*3600 + 15*60)) lateCount++;
+    }
+  });
+  const totalLeave = Object.values(lv).reduce((a,b)=>a+b,0);
+  const activityPct = (present + totalLeave) > 0 ? Math.round((present / Math.max(1, present + lv.UL + lv.IL)) * 10000)/100 : 0;
+  const attBase = present + lv.CL + lv.SL + lv.EL + lv.CoL + lv.ML + lv.UL + lv.IL;
+  const attendancePct = attBase > 0 ? Math.round((present / attBase) * 10000)/100 : (present>0?100:0);
+  return {
+    employee_name: employeeName, emp_code: empCode, designation,
+    month, month_label: monthLabel,
+    present_days: present, late_count: lateCount, worked_hours: Math.round(worked*100)/100,
+    cl_days: lv.CL, sl_days: lv.SL, el_days: lv.EL, col_days: lv.CoL,
+    ml_days: lv.ML, ph_days: lv.PH, ul_days: lv.UL, il_days: lv.IL,
+    total_leave: totalLeave, activity_pct: activityPct, attendance_pct: attendancePct, source: 'sheet'
+  };
+}
+
+async function saveActivityImport() {
+  if (!_activityParsed || !_activityParsed.records.length) return;
+  const btn = document.getElementById('actSaveBtn');
+  setBtnLoading(btn, true);
+  let saved = 0, linked = 0, failed = 0;
+  try {
+    const { data: profs } = await sb.from('profiles').select('id, full_name');
+    const norm = (s) => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+    const findProfile = (name) => {
+      const n = norm(name);
+      let p = (profs||[]).find(x => norm(x.full_name) === n);
+      if (!p) p = (profs||[]).find(x => n.includes(norm(x.full_name)) || norm(x.full_name).includes(n.split(' ').slice(0,3).join(' ')));
+      return p;
+    };
+    for (const rec of _activityParsed.records) {
+      const prof = findProfile(rec.employee_name);
+      if (prof) { rec.user_id = prof.id; linked++; }
+      const { error } = await sb.from('monthly_activity').upsert(rec, { onConflict: 'employee_name,month' });
+      if (error) { failed++; console.warn(error); } else saved++;
+    }
+    if (saved > 0) {
+      showToast(`✅ ${bnDigits(saved)} জনের ডাটা সেভ হয়েছে (${bnDigits(linked)} জন প্রোফাইলে লিংকড)`, 'success');
+    } else {
+      showToast('⚠️ সেভ হয়নি — monthly_activity টেবিল নেই? supabase_v10 SQL চালান', 'error');
+    }
+  } catch (e) {
+    showToast('❌ ' + (e.message||'সেভ ব্যর্থ'), 'error');
+  } finally { setBtnLoading(btn, false); }
 }
 
 // ═══════════════════════════════════════════════════════════
