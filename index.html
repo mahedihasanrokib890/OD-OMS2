@@ -7000,7 +7000,12 @@ async function importOverall() {
       <div class="note-banner" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-color:var(--emerald-500);color:var(--gray-800)">
         <i class="fa-solid fa-circle-check"></i> ${bnDigits(empNames.length)} জন এমপ্লয়ীর মোট <b>${bnDigits(records.length)}</b> মাসের রেকর্ড পড়া হয়েছে (${escapeHtml(monthRows[0].label)} — ${escapeHtml(monthRows[monthRows.length-1].label)})
       </div>
-      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:12px 0;max-height:340px;overflow-y:auto">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0">
+        <button class="btn btn-success" id="ovSaveBtn" onclick="saveOverallImport()" style="font-size:15px;padding:14px 24px"><i class="fa-solid fa-cloud-arrow-up"></i> ${bnDigits(records.length)} টি রেকর্ড অ্যাপে সেভ করুন</button>
+        <button class="btn btn-outline" onclick="document.getElementById('actScanResult').innerHTML='';_overallParsed=null">বাতিল</button>
+      </div>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px"><i class="fa-solid fa-eye"></i> প্রিভিউ — সেভ করার পর Reports পেজে রঙিন কার্ডে বছর-ভিত্তিক দেখা যাবে</div>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;max-height:340px;overflow-y:auto">
         <table class="data-table" style="width:100%;min-width:520px">
           <thead style="position:sticky;top:0;background:white;z-index:1"><tr><th>এমপ্লয়ী</th><th>মাস সংখ্যা</th><th>মোট কাজ (ঘ.)</th><th>গড় অ্যাক্টিভিটি%</th></tr></thead>
           <tbody>
@@ -7013,10 +7018,6 @@ async function importOverall() {
             }).join('')}
           </tbody>
         </table>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-outline" onclick="document.getElementById('actScanResult').innerHTML='';_overallParsed=null">বাতিল</button>
-        <button class="btn btn-success" id="ovSaveBtn" onclick="saveOverallImport()"><i class="fa-solid fa-cloud-arrow-up"></i> ${bnDigits(records.length)} টি মাসিক রেকর্ড সেভ করুন</button>
       </div>
     `;
   } catch (e) {
