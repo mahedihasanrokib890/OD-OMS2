@@ -3001,6 +3001,25 @@ async function saveNotice(id) {
       const { error } = await sb.from('notices').insert({ title, content, priority, posted_by: App.user.id });
       if (error) throw error;
       showToast('✅ নোটিশ পোস্ট হয়েছে!');
+
+      // Notify all employees about new notice
+      try {
+        const { data: emps } = await sb.from('profiles').select('email').eq('status', 'active');
+        const emails = (emps || []).map(e => e.email).filter(Boolean);
+        if (emails.length > 0) {
+          fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'new_notice',
+              to: emails,
+              data: { title, priority, postedBy: App.user.full_name }
+            })
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to send notice emails:', err);
+      }
     }
     closeModal();
     refreshNoticesList();
@@ -3362,7 +3381,7 @@ async function notifyAdminsOfLeave(data) {
     } catch {}
 
     // 3) Hardcoded fallback — guarantees the system never silently misses admin
-    ['admin@ordhekdeen.com', 'mahedihasanrokib47@gmail.com'].forEach(e => emails.push(e));
+    ['mahedihasanrokib47@gmail.com'].forEach(e => emails.push(e));
 
     // Dedupe
     emails = [...new Set(emails)].filter(Boolean);

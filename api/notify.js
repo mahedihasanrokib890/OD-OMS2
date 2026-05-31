@@ -192,6 +192,27 @@ function passwordResetTemplate({ name, code, email }) {
   };
 }
 
+function newNoticeTemplate({ title, priority, postedBy }) {
+  const isUrgent = priority === 'urgent';
+  return {
+    subject: `${isUrgent ? '🔴 জরুরী' : '📢 নতুন'} নোটিশ: ${title}`,
+    html: shell({
+      subtitle: 'অফিসের নতুন ঘোষণা',
+      body: `
+<p style="margin:0 0 14px"><b>আসসালামু আলাইকুম,</b></p>
+<p style="margin:0 0 14px;color:#475569">অফিসের একটি নতুন নোটিশ প্রকাশিত হয়েছে।</p>
+
+<div style="background:#faf5ff;border-left:4px solid ${isUrgent ? '#ef4444' : BRAND.primary};padding:14px 18px;border-radius:10px;margin:18px 0">
+  <div style="font-size:11px;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:2px;font-weight:700">নোটিশের শিরোনাম</div>
+  <div style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:8px">${title}</div>
+  <div style="font-size:13px;color:#64748b">প্রকাশ করেছেন: <b>${postedBy || 'অ্যাডমিন'}</b></div>
+</div>
+
+<p style="margin:14px 0 0;font-size:13px;color:#64748b">বিস্তারিত পড়তে অ্যাপে লগইন করুন।</p>`
+    })
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -220,6 +241,7 @@ export default async function handler(req, res) {
     else if (type === 'leave_confirmation') template = leaveConfirmationTemplate(data || {});
     else if (type === 'verification_code')  template = verificationCodeTemplate(data || {});
     else if (type === 'password_reset')     template = passwordResetTemplate(data || {});
+    else if (type === 'new_notice')         template = newNoticeTemplate(data || {});
     else return res.status(400).json({ error: 'Unknown notification type: ' + type });
 
     const recipients = Array.isArray(to) ? to : [to];
