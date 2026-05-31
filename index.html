@@ -291,6 +291,11 @@
   .emp-card h4{font-size:15px;font-weight:800;color:var(--gray-800);margin-bottom:2px;position:relative;z-index:1}
   .emp-desg{font-size:12px;color:var(--gray-500);font-weight:600;margin-bottom:8px}
   .type-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:var(--purple-100);color:var(--purple-700)}
+  .role-select{position:relative;z-index:3;width:100%;padding:8px 30px 8px 12px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:var(--font-bn);font-size:12px;font-weight:700;color:var(--gray-700);background:white;cursor:pointer;outline:none;transition:all .25s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%237c3aed' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;appearance:none}
+  .role-select:hover{border-color:var(--purple-300);box-shadow:0 4px 10px rgba(91,45,138,.08)}
+  .role-select.role-admin{border-color:var(--purple-400);background-color:var(--purple-50);color:var(--purple-700)}
+  .role-select.role-editor{border-color:#93c5fd;background-color:#eff6ff;color:#1d4ed8}
+  .role-select.role-employee{border-color:#a7f3d0;background-color:#ecfdf5;color:#047857}
   .status-dot{position:absolute;top:18px;right:18px;width:10px;height:10px;border-radius:50%;background:var(--emerald-500);box-shadow:0 0 0 3px white,0 0 8px rgba(16,185,129,.4);z-index:2}
 
   /* Settings */
@@ -4469,6 +4474,7 @@ async function refreshEmployeesList() {
     card.innerHTML = `<div class="emp-grid">${filtered.map(e => {
       const roleBadge = e.role === 'admin' ? `<span class="type-badge" style="background:var(--purple-100);color:var(--purple-700);font-size:10px"><i class="fa-solid fa-shield-halved"></i> Admin</span>` :
                         e.role === 'editor' ? `<span class="type-badge" style="background:var(--blue-100);color:var(--blue-500);font-size:10px"><i class="fa-solid fa-pen"></i> Editor</span>` : '';
+      const curRole = e.role || 'employee';
       return `
       <div class="emp-card" onclick="viewEmployee('${e.id}')">
         ${e.is_active?'<span class="status-dot"></span>':''}
@@ -4480,11 +4486,19 @@ async function refreshEmployeesList() {
           <span class="type-badge">${escapeHtml(e.employee_types?.name_bn || 'এমপ্লয়ী')}</span>
           ${roleBadge}
         </div>
-        ${App.isAdmin ? `<div style="margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
-          <button class="icon-btn" onclick="event.stopPropagation();editEmployee('${e.id}')" title="পূর্ণ এডিট"><i class="fa-solid fa-pen"></i></button>
-          <button class="icon-btn" style="color:var(--purple-600)" onclick="event.stopPropagation();openRoleChangeModal('${e.id}','${escapeHtml((e.full_name||'').replace(/'/g,'&#39;'))}','${e.role||'employee'}')" title="রোল পরিবর্তন"><i class="fa-solid fa-user-shield"></i></button>
-          <button class="icon-btn danger" onclick="event.stopPropagation();deleteEmployee('${e.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button>
-        </div>` : ''}
+        ${App.isAdmin ? `
+          <div style="margin-top:12px" onclick="event.stopPropagation()">
+            <select class="role-select role-${curRole}" data-uid="${e.id}" onchange="quickChangeRole(this)">
+              <option value="admin"    ${curRole==='admin'?'selected':''}>👑 অ্যাডমিন</option>
+              <option value="editor"   ${curRole==='editor'?'selected':''}>✍️ এডিটর</option>
+              <option value="employee" ${curRole==='employee'?'selected':''}>👤 এমপ্লয়ী</option>
+            </select>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+            <button class="icon-btn" onclick="event.stopPropagation();editEmployee('${e.id}')" title="পূর্ণ এডিট"><i class="fa-solid fa-pen"></i></button>
+            <button class="icon-btn danger" onclick="event.stopPropagation();deleteEmployee('${e.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        ` : ''}
       </div>`;
     }).join('')}</div>
     <div style="text-align:center;margin-top:18px;color:var(--gray-500);font-size:13px">মোট ${bnDigits(filtered.length)} জন</div>`;
@@ -4827,6 +4841,55 @@ async function setEmployeeRole(userId) {
     if (userId === App.user.id) setTimeout(() => location.reload(), 800);
   } catch (e) {
     showToast('❌ ' + (e.message || 'রোল পরিবর্তন ব্যর্থ'), 'error');
+  }
+}
+
+// Inline dropdown role change (one click) for employee directory cards
+async function quickChangeRole(selectEl) {
+  if (!App.isAdmin) return showToast('শুধু এডমিন রোল পরিবর্তন করতে পারে', 'error');
+  const userId  = selectEl.dataset.uid;
+  const newRole = selectEl.value;
+  const oldRole = selectEl.dataset.prev || (selectEl.dataset.prev = newRole);
+  if (!['admin','editor','employee'].includes(newRole)) return;
+
+  // Self-demotion guard
+  if (userId === App.user.id && newRole !== 'admin') {
+    if (!confirm('⚠️ আপনি নিজের অ্যাডমিন এক্সেস তুলে নিচ্ছেন। সাইটে আবার আসতে অন্য কোনো এডমিন প্রয়োজন হবে। চালিয়ে যাবেন?')) {
+      selectEl.value = oldRole;
+      return;
+    }
+  }
+
+  // Visual update
+  selectEl.classList.remove('role-admin','role-editor','role-employee');
+  selectEl.classList.add('role-' + newRole);
+  selectEl.disabled = true;
+
+  try {
+    const update = { role: newRole, is_admin: newRole === 'admin' };
+    if (newRole === 'admin') {
+      const adminType = (App.employeeTypes||[]).find(t => t.code === 'admin');
+      if (adminType?.id) update.employee_type_id = adminType.id;
+    }
+    const { error } = await sb.from('profiles').update(update).eq('id', userId);
+    if (error) throw error;
+    selectEl.dataset.prev = newRole;
+    const label = newRole==='admin'?'অ্যাডমিন':newRole==='editor'?'এডিটর':'এমপ্লয়ী';
+    showToast(`✅ রোল "${label}" সেট করা হয়েছে`);
+    // If admin changed own role to non-admin, hard reload after short delay
+    if (userId === App.user.id && newRole !== 'admin') {
+      setTimeout(() => location.reload(), 800);
+    } else {
+      // Refresh list to update badge color & employee_type_id chip
+      setTimeout(() => refreshEmployeesList(), 400);
+    }
+  } catch (e) {
+    selectEl.value = oldRole;
+    selectEl.classList.remove('role-admin','role-editor','role-employee');
+    selectEl.classList.add('role-' + oldRole);
+    showToast('❌ ' + (e.message || 'রোল পরিবর্তন ব্যর্থ'), 'error');
+  } finally {
+    selectEl.disabled = false;
   }
 }
 
