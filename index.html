@@ -486,6 +486,68 @@
   /* Smoother animated counters */
   .num-anim{display:inline-block}
 
+  /* ═══ ATTENDANCE HERO V2 ═══ */
+  .att-hero{position:relative;border-radius:24px;padding:28px 30px;background:linear-gradient(135deg,#1a0533 0%,#2d1b69 35%,#5b2d8a 70%,#a73289 100%);color:#fff;overflow:hidden;box-shadow:0 24px 60px -16px rgba(91,45,138,.45);margin-bottom:0}
+  body.theme-dark .att-hero{background:linear-gradient(135deg,#0a031f 0%,#1a0a3e 50%,#3b1370 100%)}
+  .att-hero-bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 85% 20%,rgba(255,255,255,.10) 0%,transparent 55%),radial-gradient(circle at 10% 90%,rgba(233,30,99,.18) 0%,transparent 50%);animation:floatSlow 14s ease-in-out infinite}
+  .att-hero::after{content:'';position:absolute;top:-30px;right:-30px;width:240px;height:240px;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 65%);border-radius:50%;animation:float 6s ease-in-out infinite}
+  .att-hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:center;margin-bottom:22px}
+  @media (max-width:780px){.att-hero-grid{grid-template-columns:1fr;text-align:center}.att-hero-meta{justify-content:center}}
+  .att-hero-greet{font-size:13px;font-weight:800;opacity:.8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+  .att-clock-display{font-family:var(--font-en);font-size:64px;font-weight:900;line-height:1;letter-spacing:-2px;font-feature-settings:'tnum';text-shadow:0 6px 30px rgba(0,0,0,.3);background:linear-gradient(180deg,#fff 0%,#fce7f3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:inline-block}
+  @media (max-width:600px){.att-clock-display{font-size:48px}}
+  .att-amp{font-size:24px;margin-left:10px;color:rgba(255,255,255,.75);font-weight:800;-webkit-text-fill-color:rgba(255,255,255,.75)}
+  .att-clock-date{font-size:14px;font-weight:600;opacity:.85;margin:8px 0 14px}
+  .att-hero-meta{display:flex;flex-wrap:wrap;gap:10px}
+  .att-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:rgba(255,255,255,.14);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.18);border-radius:99px;font-size:12px;font-weight:700}
+  .att-pill .live-dot{width:8px;height:8px;border-radius:50%;background:#34d399;animation:pulseDot 1.6s infinite}
+  .att-hero-status{background:rgba(255,255,255,.1);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:18px;text-align:left;min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+  .att-hero-status .ahs-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:700;opacity:.95}
+  .att-hero-status .ahs-row b{font-family:var(--font-en);font-size:15px;font-weight:800}
+
+  .att-actions{position:relative;z-index:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .att-btn{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.10);backdrop-filter:blur(12px);color:#fff;cursor:pointer;font-family:var(--font-bn);text-align:left;transition:all .25s cubic-bezier(.16,1,.3,1);position:relative;overflow:hidden}
+  .att-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 0%,rgba(255,255,255,.08) 100%);opacity:0;transition:opacity .25s}
+  .att-btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 12px 24px -8px rgba(0,0,0,.35);background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3)}
+  .att-btn:hover::before{opacity:1}
+  .att-btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.3)}
+  .att-btn-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 6px 14px -4px rgba(0,0,0,.3)}
+  .att-btn-title{font-size:14px;font-weight:800;line-height:1.1}
+  .att-btn-sub{font-size:11px;opacity:.75;font-weight:600;margin-top:2px;line-height:1.2}
+  .att-btn.in   .att-btn-icon{background:linear-gradient(135deg,#10b981,#059669)}
+  .att-btn.lout .att-btn-icon{background:linear-gradient(135deg,#f59e0b,#d97706)}
+  .att-btn.lin  .att-btn-icon{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+  .att-btn.pout .att-btn-icon{background:linear-gradient(135deg,#a78bfa,#7c3aed)}
+  .att-btn.pin  .att-btn-icon{background:linear-gradient(135deg,#f472b6,#db2777)}
+  .att-btn.out  .att-btn-icon{background:linear-gradient(135deg,#ef4444,#dc2626)}
+  /* Active state highlight after action complete */
+  .att-btn.done{background:rgba(16,185,129,.25);border-color:rgba(52,211,153,.5)}
+  .att-btn.done::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;top:8px;right:10px;color:#34d399;font-size:11px}
+
+  /* ═══ ADMIN QUICK LEAVE PANEL ═══ */
+  .quick-leave-panel{margin-top:22px;padding:22px;border-radius:20px;background:linear-gradient(135deg,#faf5ff 0%,#fce7f3 50%,#ede9fe 100%);border:1px solid var(--purple-200);position:relative;overflow:hidden;box-shadow:0 12px 32px -12px rgba(91,45,138,.15)}
+  body.theme-dark .quick-leave-panel{background:linear-gradient(135deg,#241845 0%,#3b1c5c 100%);border-color:#3b2870}
+  .quick-leave-panel::before{content:'';position:absolute;top:-30px;right:-30px;width:200px;height:200px;background:radial-gradient(circle,rgba(168,85,247,.15) 0%,transparent 65%);border-radius:50%}
+  .qlp-head{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .qlp-icon{width:50px;height:50px;border-radius:14px;background:var(--gradient-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 10px 20px -6px rgba(91,45,138,.45)}
+  .qlp-head h3{font-size:16px;font-weight:800;color:var(--gray-900);margin-bottom:3px}
+  body.theme-dark .qlp-head h3{color:#ede5f7}
+  .qlp-head p{font-size:12px;color:var(--gray-600);font-weight:600}
+  .qlp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;position:relative}
+  .qlp-chip{padding:14px 12px;border-radius:14px;border:none;cursor:pointer;font-family:var(--font-bn);background:#fff;display:flex;align-items:center;gap:10px;transition:all .25s cubic-bezier(.16,1,.3,1);box-shadow:0 4px 10px rgba(91,45,138,.06);position:relative;overflow:hidden;text-align:left}
+  .qlp-chip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,#8b5cf6);transition:width .25s}
+  .qlp-chip:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 24px -6px rgba(91,45,138,.2);color:#fff;background:var(--c,#8b5cf6)}
+  .qlp-chip:hover::before{width:100%;opacity:.92}
+  body.theme-dark .qlp-chip{background:#241845;color:#dcd2ed}
+  .qlp-chip > *{position:relative;z-index:1}
+  .qlp-code{font-family:var(--font-en);font-size:18px;font-weight:900;color:var(--c,#8b5cf6);background:rgba(0,0,0,.04);padding:6px 10px;border-radius:9px;min-width:46px;text-align:center;transition:all .25s}
+  body.theme-dark .qlp-code{background:rgba(255,255,255,.08)}
+  .qlp-chip:hover .qlp-code{background:rgba(255,255,255,.25);color:#fff}
+  .qlp-name{font-size:13px;font-weight:800;color:var(--gray-700)}
+  .qlp-chip:hover .qlp-name{color:#fff}
+  body.theme-dark .qlp-name{color:#dcd2ed}
+  /* set --c per chip from data-c via JS-bound style won't work; do via inline style assignment */
+
   /* ═══ DASHBOARD V2 (professional) ═══ */
   @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.55)}70%{box-shadow:0 0 0 12px rgba(16,185,129,0)}}
   @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
@@ -3050,21 +3112,64 @@ async function getMyOfficeTime() {
 
 async function refreshTodayClockStatus() {
   const el = document.getElementById('todayStatus');
-  if (!el || !App.user) return;
+  const big = document.getElementById('todayStatusBig');
+  if (!App.user) return;
   try {
     const { data } = await sb.from('attendance').select('*').eq('user_id', App.user.id).eq('date', today()).maybeSingle();
-    if (!data) { el.style.display = 'none'; return; }
-    let parts = [];
-    if (data.check_in)  parts.push(`চেক-ইন ${formatBnTime(data.check_in)}`);
-    if (data.lunch_out) parts.push(`লাঞ্চ আউট ${formatBnTime(data.lunch_out)}`);
-    if (data.lunch_in)  parts.push(`লাঞ্চ ইন ${formatBnTime(data.lunch_in)}`);
-    if (data.check_out) parts.push(`চেক-আউট ${formatBnTime(data.check_out)}`);
 
-    const isLate = (data.late_minutes||0) > 0;
-    el.style.display = 'inline-flex';
-    el.className = 'clock-status ' + (isLate ? 'late' : 'ok');
-    const lateText = isLate ? ` · ⚠️ ${bnDigits(data.late_minutes)} মিনিট লেট` : '';
-    el.innerHTML = `<i class="fa-solid fa-${isLate?'triangle-exclamation':'circle-check'}"></i> ${parts.join(' · ')}${lateText}`;
+    // Mark .att-btn.done for completed actions
+    const setDone = (key, ok) => {
+      const btn = document.querySelector(`.att-btn[onclick*="${key}"]`);
+      if (btn) btn.classList.toggle('done', !!ok);
+    };
+    setDone('check_in',     data && data.check_in);
+    setDone('lunch_out',    data && data.lunch_out);
+    setDone('lunch_in',     data && data.lunch_in);
+    setDone('personal_out', data && data.personal_out);
+    setDone('personal_in',  data && data.personal_in);
+    setDone('check_out',    data && data.check_out);
+
+    // Hero status big card
+    if (big) {
+      if (!data || !data.check_in) {
+        big.innerHTML = `
+          <div style="text-align:center;font-weight:800;font-size:14px;opacity:.95">⏳ আজকে এখনো চেক-ইন হয়নি</div>
+          <div style="text-align:center;font-size:12px;opacity:.7;font-weight:600">"অফিস ইন" বাটনে ক্লিক করে কাজ শুরু করুন</div>
+        `;
+      } else {
+        const isLate = (data.late_minutes||0) > 0;
+        const status = data.check_out ? '✅ দিন শেষ' : isLate ? '⏰ লেট চেক-ইন' : '✓ অন-টাইম';
+        const statusColor = data.check_out ? '#34d399' : isLate ? '#fbbf24' : '#34d399';
+        big.innerHTML = `
+          <div class="ahs-row"><span style="font-size:11px;opacity:.7;font-weight:800;text-transform:uppercase;letter-spacing:1px">আজকের অবস্থা</span> <span style="color:${statusColor};font-weight:800;font-size:13px">${status}</span></div>
+          <div class="ahs-row"><span><i class="fa-solid fa-right-to-bracket" style="opacity:.6"></i> চেক-ইন</span> <b>${data.check_in ? formatBnTime(data.check_in) : '—'}</b></div>
+          ${data.lunch_out ? `<div class="ahs-row"><span><i class="fa-solid fa-utensils" style="opacity:.6"></i> লাঞ্চ</span> <b>${formatBnTime(data.lunch_out)}${data.lunch_in?` → ${formatBnTime(data.lunch_in)}`:''}</b></div>` : ''}
+          <div class="ahs-row"><span><i class="fa-solid fa-right-from-bracket" style="opacity:.6"></i> চেক-আউট</span> <b>${data.check_out ? formatBnTime(data.check_out) : '—'}</b></div>
+          ${isLate ? `<div class="ahs-row" style="background:rgba(251,191,36,.18);padding:6px 10px;border-radius:8px;margin-top:4px"><span>⚠️ লেট</span> <b style="color:#fbbf24">${bnDigits(data.late_minutes)} মিনিট</b></div>` : ''}
+          ${data.total_hours ? `<div class="ahs-row"><span><i class="fa-solid fa-stopwatch" style="opacity:.6"></i> কাজের সময়</span> <b>${bnDigits(Number(data.total_hours).toFixed(1))} ঘ.</b></div>` : ''}
+        `;
+      }
+    }
+
+    // Old text status (kept for backward compat / hidden by default)
+    if (el) {
+      if (!data) { el.style.display = 'none'; }
+      else {
+        let parts = [];
+        if (data.check_in)  parts.push(`চেক-ইন ${formatBnTime(data.check_in)}`);
+        if (data.lunch_out) parts.push(`লাঞ্চ আউট ${formatBnTime(data.lunch_out)}`);
+        if (data.lunch_in)  parts.push(`লাঞ্চ ইন ${formatBnTime(data.lunch_in)}`);
+        if (data.check_out) parts.push(`চেক-আউট ${formatBnTime(data.check_out)}`);
+        el.style.display = 'none';
+        el.className = 'clock-status ' + ((data.late_minutes||0) > 0 ? 'late' : 'ok');
+        el.innerHTML = parts.join(' · ');
+      }
+    }
+
+    // Bind --c CSS variable on quick leave chips
+    document.querySelectorAll('.qlp-chip[data-c]').forEach(chip => {
+      chip.style.setProperty('--c', chip.dataset.c);
+    });
   } catch (e) { /* ignore */ }
 }
 
@@ -3087,12 +3192,19 @@ async function refreshAttendanceList() {
     if (error) throw error;
 
     const myData = App.isAdmin ? (data||[]).filter(r => r.user_id === App.user.id) : (data||[]);
-    document.getElementById('aStatPresent').textContent = bnDigits(myData.filter(r => r.status === 'present' || r.status === 'late').length);
-    document.getElementById('aStatLate').textContent    = bnDigits(myData.filter(r => r.late_minutes > 0).length);
-    const leaveEl = document.getElementById('aStatLeave');
-    if (leaveEl) leaveEl.textContent = bnDigits(myData.filter(r => r.status === 'leave' || r.status === 'absent').length);
-    const hoursTotal = Math.round(myData.reduce((s, r) => s + (r.total_hours || 0), 0));
-    document.getElementById('aStatHours').textContent = bnDigits(hoursTotal);
+    const _setStat = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.dataset.count = String(val);
+      el.dataset.counted = '';
+      el.textContent = bnDigits(val);
+    };
+    _setStat('aStatPresent', myData.filter(r => r.status === 'present' || r.status === 'late').length);
+    _setStat('aStatLate',    myData.filter(r => r.late_minutes > 0).length);
+    _setStat('aStatLeave',   myData.filter(r => r.status === 'leave' || r.status === 'absent').length);
+    _setStat('aStatHours',   Math.round(myData.reduce((s, r) => s + (r.total_hours || 0), 0)));
+    // Animate any uncounted numbers
+    if (typeof animateCounters === 'function') animateCounters(document.getElementById('attStats'));
 
     if (!data || data.length === 0) {
       tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;padding:40px;color:var(--gray-400)"><i class="fa-solid fa-database" style="font-size:32px;margin-bottom:8px;display:block"></i> এই মাসে কোনো রেকর্ড নেই</td></tr>`;
@@ -3497,45 +3609,89 @@ function downloadCSV(rows, filename) {
 function renderAttendance() {
   const todayDate = new Date();
   const curMonth = todayDate.toISOString().slice(0,7);
+  const greet = greetingText();
+  const ot = App.myOfficeTime;
+  const officeText = ot ? `${ot.check_in_time.slice(0,5)} — ${ot.check_out_time.slice(0,5)}` : 'নির্ধারিত নয়';
   return `
-    <div class="clock-widget">
-      <div class="clock-display"><span id="liveClock">--:--:--</span> <span style="font-size:24px;color:var(--gray-500);font-weight:700" id="liveAmPm">AM</span></div>
-      <div class="clock-date">${dayName(today())} · ${formatBnDate(today())}</div>
-      <div class="clock-actions">
-        <button class="clock-btn in"   onclick="markAttendance('check_in')"><i class="fa-solid fa-right-to-bracket"></i><span>অফিস ইন</span><small>কাজ শুরু করুন</small></button>
-        <button class="clock-btn lout" onclick="markAttendance('lunch_out')"><i class="fa-solid fa-utensils"></i><span>লাঞ্চ আউট</span><small>খেতে যাচ্ছেন</small></button>
-        <button class="clock-btn lin"  onclick="markAttendance('lunch_in')"><i class="fa-solid fa-mug-hot"></i><span>লাঞ্চ ইন</span><small>ফিরে এসেছেন</small></button>
-        <button class="clock-btn pout" onclick="markAttendance('personal_out')"><i class="fa-solid fa-walking"></i><span>ব্রেক শুরু</span><small>পার্সোনাল</small></button>
-        <button class="clock-btn pin"  onclick="markAttendance('personal_in')"><i class="fa-solid fa-arrow-rotate-left"></i><span>ব্রেক শেষ</span><small>ফিরে এলেন</small></button>
-        <button class="clock-btn out"  onclick="markAttendance('check_out')"><i class="fa-solid fa-right-from-bracket"></i><span>অফিস আউট</span><small>দিন শেষ করুন</small></button>
+    <!-- ═══ ATTENDANCE HERO ═══ -->
+    <div class="att-hero">
+      <div class="att-hero-bg"></div>
+      <div class="att-hero-grid">
+        <div class="att-hero-clock">
+          <div class="att-hero-greet">${greet} 👋</div>
+          <div class="att-clock-display">
+            <span id="liveClock">--:--:--</span><span class="att-amp" id="liveAmPm">AM</span>
+          </div>
+          <div class="att-clock-date">
+            <i class="fa-regular fa-calendar"></i> ${dayName(today())} · ${formatBnDate(today())}
+          </div>
+          <div class="att-hero-meta">
+            <span class="att-pill"><span class="live-dot"></span> লাইভ</span>
+            <span class="att-pill"><i class="fa-solid fa-business-time"></i> অফিস: ${officeText}</span>
+            ${ot ? `<span class="att-pill"><i class="fa-solid fa-stopwatch"></i> গ্রেস: ${bnDigits(ot.grace_minutes||0)} মি.</span>` : ''}
+          </div>
+        </div>
+        <div class="att-hero-status" id="todayStatusBig">
+          <div style="text-align:center;opacity:.85"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
+        </div>
+      </div>
+
+      <div class="att-actions">
+        <button class="att-btn in"   onclick="markAttendance('check_in')"><div class="att-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div><div><div class="att-btn-title">অফিস ইন</div><div class="att-btn-sub">কাজ শুরু করুন</div></div></button>
+        <button class="att-btn lout" onclick="markAttendance('lunch_out')"><div class="att-btn-icon"><i class="fa-solid fa-utensils"></i></div><div><div class="att-btn-title">লাঞ্চ আউট</div><div class="att-btn-sub">খেতে যাচ্ছেন</div></div></button>
+        <button class="att-btn lin"  onclick="markAttendance('lunch_in')"><div class="att-btn-icon"><i class="fa-solid fa-mug-hot"></i></div><div><div class="att-btn-title">লাঞ্চ ইন</div><div class="att-btn-sub">ফিরে এসেছেন</div></div></button>
+        <button class="att-btn pout" onclick="markAttendance('personal_out')"><div class="att-btn-icon"><i class="fa-solid fa-person-walking"></i></div><div><div class="att-btn-title">ব্রেক শুরু</div><div class="att-btn-sub">পার্সোনাল</div></div></button>
+        <button class="att-btn pin"  onclick="markAttendance('personal_in')"><div class="att-btn-icon"><i class="fa-solid fa-arrow-rotate-left"></i></div><div><div class="att-btn-title">ব্রেক শেষ</div><div class="att-btn-sub">ফিরে এলেন</div></div></button>
+        <button class="att-btn out"  onclick="markAttendance('check_out')"><div class="att-btn-icon"><i class="fa-solid fa-right-from-bracket"></i></div><div><div class="att-btn-title">অফিস আউট</div><div class="att-btn-sub">দিন শেষ করুন</div></div></button>
       </div>
       <div class="clock-status" id="todayStatus" style="display:none"></div>
     </div>
 
-    <div class="stats-grid" id="attStats">
-      <div class="stat-card"><div class="stat-icon emerald"><i class="fa-solid fa-calendar-check"></i></div><h3 class="num" id="aStatPresent">০</h3><p>উপস্থিত</p></div>
-      <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div><h3 class="num" id="aStatLate">০</h3><p>লেট</p></div>
-      <div class="stat-card"><div class="stat-icon pink"><i class="fa-solid fa-umbrella-beach"></i></div><h3 class="num" id="aStatLeave">০</h3><p>ছুটি</p></div>
-      <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-business-time"></i></div><h3 class="num" id="aStatHours">০</h3><p>মোট ঘন্টা</p></div>
+    <!-- ═══ MONTHLY KPI ═══ -->
+    <div class="kpi-grid" id="attStats" style="margin-top:22px">
+      <div class="kpi-card" style="--accent:linear-gradient(135deg,#10b981,#059669);--accent-shadow:rgba(5,150,105,.4)">
+        <div class="kpi-head"><div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div><span class="kpi-trend up" id="aStatPresentTrend"><i class="fa-solid fa-arrow-up"></i> মাসিক</span></div>
+        <div class="kpi-value num"><span class="num-anim" id="aStatPresent" data-count="0">০</span></div>
+        <div class="kpi-label">উপস্থিত দিন</div>
+      </div>
+      <div class="kpi-card" style="--accent:linear-gradient(135deg,#f59e0b,#d97706);--accent-shadow:rgba(217,119,6,.4)">
+        <div class="kpi-head"><div class="kpi-icon"><i class="fa-solid fa-stopwatch"></i></div><span class="kpi-trend neutral" id="aStatLateTrend">এ মাস</span></div>
+        <div class="kpi-value num"><span class="num-anim" id="aStatLate" data-count="0">০</span></div>
+        <div class="kpi-label">লেট হয়েছেন</div>
+      </div>
+      <div class="kpi-card" style="--accent:linear-gradient(135deg,#ec4899,#be185d);--accent-shadow:rgba(190,24,93,.4)">
+        <div class="kpi-head"><div class="kpi-icon"><i class="fa-solid fa-umbrella-beach"></i></div><span class="kpi-trend neutral">এ মাস</span></div>
+        <div class="kpi-value num"><span class="num-anim" id="aStatLeave" data-count="0">০</span></div>
+        <div class="kpi-label">ছুটি (দিন)</div>
+      </div>
+      <div class="kpi-card" style="--accent:linear-gradient(135deg,#8b5cf6,#5b2d8a);--accent-shadow:rgba(91,45,138,.4)">
+        <div class="kpi-head"><div class="kpi-icon"><i class="fa-solid fa-business-time"></i></div><span class="kpi-trend neutral">এ মাস</span></div>
+        <div class="kpi-value num"><span class="num-anim" id="aStatHours" data-count="0">০</span></div>
+        <div class="kpi-label">কাজের ঘন্টা</div>
+      </div>
     </div>
 
     ${App.isAdmin ? `
-    <div class="card" style="background:linear-gradient(135deg,#faf5ff 0%,#fce7f3 100%);border:1px solid var(--purple-200)">
-      <div class="card-title" style="border:none;padding-bottom:8px;margin-bottom:8px">
-        <span><i class="fa-solid fa-clipboard-check" style="color:var(--purple-600)"></i> অ্যাডমিন: এমপ্লয়ীদের ছুটি/অনুপস্থিতি দিন</span>
+    <!-- ═══ ADMIN QUICK MARK PANEL ═══ -->
+    <div class="quick-leave-panel">
+      <div class="qlp-head">
+        <div class="qlp-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+        <div style="flex:1;min-width:0">
+          <h3>অ্যাডমিন · দ্রুত ছুটি/অনুপস্থিতি মার্ক</h3>
+          <p>এমপ্লয়ী সিলেক্ট করে এক ক্লিকে যেকোনো ছুটির ধরন দিন</p>
+        </div>
+        <button class="btn btn-primary" style="width:auto;flex-shrink:0" onclick="openMarkOthersAttendance()"><i class="fa-solid fa-plus"></i> বিস্তারিত</button>
       </div>
-      <p style="font-size:12px;color:var(--gray-600);margin-bottom:14px">এমপ্লয়ী সিলেক্ট করে ছুটির ধরন (CL/SL/EL/CoL/ML/PH/UL/IL) এক ক্লিকে দিতে পারবেন।</p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-        <button class="btn btn-sm" style="background:#3b82f6;color:white" onclick="quickMarkLeave('CL')"><b>CL</b> · নৈমিত্তিক</button>
-        <button class="btn btn-sm" style="background:#ef4444;color:white" onclick="quickMarkLeave('SL')"><b>SL</b> · অসুস্থতা</button>
-        <button class="btn btn-sm" style="background:#10b981;color:white" onclick="quickMarkLeave('EL')"><b>EL</b> · অর্জিত</button>
-        <button class="btn btn-sm" style="background:#a78bfa;color:white" onclick="quickMarkLeave('CoL')"><b>CoL</b> · সমবেদনা</button>
-        <button class="btn btn-sm" style="background:#ec4899;color:white" onclick="quickMarkLeave('ML')"><b>ML</b> · বিবাহ</button>
-        <button class="btn btn-sm" style="background:#f59e0b;color:white" onclick="quickMarkLeave('PH')"><b>PH</b> · সরকারি</button>
-        <button class="btn btn-sm" style="background:#94a3b8;color:white" onclick="quickMarkLeave('UL')"><b>UL</b> · অননুমোদিত</button>
-        <button class="btn btn-sm" style="background:#dc2626;color:white" onclick="quickMarkLeave('IL')"><b>IL</b> · দায়িত্বহীন</button>
+      <div class="qlp-grid">
+        <button class="qlp-chip" data-c="#3b82f6" onclick="quickMarkLeave('CL')"><span class="qlp-code">CL</span><span class="qlp-name">নৈমিত্তিক</span></button>
+        <button class="qlp-chip" data-c="#ef4444" onclick="quickMarkLeave('SL')"><span class="qlp-code">SL</span><span class="qlp-name">অসুস্থতা</span></button>
+        <button class="qlp-chip" data-c="#10b981" onclick="quickMarkLeave('EL')"><span class="qlp-code">EL</span><span class="qlp-name">অর্জিত</span></button>
+        <button class="qlp-chip" data-c="#a78bfa" onclick="quickMarkLeave('CoL')"><span class="qlp-code">CoL</span><span class="qlp-name">সমবেদনা</span></button>
+        <button class="qlp-chip" data-c="#ec4899" onclick="quickMarkLeave('ML')"><span class="qlp-code">ML</span><span class="qlp-name">বিবাহ</span></button>
+        <button class="qlp-chip" data-c="#f59e0b" onclick="quickMarkLeave('PH')"><span class="qlp-code">PH</span><span class="qlp-name">সরকারি</span></button>
+        <button class="qlp-chip" data-c="#64748b" onclick="quickMarkLeave('UL')"><span class="qlp-code">UL</span><span class="qlp-name">অননুমোদিত</span></button>
+        <button class="qlp-chip" data-c="#dc2626" onclick="quickMarkLeave('IL')"><span class="qlp-code">IL</span><span class="qlp-name">দায়িত্বহীন</span></button>
       </div>
-      <button class="btn btn-primary" onclick="openMarkOthersAttendance()" style="width:auto"><i class="fa-solid fa-plus"></i> বিস্তারিত এটেন্ডেন্স দিন (চেক-ইন/আউট সহ)</button>
     </div>
     ` : ''}
 
