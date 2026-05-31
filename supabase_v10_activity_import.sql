@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS public.monthly_activity (
   total_leave     NUMERIC(6,1) DEFAULT 0,
   activity_pct    NUMERIC(5,2) DEFAULT 0,  -- activity %
   attendance_pct  NUMERIC(5,2) DEFAULT 0,  -- present/regular %
+  sort_order      INT DEFAULT 0,           -- preserve sheet/tab order
   source          TEXT DEFAULT 'sheet',
   imported_at     TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE (employee_name, month)
@@ -37,6 +38,9 @@ CREATE TABLE IF NOT EXISTS public.monthly_activity (
 
 CREATE INDEX IF NOT EXISTS idx_ma_month ON public.monthly_activity(month);
 CREATE INDEX IF NOT EXISTS idx_ma_user  ON public.monthly_activity(user_id);
+
+-- For existing installs: add sort_order if missing
+ALTER TABLE public.monthly_activity ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
 
 ALTER TABLE public.monthly_activity ENABLE ROW LEVEL SECURITY;
 
