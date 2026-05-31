@@ -5897,7 +5897,10 @@ async function renderReports() {
           <h2 style="font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-chart-line"></i> সামগ্রিক উপস্থিতি রিপোর্ট</h2>
           <p style="opacity:.8;font-size:13px;margin-top:4px">অ্যাপে সংরক্ষিত — প্রতি এমপ্লয়ীর বার্ষিক তথ্য (শিটের আর প্রয়োজন নেই)</p>
         </div>
-        <div id="actYearTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div id="actYearTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          <button class="act-year-tab" onclick="_actAllRows=null;loadImportedActivity()" title="রিফ্রেশ"><i class="fa-solid fa-arrows-rotate"></i> রিফ্রেশ</button>
+        </div>
       </div>
       <div style="padding:20px">
         <div id="importedActivityBox"><div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
@@ -6119,7 +6122,13 @@ async function loadImportedActivity(forceYear) {
     }
     if (_actAllRows.length === 0) {
       if (tabsEl) tabsEl.innerHTML = '';
-      box.innerHTML = `<div class="empty-state" style="padding:30px"><i class="fa-solid fa-cloud-arrow-up"></i><h3>এখনো কোনো অ্যাক্টিভিটি ইম্পোর্ট করা হয়নি</h3><p>ডাটা ইম্পোর্ট পেজ থেকে Google Sheet লিংক দিয়ে ইম্পোর্ট করুন</p><button class="btn btn-primary" style="margin-top:12px;width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>`;
+      box.innerHTML = `
+        <div class="empty-state" style="padding:30px">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3>
+          <p style="margin-bottom:14px">Google Sheet থেকে একবার ইম্পোর্ট করলে সব এমপ্লয়ীর বছরভিত্তিক ডাটা এখানে কার্ডে দেখা যাবে — এরপর আর শিট লাগবে না।</p>
+          <button class="btn btn-primary" style="width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট পেজে যান</button>
+        </div>`;
       return;
     }
     // Distinct years (desc)
