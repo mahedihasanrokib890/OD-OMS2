@@ -1761,6 +1761,7 @@ function navigate(route) {
     if (route === 'employees') refreshEmployeesList();
     if (route === 'inbox')     refreshInboxList();
     if (route === 'settings') loadOfficeTimes();
+    if (route === 'reports')  loadEmpReport();
 
     // Update today status if attendance is rendered
     refreshTodayClockStatus();
@@ -4686,6 +4687,23 @@ async function renderReports() {
         <button class="btn btn-outline" onclick="exportEmployees()" style="width:auto"><i class="fa-solid fa-users"></i> কর্মী তালিকা</button>
         <button class="btn btn-outline" onclick="exportAttendance()" style="width:auto"><i class="fa-solid fa-calendar-check"></i> এটেন্ডেন্স</button>
         <button class="btn btn-outline" onclick="exportLeaves()" style="width:auto"><i class="fa-solid fa-umbrella"></i> ছুটি</button>
+        <button class="btn btn-outline" onclick="exportEmpReportCSV()" style="width:auto"><i class="fa-solid fa-file-csv"></i> কর্মী-ভিত্তিক বার্ষিক রিপোর্ট</button>
+      </div>
+    </div>
+
+    <!-- ═══ PER-EMPLOYEE REPORT ═══ -->
+    <div class="card" style="margin-top:18px">
+      <div class="card-title">
+        <span><i class="fa-solid fa-id-card-clip" style="color:var(--purple-600)"></i> প্রতিটি কর্মীর ছুটি ও উপস্থিতি রিপোর্ট</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="form-select" id="empRptYear" onchange="loadEmpReport()" style="width:auto;min-height:38px;padding:8px 30px 8px 12px;font-size:13px"></select>
+          <input class="form-input" id="empRptSearch" placeholder="🔍 নাম/ইমেইল/ডিপার্টমেন্ট" oninput="filterEmpReport()" style="width:240px;min-height:38px;padding:8px 14px;font-size:13px">
+          <button class="btn btn-outline btn-sm" onclick="loadEmpReport()"><i class="fa-solid fa-arrows-rotate"></i> রিফ্রেশ</button>
+        </div>
+      </div>
+      <div id="empReportSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px"></div>
+      <div id="empReportGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
+        <div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
       </div>
     </div>
   `;
@@ -4723,6 +4741,363 @@ function drawReportCharts(monthly, typeDist) {
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
     });
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PER-EMPLOYEE YEARLY REPORT
+// (leave balance, attendance summary, late, hours)
+// ═══════════════════════════════════════════════════════════
+let _empReportCache = { year: null, rows: [] };
+
+async function loadEmpReport() {
+  // Populate year selector first
+  const yrSel = document.getElementById('empRptYear');
+  if (yrSel && !yrSel.options.length) {
+    const cur = new Date().getFullYear();
+    yrSel.innerHTML = [cur, cur-1, cur-2, cur-3].map(y => `<option value="${y}">${bnDigits(y)}</option>`).join('');
+  }
+  const year = parseInt(yrSel?.value || new Date().getFullYear(), 10);
+  const yearStart = `${year}-01-01`;
+  const yearEnd   = `${year}-12-31`;
+
+  const grid = document.getElementById('empReportGrid');
+  const summaryEl = document.getElementById('empReportSummary');
+  if (grid) grid.innerHTML = `<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>`;
+
+  try {
+    const [profRes, polRes, lvRes, attRes] = await Promise.all([
+      sb.from('profiles').select('id, full_name, email, photo_url, designation, department, employee_types(name_bn)').eq('is_active', true).order('full_name'),
+      sb.from('leave_policies').select('*').eq('is_active', true).order('display_order'),
+      sb.from('leaves').select('user_id, leave_code, total_days, status, start_date').eq('status', 'approved').gte('start_date', yearStart).lte('start_date', yearEnd),
+      sb.from('attendance').select('user_id, status, late_minutes, total_hours, date').gte('date', yearStart).lte('date', yearEnd)
+    ]);
+    const profiles = profRes.data || [];
+    const policies = (polRes.data || []).filter(p => p.yearly_limit);
+    const leaves   = lvRes.data || [];
+    const atts     = attRes.data || [];
+
+    // Aggregate per user
+    const byUser = {};
+    profiles.forEach(p => {
+      byUser[p.id] = {
+        profile: p,
+        leaveByCode: {},        // code → days used
+        totalLeaveUsed: 0,
+        present: 0, late: 0, lateMinutes: 0, absent: 0, hours: 0,
+        workDays: 0
+      };
+    });
+    leaves.forEach(l => {
+      const u = byUser[l.user_id]; if (!u) return;
+      const code = l.leave_code || 'CL';
+      u.leaveByCode[code] = (u.leaveByCode[code] || 0) + (l.total_days || 0);
+      u.totalLeaveUsed   += (l.total_days || 0);
+    });
+    atts.forEach(a => {
+      const u = byUser[a.user_id]; if (!u) return;
+      u.workDays++;
+      u.hours += Number(a.total_hours||0);
+      if ((a.late_minutes||0) > 0) { u.late++; u.lateMinutes += a.late_minutes; }
+      if (a.status === 'present' || a.status === 'late') u.present++;
+      else if (a.status === 'absent') u.absent++;
+    });
+
+    // Cache for filter / export
+    _empReportCache = { year, rows: Object.values(byUser), policies };
+
+    renderEmpReportSummary(_empReportCache);
+    renderEmpReportGrid(_empReportCache);
+  } catch (e) {
+    if (grid) grid.innerHTML = `<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--red-500)"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(e.message||'লোড ব্যর্থ')}</div>`;
+  }
+}
+
+function renderEmpReportSummary(cache) {
+  const el = document.getElementById('empReportSummary');
+  if (!el) return;
+  const totalEmp = cache.rows.length;
+  const totalLeave = cache.rows.reduce((s,r) => s + r.totalLeaveUsed, 0);
+  const totalLate  = cache.rows.reduce((s,r) => s + r.late, 0);
+  const totalHours = Math.round(cache.rows.reduce((s,r) => s + r.hours, 0));
+  const tile = (icon, color, value, label) => `
+    <div style="background:white;padding:14px 16px;border-radius:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="width:40px;height:40px;border-radius:11px;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fa-solid fa-${icon}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div class="num" style="font-size:22px;font-weight:800;color:var(--gray-900);line-height:1">${bnDigits(value)}</div>
+        <div style="font-size:12px;color:var(--gray-500);font-weight:600">${label}</div>
+      </div>
+    </div>
+  `;
+  el.innerHTML = [
+    tile('users', 'linear-gradient(135deg,#8b5cf6,#5b2d8a)', totalEmp, 'মোট কর্মী'),
+    tile('umbrella-beach', 'linear-gradient(135deg,#ec4899,#be185d)', totalLeave, 'মোট ছুটি (দিন)'),
+    tile('clock', 'linear-gradient(135deg,#f59e0b,#d97706)', totalLate, 'মোট লেট ঘটনা'),
+    tile('business-time', 'linear-gradient(135deg,#10b981,#059669)', totalHours, 'মোট কাজের ঘন্টা')
+  ].join('');
+}
+
+function renderEmpReportGrid(cache) {
+  const grid = document.getElementById('empReportGrid');
+  if (!grid) return;
+  const rows = cache.rows;
+  if (!rows || rows.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1" class="empty-state"><i class="fa-solid fa-users-slash"></i><h3>কোনো কর্মী পাওয়া যায়নি</h3></div>`;
+    return;
+  }
+  // Color palette for cards
+  const palette = [
+    { bg:'linear-gradient(135deg,#8b5cf6,#5b2d8a)', name:'purple' },
+    { bg:'linear-gradient(135deg,#ec4899,#be185d)', name:'pink' },
+    { bg:'linear-gradient(135deg,#10b981,#059669)', name:'emerald' },
+    { bg:'linear-gradient(135deg,#3b82f6,#1d4ed8)', name:'blue' },
+    { bg:'linear-gradient(135deg,#f59e0b,#d97706)', name:'amber' },
+    { bg:'linear-gradient(135deg,#ef4444,#b91c1c)', name:'red' }
+  ];
+
+  grid.innerHTML = rows.map((u, idx) => {
+    const p = u.profile;
+    const palet = palette[idx % palette.length];
+    const init = (p.full_name || 'আ').charAt(0).toUpperCase();
+    const totalAllowed = (cache.policies||[]).reduce((s,po) => s + (po.yearly_limit||0), 0);
+    const remaining = Math.max(0, totalAllowed - u.totalLeaveUsed);
+    const remainingPct = totalAllowed ? Math.round((remaining/totalAllowed)*100) : 0;
+
+    // Leave breakdown (top codes)
+    const leaveChips = (cache.policies||[]).slice(0,4).map(po => {
+      const used = u.leaveByCode[po.code] || 0;
+      const remain = Math.max(0, (po.yearly_limit||0) - used);
+      const pct = po.yearly_limit ? Math.min(100, (used/po.yearly_limit)*100) : 0;
+      const barColor = pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
+      return `
+        <div style="background:#fafafa;border:1px solid var(--gray-100);border-radius:10px;padding:8px 10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--gray-700);margin-bottom:4px">
+            <span title="${escapeHtml(po.name_bn)}">${escapeHtml(po.code)}</span>
+            <span class="num" style="color:var(--gray-900)">${bnDigits(used)}<span style="color:var(--gray-400)">/${bnDigits(po.yearly_limit||0)}</span></span>
+          </div>
+          <div style="height:4px;background:var(--gray-200);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="emp-rpt-card" data-search="${escapeHtml(((p.full_name||'')+' '+(p.email||'')+' '+(p.department||'')+' '+(p.designation||'')).toLowerCase())}" style="background:white;border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow-sm);transition:all .3s;cursor:pointer" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='var(--shadow-sm)'" onclick="openEmpReportModal('${p.id}')">
+        <!-- Header -->
+        <div style="background:${palet.bg};color:#fff;padding:16px 18px;display:flex;align-items:center;gap:12px;position:relative">
+          <div style="width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;font-family:var(--font-en);overflow:hidden;border:2px solid rgba(255,255,255,.4);flex-shrink:0">
+            ${p.photo_url ? `<img src="${escapeHtml(p.photo_url)}" style="width:100%;height:100%;object-fit:cover">` : init}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.full_name||'কর্মী')}</div>
+            <div style="font-size:11px;opacity:.85;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.designation || p.employee_types?.name_bn || 'কর্মী')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="num" style="font-size:22px;font-weight:800;line-height:1">${bnDigits(remainingPct)}<span style="font-size:12px;opacity:.8">%</span></div>
+            <div style="font-size:10px;font-weight:700;opacity:.85;letter-spacing:.5px;text-transform:uppercase">ছুটি বাকি</div>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:14px 16px">
+          <!-- Top stats row -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+            <div style="text-align:center;padding:8px 4px;background:#f0fdf4;border-radius:10px">
+              <div class="num" style="font-size:18px;font-weight:800;color:#059669">${bnDigits(u.totalLeaveUsed)}</div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">নেওয়া (দিন)</div>
+            </div>
+            <div style="text-align:center;padding:8px 4px;background:#fef3c7;border-radius:10px">
+              <div class="num" style="font-size:18px;font-weight:800;color:#d97706">${bnDigits(remaining)}</div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">বাকি (দিন)</div>
+            </div>
+            <div style="text-align:center;padding:8px 4px;background:#fee2e2;border-radius:10px">
+              <div class="num" style="font-size:18px;font-weight:800;color:#dc2626">${bnDigits(u.late)}</div>
+              <div style="font-size:10px;color:var(--gray-500);font-weight:700">লেট</div>
+            </div>
+          </div>
+
+          <!-- Leave by code -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">${leaveChips}</div>
+
+          <!-- Footer line -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px dashed var(--gray-200);font-size:11px;color:var(--gray-500);font-weight:700">
+            <span><i class="fa-solid fa-calendar-check" style="color:#10b981"></i> ${bnDigits(u.present)} উপস্থিত</span>
+            <span><i class="fa-solid fa-business-time" style="color:#8b5cf6"></i> ${bnDigits(Math.round(u.hours))} ঘ.</span>
+            <span style="color:var(--purple-600)">বিস্তারিত <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterEmpReport() {
+  const q = (document.getElementById('empRptSearch')?.value || '').toLowerCase().trim();
+  const cards = document.querySelectorAll('#empReportGrid .emp-rpt-card');
+  let visible = 0;
+  cards.forEach(c => {
+    const match = !q || (c.dataset.search || '').includes(q);
+    c.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  if (visible === 0 && q) {
+    if (!document.getElementById('empRptNoMatch')) {
+      const div = document.createElement('div');
+      div.id = 'empRptNoMatch';
+      div.style.cssText = 'grid-column:1/-1;padding:30px;text-align:center;color:var(--gray-400)';
+      div.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> "${escapeHtml(q)}" এর সাথে মিলে এমন কেউ নেই`;
+      document.getElementById('empReportGrid').appendChild(div);
+    }
+  } else {
+    document.getElementById('empRptNoMatch')?.remove();
+  }
+}
+
+async function openEmpReportModal(userId) {
+  const cache = _empReportCache;
+  const u = cache.rows.find(x => x.profile.id === userId);
+  if (!u) return showToast('তথ্য পাওয়া যায়নি', 'error');
+  const p = u.profile;
+  const policies = cache.policies || [];
+  const totalAllowed = policies.reduce((s,po) => s + (po.yearly_limit||0), 0);
+  const remaining = Math.max(0, totalAllowed - u.totalLeaveUsed);
+
+  // Fetch detailed leaves for this user
+  const yearStart = `${cache.year}-01-01`;
+  const yearEnd   = `${cache.year}-12-31`;
+  const { data: leaveDetail } = await sb.from('leaves').select('*').eq('user_id', userId).gte('start_date', yearStart).lte('start_date', yearEnd).order('start_date', { ascending: false });
+
+  const leaveTable = (leaveDetail||[]).map(l => `
+    <tr>
+      <td>${formatBnDate(l.start_date)} - ${formatBnDate(l.end_date)}</td>
+      <td><b>${escapeHtml(l.leave_code||'-')}</b></td>
+      <td class="num">${bnDigits(l.total_days)} দিন</td>
+      <td><span class="leave-status ${l.status}">${statusLabel(l.status)}</span></td>
+      <td style="font-size:12px;color:var(--gray-600)">${escapeHtml((l.reason||'').slice(0,60))}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--gray-400)">এই বছরে কোনো ছুটির রেকর্ড নেই</td></tr>`;
+
+  const leaveBalanceTable = policies.map(po => {
+    const used = u.leaveByCode[po.code] || 0;
+    const remain = Math.max(0, (po.yearly_limit||0) - used);
+    const pct = po.yearly_limit ? Math.min(100, (used/po.yearly_limit)*100) : 0;
+    const barColor = pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
+    return `
+      <tr>
+        <td><b>${escapeHtml(po.name_bn)}</b> <small style="color:var(--gray-400)">(${po.code})</small></td>
+        <td class="num">${bnDigits(po.yearly_limit||0)}</td>
+        <td class="num" style="color:#dc2626">${bnDigits(used)}</td>
+        <td class="num" style="color:#059669;font-weight:800">${bnDigits(remain)}</td>
+        <td><div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden;width:120px"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div></td>
+      </tr>
+    `;
+  }).join('');
+
+  const init = (p.full_name||'আ').charAt(0).toUpperCase();
+  const body = `
+    <!-- Profile header -->
+    <div style="display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,var(--purple-50),var(--pink-100));border-radius:14px;margin-bottom:18px">
+      <div style="width:56px;height:56px;border-radius:14px;background:var(--gradient-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:var(--font-en);overflow:hidden;flex-shrink:0">
+        ${p.photo_url ? `<img src="${escapeHtml(p.photo_url)}" style="width:100%;height:100%;object-fit:cover">` : init}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:18px;font-weight:800;color:var(--gray-900)">${escapeHtml(p.full_name||'কর্মী')}</div>
+        <div style="font-size:12px;color:var(--gray-600);font-weight:600">${escapeHtml(p.designation || '')}${p.department?` · ${escapeHtml(p.department)}`:''}</div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:2px">${escapeHtml(p.email||'')}</div>
+      </div>
+      <div style="text-align:center;padding:8px 14px;background:white;border-radius:12px;box-shadow:var(--shadow-sm)">
+        <div class="num" style="font-size:24px;font-weight:800;color:var(--purple-700)">${bnDigits(cache.year)}</div>
+        <div style="font-size:10px;color:var(--gray-500);font-weight:700;letter-spacing:.5px;text-transform:uppercase">বছর</div>
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px">
+      <div style="padding:12px;background:#ecfdf5;border-left:3px solid #10b981;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#059669">${bnDigits(u.present)}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">উপস্থিত দিন</div>
+      </div>
+      <div style="padding:12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#d97706">${bnDigits(u.late)}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">লেট (${bnDigits(u.lateMinutes)} মিনিট)</div>
+      </div>
+      <div style="padding:12px;background:#fce7f3;border-left:3px solid #ec4899;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#be185d">${bnDigits(u.totalLeaveUsed)}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">ছুটি নেওয়া</div>
+      </div>
+      <div style="padding:12px;background:#f3e8ff;border-left:3px solid #8b5cf6;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#7c3aed">${bnDigits(remaining)}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">ছুটি বাকি</div>
+      </div>
+      <div style="padding:12px;background:#dbeafe;border-left:3px solid #3b82f6;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#1d4ed8">${bnDigits(Math.round(u.hours))}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">কাজের ঘন্টা</div>
+      </div>
+    </div>
+
+    <!-- Leave balance table -->
+    <div class="card-title" style="margin-bottom:8px"><span><i class="fa-solid fa-scale-balanced"></i> ছুটির ব্যালেন্স ভাঙা</span></div>
+    <div style="overflow-x:auto;margin-bottom:18px">
+      <table class="data-table" style="width:100%">
+        <thead><tr><th>ছুটির ধরন</th><th>বার্ষিক সীমা</th><th>ব্যবহৃত</th><th>বাকি</th><th>প্রগ্রেস</th></tr></thead>
+        <tbody>${leaveBalanceTable || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:16px">পলিসি সেট নেই</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <!-- Leave history -->
+    <div class="card-title" style="margin-bottom:8px"><span><i class="fa-solid fa-clock-rotate-left"></i> ${bnDigits(cache.year)} সালের ছুটির ইতিহাস</span></div>
+    <div style="overflow-x:auto;max-height:280px;overflow-y:auto;border:1px solid var(--gray-100);border-radius:10px">
+      <table class="data-table" style="width:100%;font-size:13px">
+        <thead style="position:sticky;top:0;background:white;z-index:1"><tr><th>তারিখ</th><th>কোড</th><th>দিন</th><th>স্ট্যাটাস</th><th>কারণ</th></tr></thead>
+        <tbody>${leaveTable}</tbody>
+      </table>
+    </div>
+  `;
+  showModal(`<i class="fa-solid fa-id-card-clip"></i> ${escapeHtml(p.full_name)} — বার্ষিক রিপোর্ট`, body, `<button class="btn btn-outline" onclick="closeModal()">বন্ধ</button><button class="btn btn-primary" onclick="exportSingleEmpReport('${p.id}')"><i class="fa-solid fa-download"></i> CSV ডাউনলোড</button>`);
+}
+
+function exportEmpReportCSV() {
+  const cache = _empReportCache;
+  if (!cache || !cache.rows || cache.rows.length === 0) return showToast('ডাটা লোড হয়নি', 'warning');
+  const polCodes = (cache.policies||[]).map(p => p.code);
+  const headers = ['নাম','ইমেইল','পদবি','ডিপার্টমেন্ট','উপস্থিত','লেট','লেট-মিনিট','কাজের-ঘন্টা', ...polCodes.flatMap(c => [`${c}-নেওয়া`,`${c}-বাকি`]), 'মোট-ছুটি-নেওয়া','মোট-ছুটি-বাকি'];
+  const rows = cache.rows.map(u => {
+    const p = u.profile;
+    const totalAllowed = (cache.policies||[]).reduce((s,po) => s + (po.yearly_limit||0), 0);
+    const remaining = Math.max(0, totalAllowed - u.totalLeaveUsed);
+    const codeCols = (cache.policies||[]).flatMap(po => {
+      const used = u.leaveByCode[po.code] || 0;
+      return [used, Math.max(0, (po.yearly_limit||0) - used)];
+    });
+    return [p.full_name||'', p.email||'', p.designation||'', p.department||'', u.present, u.late, u.lateMinutes, Math.round(u.hours), ...codeCols, u.totalLeaveUsed, remaining];
+  });
+  downloadCSV([headers, ...rows], `employee_yearly_report_${cache.year}.csv`);
+  showToast('✅ CSV ডাউনলোড সম্পন্ন');
+}
+
+function exportSingleEmpReport(userId) {
+  const cache = _empReportCache;
+  const u = cache.rows.find(x => x.profile.id === userId);
+  if (!u) return showToast('তথ্য পাওয়া যায়নি', 'error');
+  const p = u.profile;
+  const headers = ['ক্ষেত্র','মান'];
+  const rows = [
+    ['নাম', p.full_name||''],
+    ['ইমেইল', p.email||''],
+    ['পদবি', p.designation||''],
+    ['ডিপার্টমেন্ট', p.department||''],
+    ['বছর', cache.year],
+    ['উপস্থিত (দিন)', u.present],
+    ['লেট (বার)', u.late],
+    ['লেট-মিনিট (মোট)', u.lateMinutes],
+    ['কাজের ঘন্টা (মোট)', Math.round(u.hours)],
+    ['মোট ছুটি নেওয়া', u.totalLeaveUsed]
+  ];
+  (cache.policies||[]).forEach(po => {
+    const used = u.leaveByCode[po.code] || 0;
+    rows.push([`${po.name_bn} (${po.code}) - নেওয়া`, used]);
+    rows.push([`${po.name_bn} (${po.code}) - বাকি`, Math.max(0, (po.yearly_limit||0) - used)]);
+  });
+  downloadCSV([headers, ...rows], `${(p.full_name||'employee').replace(/\s+/g,'_')}_${cache.year}.csv`);
+  showToast('✅ ডাউনলোড সম্পন্ন');
 }
 
 // ═══════════════════════════════════════════════════════════
