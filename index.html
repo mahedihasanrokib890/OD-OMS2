@@ -410,6 +410,82 @@
   .empty-state h3{font-size:18px;font-weight:700;color:var(--gray-700);margin-bottom:6px}
   .empty-state p{font-size:14px;font-weight:500}
 
+  /* ═══ PREMIUM ENHANCEMENTS V3 ═══ */
+  /* Theme system */
+  body.theme-dark{background:#0f0820;color:#e2e8f0}
+  body.theme-dark{--bg-page:#0f0820;--bg-card:#1a1230;--border:#2d1b4d;--gray-50:#1a1230;--gray-100:#241845;--gray-200:#33235e;--gray-300:#4a3380;--gray-400:#8b7ab5;--gray-500:#a594d3;--gray-600:#c4b5e0;--gray-700:#dcd2ed;--gray-800:#ede5f7;--gray-900:#f8f5ff}
+  body.theme-dark .sidebar{background:linear-gradient(180deg,rgba(26,18,48,.95) 0%,rgba(20,12,40,.97) 100%);border-right-color:#2d1b4d}
+  body.theme-dark .sidebar-brand,body.theme-dark .sidebar-user{border-color:#2d1b4d;background:none}
+  body.theme-dark .topbar{background:rgba(20,12,40,.85);border-bottom-color:#2d1b4d}
+  body.theme-dark .card,body.theme-dark .stat-card,body.theme-dark .kpi-card,body.theme-dark .live-tile,body.theme-dark .emp-card,body.theme-dark .leave-card,body.theme-dark .notice-item{background:#1a1230;border-color:#2d1b4d}
+  body.theme-dark .form-input,body.theme-dark .form-select,body.theme-dark .form-textarea{background:#241845;border-color:#3b2870;color:#ede5f7}
+  body.theme-dark .form-input::placeholder{color:#8b7ab5}
+  body.theme-dark .topbar-search{background:rgba(36,24,69,.6)}
+  body.theme-dark .topbar-search input{color:#dcd2ed}
+  body.theme-dark .icon-btn-pill,body.theme-dark .topbar-user{background:#241845;border-color:#3b2870;color:#dcd2ed}
+  body.theme-dark .topbar-user span{color:#ede5f7}
+  body.theme-dark .modal{background:#1a1230;color:#ede5f7}
+  body.theme-dark .modal-header,body.theme-dark .modal-footer{border-color:#2d1b4d}
+  body.theme-dark #appContainer::before{background:radial-gradient(circle at 0% 0%,rgba(168,85,247,.15) 0%,transparent 50%),radial-gradient(circle at 100% 0%,rgba(236,72,153,.1) 0%,transparent 50%)}
+  body.theme-dark .nav-item{color:#a594d3}
+  body.theme-dark .nav-item:hover{background:linear-gradient(135deg,rgba(168,85,247,.18),rgba(236,72,153,.12))}
+  body.theme-dark .nav-item.active{background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(236,72,153,.15));color:#dcd2ed}
+  body.theme-dark .data-table th{background:#241845;color:#dcd2ed}
+  body.theme-dark .data-table td{border-color:#2d1b4d;color:#dcd2ed}
+  body.theme-dark .info-row{border-color:#2d1b4d}
+
+  /* Keyboard hint badge */
+  .kbd-hint{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:var(--gray-100);color:var(--gray-500);font-family:var(--font-en);font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;border:1px solid var(--gray-200);pointer-events:none}
+  body.theme-dark .kbd-hint{background:#33235e;border-color:#4a3380;color:#c4b5e0}
+
+  /* Global search panel */
+  .global-search-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:white;border:1px solid var(--border);border-radius:14px;box-shadow:0 24px 48px rgba(91,45,138,.18);max-height:420px;overflow-y:auto;z-index:1000;animation:slideUp .2s ease}
+  body.theme-dark .global-search-panel{background:#1a1230;border-color:#2d1b4d}
+  .global-search-panel .gs-section{padding:8px 12px;font-size:10px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid var(--border)}
+  .global-search-panel .gs-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--gray-100);transition:all .2s}
+  .global-search-panel .gs-item:hover{background:var(--purple-50)}
+  body.theme-dark .global-search-panel .gs-item:hover{background:#241845}
+  .global-search-panel .gs-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-shrink:0}
+  .global-search-panel .gs-title{font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .global-search-panel .gs-meta{font-size:11px;color:var(--gray-500);font-weight:600}
+  .global-search-panel .gs-empty{padding:30px 16px;text-align:center;color:var(--gray-400);font-size:13px}
+
+  /* Premium glow on stats */
+  .kpi-card.glow::after{content:'';position:absolute;inset:-1px;border-radius:18px;padding:1px;background:linear-gradient(135deg,#a78bfa,#f472b6,#a78bfa);background-size:200% 200%;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;animation:shine 4s linear infinite;pointer-events:none;opacity:.5}
+
+  /* Birthday widget */
+  .bday-card{background:linear-gradient(135deg,#fce7f3 0%,#fbcfe8 50%,#f9a8d4 100%);border:1px solid #f9a8d4;border-radius:16px;padding:16px;position:relative;overflow:hidden}
+  body.theme-dark .bday-card{background:linear-gradient(135deg,#3a1a3e 0%,#5a2050 100%);border-color:#7a2a6e}
+  .bday-card::before{content:'🎂';position:absolute;font-size:90px;right:-15px;top:-15px;opacity:.15;transform:rotate(15deg)}
+  .bday-card h4{font-size:14px;font-weight:800;color:#831843;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  body.theme-dark .bday-card h4{color:#f9a8d4}
+  .bday-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed rgba(190,24,93,.15)}
+  .bday-row:last-child{border-bottom:none}
+  .bday-row .bd-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f472b6,#be185d);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;text-transform:uppercase}
+  .bday-row .bd-name{font-size:13px;font-weight:700;color:#831843}
+  body.theme-dark .bday-row .bd-name{color:#f9a8d4}
+  .bday-row .bd-date{font-size:11px;color:#be185d;font-weight:600}
+
+  /* Streak badge */
+  .streak-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;border-radius:99px;font-size:11px;font-weight:800;box-shadow:0 4px 12px rgba(234,88,12,.3)}
+  .streak-pill.cold{background:linear-gradient(135deg,#94a3b8,#64748b);box-shadow:0 4px 12px rgba(100,116,139,.2)}
+  .streak-pill .streak-flame{display:inline-block;animation:flame 1.6s ease-in-out infinite alternate}
+  @keyframes flame{from{transform:scale(.92) rotate(-3deg)}to{transform:scale(1.05) rotate(3deg)}}
+
+  /* Shortcuts panel modal */
+  .shortcuts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}
+  .shortcuts-grid > div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--gray-50);border:1px solid var(--border);border-radius:10px}
+  body.theme-dark .shortcuts-grid > div{background:#241845;border-color:#3b2870}
+  .shortcuts-grid kbd{background:#fff;border:1px solid var(--gray-300);border-bottom-width:2px;border-radius:6px;padding:2px 8px;font-family:var(--font-en);font-size:11px;font-weight:700;color:var(--gray-700);box-shadow:0 1px 0 var(--gray-200)}
+  body.theme-dark .shortcuts-grid kbd{background:#33235e;border-color:#4a3380;color:#dcd2ed}
+
+  /* Page transitions: scroll-triggered reveal */
+  .reveal{opacity:0;transform:translateY(16px);transition:all .5s cubic-bezier(.16,1,.3,1)}
+  .reveal.in{opacity:1;transform:translateY(0)}
+
+  /* Smoother animated counters */
+  .num-anim{display:inline-block}
+
   /* ═══ DASHBOARD V2 (professional) ═══ */
   @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.55)}70%{box-shadow:0 0 0 12px rgba(16,185,129,0)}}
   @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
@@ -750,10 +826,13 @@
         </div>
       </div>
       <div class="topbar-right">
-        <div class="topbar-search">
+        <div class="topbar-search" style="position:relative">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input placeholder="খুঁজুন...">
+          <input id="globalSearchInput" placeholder="খুঁজুন... (এমপ্লয়ী, নোটিশ, ছুটি)" oninput="globalSearch(this.value)" onfocus="globalSearch(this.value)" onblur="setTimeout(()=>document.getElementById('globalSearchPanel').style.display='none',200)" autocomplete="off">
+          <kbd class="kbd-hint" title="Ctrl+K">⌘K</kbd>
+          <div class="global-search-panel" id="globalSearchPanel"></div>
         </div>
+        <button class="icon-btn-pill" onclick="toggleTheme()" id="themeBtn" title="থিম পরিবর্তন (D)"><i class="fa-solid fa-moon"></i></button>
         <div style="position:relative">
           <button class="icon-btn-pill" onclick="toggleNotifPanel(event)"><i class="fa-solid fa-bell"></i><span class="dot" id="notifDot" style="display:none"></span><span class="nav-badge" id="notifCount" style="position:absolute;top:-2px;right:-2px;display:none;font-size:10px;min-width:18px;padding:2px 5px">০</span></button>
           <div class="notif-panel" id="notifPanel" onclick="event.stopPropagation()">
@@ -764,6 +843,7 @@
             <div id="notifList"><div class="notif-empty"><i class="fa-solid fa-bell-slash"></i><p>কোনো নটিফিকেশন নেই</p></div></div>
           </div>
         </div>
+        <button class="icon-btn-pill" onclick="openShortcutsPanel()" title="কীবোর্ড শর্টকাট (?)"><i class="fa-solid fa-keyboard"></i></button>
         <div class="topbar-user" onclick="navigate('profile')">
           <div class="avatar" id="topbarAvatar">আ</div>
           <span id="topbarUserName">ইউজার</span>
@@ -1769,6 +1849,12 @@ function navigate(route) {
     if (route === 'settings') loadOfficeTimes();
     if (route === 'reports')  loadEmpReport();
 
+    // Premium polish: counters + reveal animations on every page
+    setTimeout(() => {
+      attachReveals(document.getElementById('pageContent'));
+      animateCounters(document.getElementById('pageContent'));
+    }, 80);
+
     // Update today status if attendance is rendered
     refreshTodayClockStatus();
   }).catch(err => {
@@ -1942,6 +2028,9 @@ async function renderDashboard() {
           <div id="dashActivity"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
         </div>
       </div>
+
+      <!-- ═══ BIRTHDAYS ═══ -->
+      <div class="card bday-card" style="margin-top:18px" id="dashBdayCard"></div>
     `;
   }
 
@@ -1981,6 +2070,7 @@ async function renderDashboard() {
             <span class="hero-pill"><span class="live-dot"></span> অনলাইন</span>
             <span class="hero-pill"><i class="fa-regular fa-clock"></i> <span class="hero-clock" id="dashHeroClock">--:--:--</span></span>
             <span class="hero-pill"><i class="fa-solid fa-business-time"></i> অফিস: ${officeTimeText}</span>
+            <span class="hero-pill" id="myStreakPill" style="display:none"></span>
           </div>
         </div>
       </div>
@@ -2063,6 +2153,9 @@ async function renderDashboard() {
         <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
     </div>
+
+    <!-- ═══ BIRTHDAYS ═══ -->
+    <div class="card bday-card" style="margin-top:18px" id="dashBdayCard"></div>
   `;
 }
 
@@ -2166,6 +2259,17 @@ function startDashHeroClock() {
 async function loadDashboardLists() {
   // Start hero clock for any role
   startDashHeroClock();
+
+  // Birthday widget (shared)
+  loadDashBirthdays();
+
+  // Streak pill (employee only)
+  if (!App.isAdmin && !App.isEditor) loadMyStreakPill();
+
+  // Reveal animations on cards
+  setTimeout(() => attachReveals(document.getElementById('pageContent')), 50);
+  // Animate counters
+  setTimeout(() => animateCounters(document.getElementById('pageContent')), 100);
 
   // Recent notices (shared)
   try {
@@ -2405,6 +2509,298 @@ async function loadDashboardLists() {
 
 function priorityLabel(p) {
   return p === 'urgent' ? '🔴 জরুরী' : p === 'important' ? '🟡 গুরুত্বপূর্ণ' : '🟢 সাধারণ';
+}
+
+// ═══════════════════════════════════════════════════════════
+// PREMIUM ENHANCEMENTS — theme, search, shortcuts, animations
+// ═══════════════════════════════════════════════════════════
+
+// 1. THEME TOGGLE (light/dark)
+function applyTheme(t) {
+  document.body.classList.toggle('theme-dark', t === 'dark');
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.innerHTML = t === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  try { localStorage.setItem(LS_PREFIX + 'theme', t); } catch {}
+}
+function toggleTheme() {
+  const cur = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+}
+// Restore theme on load
+try {
+  const saved = localStorage.getItem(LS_PREFIX + 'theme');
+  if (saved === 'dark') document.addEventListener('DOMContentLoaded', () => applyTheme('dark'));
+} catch {}
+
+// 2. GLOBAL SEARCH (employees / notices / leaves)
+let _gsTimer = null;
+function globalSearch(q) {
+  q = (q||'').trim().toLowerCase();
+  const panel = document.getElementById('globalSearchPanel');
+  if (!panel) return;
+  if (!q) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  panel.innerHTML = `<div class="gs-empty"><i class="fa-solid fa-spinner fa-spin"></i> খুঁজছি...</div>`;
+  if (_gsTimer) clearTimeout(_gsTimer);
+  _gsTimer = setTimeout(() => doGlobalSearch(q, panel), 220);
+}
+async function doGlobalSearch(q, panel) {
+  try {
+    const out = [];
+    // Employees
+    const empQ = sb.from('profiles').select('id, full_name, email, designation, photo_url').eq('is_active', true);
+    const empProm = (App.isAdmin || App.isEditor)
+      ? empQ.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,designation.ilike.%${q}%`).limit(5)
+      : Promise.resolve({ data: [] });
+    // Notices
+    const ntProm = sb.from('notices').select('id, title, priority, created_at').eq('is_active', true).or(`title.ilike.%${q}%,content.ilike.%${q}%`).limit(5);
+    // Leaves (admin sees all, employee sees own)
+    let lvProm;
+    if (App.isAdmin) {
+      lvProm = sb.from('leaves').select('id, reason, total_days, status, leave_code, profiles!user_id(full_name)').or(`reason.ilike.%${q}%,leave_code.ilike.%${q}%`).limit(5);
+    } else {
+      lvProm = sb.from('leaves').select('id, reason, total_days, status, leave_code').eq('user_id', App.user.id).or(`reason.ilike.%${q}%,leave_code.ilike.%${q}%`).limit(5);
+    }
+    const [empR, ntR, lvR] = await Promise.all([empProm, ntProm, lvProm]);
+
+    if (empR.data?.length) {
+      out.push(`<div class="gs-section">এমপ্লয়ী</div>`);
+      empR.data.forEach(e => {
+        const init = (e.full_name||'এ').charAt(0).toUpperCase();
+        const photo = e.photo_url ? `<img src="${escapeHtml(e.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:9px">` : init;
+        out.push(`
+          <div class="gs-item" onclick="closeGlobalSearch();viewEmployee('${e.id}')">
+            <div class="gs-icon" style="background:var(--gradient-brand)">${photo}</div>
+            <div style="flex:1;min-width:0">
+              <div class="gs-title">${escapeHtml(e.full_name||'')}</div>
+              <div class="gs-meta">${escapeHtml(e.designation||'')} · ${escapeHtml(e.email||'')}</div>
+            </div>
+          </div>
+        `);
+      });
+    }
+    if (ntR.data?.length) {
+      out.push(`<div class="gs-section">নোটিশ</div>`);
+      ntR.data.forEach(n => {
+        out.push(`
+          <div class="gs-item" onclick="closeGlobalSearch();navigate('notices');setTimeout(()=>openNoticeView(${n.id}),300)">
+            <div class="gs-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><i class="fa-solid fa-bullhorn"></i></div>
+            <div style="flex:1;min-width:0">
+              <div class="gs-title">${escapeHtml(n.title||'')}</div>
+              <div class="gs-meta">${priorityLabel(n.priority)} · ${formatBnDate(n.created_at)}</div>
+            </div>
+          </div>
+        `);
+      });
+    }
+    if (lvR.data?.length) {
+      out.push(`<div class="gs-section">ছুটির আবেদন</div>`);
+      lvR.data.forEach(l => {
+        out.push(`
+          <div class="gs-item" onclick="closeGlobalSearch();navigate('leaves')">
+            <div class="gs-icon" style="background:linear-gradient(135deg,#ec4899,#be185d)"><i class="fa-solid fa-umbrella-beach"></i></div>
+            <div style="flex:1;min-width:0">
+              <div class="gs-title">${escapeHtml(l.profiles?.full_name || l.leave_code || 'ছুটি')} — ${bnDigits(l.total_days||0)} দিন</div>
+              <div class="gs-meta">${escapeHtml((l.reason||'').slice(0,60))} · ${statusLabel(l.status)}</div>
+            </div>
+          </div>
+        `);
+      });
+    }
+    panel.innerHTML = out.length ? out.join('') : `<div class="gs-empty"><i class="fa-solid fa-magnifying-glass"></i> "${escapeHtml(q)}" এর সাথে কিছু পাওয়া যায়নি</div>`;
+  } catch (e) {
+    panel.innerHTML = `<div class="gs-empty">খুঁজতে সমস্যা হয়েছে</div>`;
+  }
+}
+function closeGlobalSearch() {
+  const p = document.getElementById('globalSearchPanel');
+  const i = document.getElementById('globalSearchInput');
+  if (p) p.style.display = 'none';
+  if (i) i.value = '';
+}
+
+// 3. KEYBOARD SHORTCUTS PANEL
+function openShortcutsPanel() {
+  showModal(
+    '<i class="fa-solid fa-keyboard" style="color:var(--purple-600)"></i> কীবোর্ড শর্টকাট',
+    `
+    <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px">দ্রুত নেভিগেশন ও কাজের জন্য:</p>
+    <div class="shortcuts-grid">
+      <div><span>সব জায়গায় খুঁজুন</span><kbd>Ctrl + K</kbd></div>
+      <div><span>থিম পরিবর্তন</span><kbd>D</kbd></div>
+      <div><span>ড্যাশবোর্ড</span><kbd>G</kbd> + <kbd>D</kbd></div>
+      <div><span>এটেন্ডেন্স</span><kbd>G</kbd> + <kbd>A</kbd></div>
+      <div><span>নোটিশ</span><kbd>G</kbd> + <kbd>N</kbd></div>
+      <div><span>ছুটি</span><kbd>G</kbd> + <kbd>L</kbd></div>
+      <div><span>প্রোফাইল</span><kbd>G</kbd> + <kbd>P</kbd></div>
+      <div><span>সাইডবার toggle</span><kbd>S</kbd></div>
+      <div><span>মডাল বন্ধ</span><kbd>Esc</kbd></div>
+      <div><span>এই প্যানেল</span><kbd>?</kbd></div>
+    </div>
+    `,
+    `<button class="btn btn-primary" onclick="closeModal()">বুঝেছি</button>`
+  );
+}
+
+// 4. KEYBOARD HANDLER (g+x sequences, d, ?, ctrl+k)
+let _kbBuffer = '';
+let _kbBufferTimer = null;
+window.addEventListener('keydown', (ev) => {
+  // Ignore inside inputs/textarea/contenteditable
+  const t = ev.target;
+  const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+
+  // Ctrl/Cmd + K → focus global search
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
+    ev.preventDefault();
+    document.getElementById('globalSearchInput')?.focus();
+    return;
+  }
+  // Esc → close modal & global search
+  if (ev.key === 'Escape') {
+    if (document.getElementById('modalOverlay')?.classList.contains('active')) closeModal();
+    closeGlobalSearch();
+    return;
+  }
+  if (inField) return;
+  // ? → shortcuts
+  if (ev.key === '?' && !ev.shiftKey === false) { openShortcutsPanel(); return; }
+  // d → theme
+  if (ev.key === 'd' || ev.key === 'D') { toggleTheme(); return; }
+  // s → sidebar
+  if (ev.key === 's' || ev.key === 'S') { toggleSidebar(); return; }
+  // g + x sequences
+  if (ev.key === 'g' || ev.key === 'G') {
+    _kbBuffer = 'g';
+    if (_kbBufferTimer) clearTimeout(_kbBufferTimer);
+    _kbBufferTimer = setTimeout(() => { _kbBuffer = ''; }, 1000);
+    return;
+  }
+  if (_kbBuffer === 'g') {
+    const map = { d:'dashboard', a:'attendance', n:'notices', l:'leaves', p:'profile', e:'employees', i:'inbox', r:'reports' };
+    const route = map[(ev.key||'').toLowerCase()];
+    if (route) { _kbBuffer = ''; ev.preventDefault(); navigate(route); }
+  }
+});
+
+// 5. ANIMATED COUNTER (any element with data-count gets smoothly counted up)
+function animateCounters(scope) {
+  const root = scope || document;
+  root.querySelectorAll('[data-count]').forEach(el => {
+    if (el.dataset.counted === '1') return;
+    const target = parseFloat(el.dataset.count) || 0;
+    const dur = 700;
+    const start = performance.now();
+    const fmt = el.dataset.fmt || 'bn';
+    function step(t) {
+      const k = Math.min(1, (t - start)/dur);
+      const eased = 1 - Math.pow(1-k, 3);
+      const val = Math.round(target * eased);
+      el.textContent = fmt === 'bn' ? bnDigits(val) : String(val);
+      if (k < 1) requestAnimationFrame(step);
+      else el.dataset.counted = '1';
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+// 6. SCROLL REVEAL — auto-add animation when entering viewport
+const _revealObs = ('IntersectionObserver' in window) ? new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); _revealObs.unobserve(e.target); }
+  });
+}, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 }) : null;
+
+function attachReveals(scope) {
+  if (!_revealObs) return;
+  const root = scope || document;
+  // Auto-tag any cards in dashboard / reports / leaves / employees pages
+  root.querySelectorAll('.kpi-card, .insight-card, .card, .emp-card, .leave-card, .notice-item').forEach(el => {
+    if (!el.classList.contains('reveal')) el.classList.add('reveal');
+    _revealObs.observe(el);
+  });
+}
+
+// 7. PUNCTUALITY STREAK — count consecutive on-time check-in days
+async function getMyStreak() {
+  try {
+    const { data } = await sb.from('attendance').select('date, late_minutes').eq('user_id', App.user.id).order('date', { ascending: false }).limit(60);
+    if (!data || data.length === 0) return { streak: 0, best: 0 };
+    let streak = 0;
+    for (const r of data) {
+      if ((r.late_minutes||0) === 0) streak++;
+      else break;
+    }
+    // Best streak in window
+    let best = 0, cur = 0;
+    data.slice().reverse().forEach(r => {
+      if ((r.late_minutes||0) === 0) { cur++; best = Math.max(best, cur); }
+      else cur = 0;
+    });
+    return { streak, best };
+  } catch { return { streak: 0, best: 0 }; }
+}
+
+// 8. UPCOMING BIRTHDAYS — next 30 days
+async function getUpcomingBirthdays() {
+  try {
+    const { data } = await sb.from('profiles').select('id, full_name, photo_url, date_of_birth').eq('is_active', true).not('date_of_birth', 'is', null);
+    const today = new Date();
+    const ms30 = 30 * 24 * 60 * 60 * 1000;
+    const list = [];
+    (data||[]).forEach(p => {
+      const dob = new Date(p.date_of_birth);
+      const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+      if (next < today) next.setFullYear(today.getFullYear()+1);
+      const days = Math.ceil((next - today) / (24*60*60*1000));
+      if (days <= 30) list.push({ ...p, days, nextDate: next });
+    });
+    return list.sort((a,b) => a.days - b.days).slice(0, 5);
+  } catch { return []; }
+}
+
+// Render birthday widget
+async function loadDashBirthdays() {
+  const el = document.getElementById('dashBdayCard');
+  if (!el) return;
+  const list = await getUpcomingBirthdays();
+  if (list.length === 0) {
+    el.innerHTML = `<h4><i class="fa-solid fa-cake-candles"></i> আসন্ন জন্মদিন</h4><div style="padding:14px;text-align:center;color:var(--gray-500);font-size:13px;font-weight:600">পরবর্তী ৩০ দিনে কোনো জন্মদিন নেই</div>`;
+    return;
+  }
+  const todayList = list.filter(b => b.days === 0);
+  const upcoming  = list.filter(b => b.days > 0);
+  let html = `<h4><i class="fa-solid fa-cake-candles"></i> আসন্ন জন্মদিন (${bnDigits(list.length)})</h4>`;
+  if (todayList.length) {
+    html += `<div style="background:rgba(255,255,255,.55);border-radius:12px;padding:8px 12px;margin-bottom:8px;backdrop-filter:blur(4px)">`;
+    html += `<div style="font-size:11px;font-weight:800;color:#831843;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">🎉 আজকেই!</div>`;
+    todayList.forEach(b => {
+      const init = (b.full_name||'এ').charAt(0).toUpperCase();
+      const photo = b.photo_url ? `<img src="${escapeHtml(b.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : init;
+      html += `<div class="bday-row"><div class="bd-avatar">${photo}</div><div style="flex:1"><div class="bd-name">${escapeHtml(b.full_name)}</div><div class="bd-date">শুভ জন্মদিন! 🎂</div></div></div>`;
+    });
+    html += `</div>`;
+  }
+  upcoming.forEach(b => {
+    const init = (b.full_name||'এ').charAt(0).toUpperCase();
+    const photo = b.photo_url ? `<img src="${escapeHtml(b.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : init;
+    html += `<div class="bday-row"><div class="bd-avatar">${photo}</div><div style="flex:1"><div class="bd-name">${escapeHtml(b.full_name)}</div><div class="bd-date">${formatBnDate(b.nextDate)} — আর ${bnDigits(b.days)} দিন</div></div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+// Streak pill in employee hero
+async function loadMyStreakPill() {
+  const pill = document.getElementById('myStreakPill');
+  if (!pill) return;
+  const { streak, best } = await getMyStreak();
+  if (streak === 0 && best === 0) { pill.style.display = 'none'; return; }
+  pill.style.display = '';
+  const cold = streak === 0;
+  pill.className = 'streak-pill' + (cold ? ' cold' : '');
+  pill.innerHTML = cold
+    ? `<i class="fa-solid fa-snowflake"></i> স্ট্রিক ০ — সেরা ${bnDigits(best)} দিন`
+    : `<span class="streak-flame">🔥</span> ${bnDigits(streak)} দিন on-time${best>streak?` · সেরা ${bnDigits(best)}`:''}`;
 }
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
