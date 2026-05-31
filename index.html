@@ -6120,8 +6120,25 @@ async function loadImportedActivity(forceYear) {
       if (error) throw error;
       _actAllRows = data || [];
     }
+
+    // Build the list of selectable years: always show a fixed range
+    // (current year back to 2023) PLUS any years present in the data.
+    const curY = new Date().getFullYear();
+    const fixedYears = [];
+    for (let y = curY; y >= 2023; y--) fixedYears.push(String(y));
+    const dataYears = [...new Set(_actAllRows.map(r => (r.month||'').slice(0,4)).filter(Boolean))];
+    const years = [...new Set([...fixedYears, ...dataYears])].sort((a,b) => b - a);
+
+    const activeYear = forceYear || window._actActiveYear || years[0];
+    window._actActiveYear = activeYear;
+
+    // Always render the year tabs
+    if (tabsEl) {
+      tabsEl.innerHTML = years.map(y => `<button class="act-year-tab ${y===activeYear?'active':''}" onclick="loadImportedActivity('${y}')">${bnDigits(y)}</button>`).join('');
+    }
+
+    // No data at all → show import prompt (but keep year tabs visible)
     if (_actAllRows.length === 0) {
-      if (tabsEl) tabsEl.innerHTML = '';
       box.innerHTML = `
         <div class="empty-state" style="padding:30px">
           <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -6131,14 +6148,6 @@ async function loadImportedActivity(forceYear) {
         </div>`;
       return;
     }
-    // Distinct years (desc)
-    const years = [...new Set(_actAllRows.map(r => (r.month||'').slice(0,4)).filter(Boolean))].sort((a,b)=>b-a);
-    const activeYear = forceYear || window._actActiveYear || years[0];
-    window._actActiveYear = activeYear;
-    if (tabsEl) {
-      tabsEl.innerHTML = years.map(y => `<button class="act-year-tab ${y===activeYear?'active':''}" onclick="loadImportedActivity('${y}')">${bnDigits(y)}</button>`).join('');
-    }
-
     // Aggregate per employee for that year
     const yearRows = _actAllRows.filter(r => (r.month||'').startsWith(activeYear));
     const byEmp = {};
