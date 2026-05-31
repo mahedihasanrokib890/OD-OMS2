@@ -3184,6 +3184,46 @@ function computeLateMinutes(checkInIso, officeTime) {
   return diff > 0 ? Math.floor(diff / 60000) : 0;
 }
 
+// Admin: recompute & persist late_minutes for every attendance record using office times
+async function resyncLateMinutes() {
+  if (!App.isAdmin) return showToast('শুধু এডমিন এটি করতে পারবে', 'error');
+  try {
+    showToast('🔄 লেট রি-সিঙ্ক চলছে...', 'success');
+    // Load office times keyed by type
+    const { data: ots } = await sb.from('office_times').select('*');
+    if (!ots || ots.length === 0) {
+      return showToast('⚠️ কোনো অফিস টাইম সেট করা নেই — Settings এ গিয়ে সেট করুন', 'error');
+    }
+    const otMap = {};
+    ots.forEach(o => { otMap[o.employee_type_id] = o; });
+    const otDefault = ots[0];
+
+    // Load all attendance rows that have a check-in
+    const { data: rows, error } = await sb.from('attendance').select('id, user_id, check_in, status, late_minutes, profiles!user_id(employee_type_id)').not('check_in', 'is', null);
+    if (error) throw error;
+    if (!rows || rows.length === 0) return showToast('কোনো রেকর্ড নেই', 'warning');
+
+    let updated = 0, lateNow = 0;
+    for (const r of rows) {
+      if (r.status === 'leave' || r.status === 'absent' || r.status === 'holiday') continue;
+      const ot = otMap[r.profiles?.employee_type_id] || otDefault;
+      const lm = computeLateMinutes(r.check_in, ot);
+      const newStatus = lm > 0 ? 'late' : 'present';
+      if (lm > 0) lateNow++;
+      if ((r.late_minutes||0) !== lm || (lm > 0 && r.status !== 'late')) {
+        const { error: uErr } = await sb.from('attendance').update({ late_minutes: lm, status: newStatus }).eq('id', r.id);
+        if (!uErr) updated++;
+      }
+    }
+    showToast(`✅ রি-সিঙ্ক সম্পন্ন — ${bnDigits(updated)} টি রেকর্ড আপডেট, ${bnDigits(lateNow)} টি এখন লেট`, 'success');
+    App.myOfficeTime = null;
+    if (App.currentPage === 'attendance') refreshAttendanceList();
+  } catch (e) {
+    showToast('❌ রি-সিঙ্ক ব্যর্থ: ' + (e.message||''), 'error');
+    console.error(e);
+  }
+}
+
 async function refreshTodayClockStatus() {
   const el = document.getElementById('todayStatus');
   const big = document.getElementById('todayStatusBig');
@@ -3867,6 +3907,7 @@ function renderAttendance() {
           <p>এমপ্লয়ী সিলেক্ট করে এক ক্লিকে যেকোনো ছুটির ধরন দিন</p>
         </div>
         <button class="btn btn-primary" style="width:auto;flex-shrink:0" onclick="openMarkOthersAttendance()"><i class="fa-solid fa-plus"></i> বিস্তারিত</button>
+        <button class="btn btn-outline" style="width:auto;flex-shrink:0" onclick="resyncLateMinutes()" title="অফিস টাইম অনুযায়ী সব রেকর্ডের লেট পুনঃগণনা করে DB-তে সেভ করুন"><i class="fa-solid fa-arrows-rotate"></i> লেট রি-সিঙ্ক</button>
       </div>
       <div class="qlp-grid">
         <button class="qlp-chip" data-c="#3b82f6" onclick="quickMarkLeave('CL')"><span class="qlp-code">CL</span><span class="qlp-name">নৈমিত্তিক</span></button>
