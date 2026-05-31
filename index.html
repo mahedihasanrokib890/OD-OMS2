@@ -494,6 +494,30 @@
   /* Smoother animated counters */
   .num-anim{display:inline-block}
 
+  /* ═══ YEARLY ACTIVITY CARDS ═══ */
+  .act-year-tab{padding:7px 16px;border-radius:99px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:var(--font-en);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s}
+  .act-year-tab:hover{background:rgba(255,255,255,.22)}
+  .act-year-tab.active{background:#fff;color:var(--purple-700)}
+  .act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .act-emp-card{background:#fff;border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow-sm);transition:all .3s;cursor:pointer}
+  body.theme-dark .act-emp-card{background:#1a1230;border-color:#2d1b4d}
+  .act-emp-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+  .act-emp-head{padding:16px 18px;color:#fff;display:flex;align-items:flex-start;gap:12px;position:relative}
+  .act-emp-head .ae-avatar{width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.25);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:var(--font-en);flex-shrink:0;overflow:hidden;text-transform:uppercase}
+  .act-emp-head .ae-name{font-size:16px;font-weight:800;line-height:1.2}
+  .act-emp-head .ae-tags{font-size:11px;opacity:.85;font-weight:600;margin-top:3px;line-height:1.4}
+  .act-emp-head .ae-pct{margin-left:auto;text-align:right;flex-shrink:0}
+  .act-emp-head .ae-pct b{font-size:24px;font-weight:900;font-family:var(--font-en);line-height:1}
+  .act-emp-head .ae-pct span{display:block;font-size:10px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .act-emp-body{padding:14px 16px}
+  .act-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .act-stat{text-align:center;padding:10px 4px;background:var(--gray-50);border-radius:11px}
+  body.theme-dark .act-stat{background:#241845}
+  .act-stat .v{font-family:var(--font-en);font-size:19px;font-weight:800;line-height:1}
+  .act-stat .l{font-size:10px;color:var(--gray-500);font-weight:700;margin-top:3px}
+  .act-emp-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px dashed var(--gray-200);font-size:12px}
+  .act-emp-foot a{color:var(--purple-600);font-weight:700;cursor:pointer}
+
   /* ═══ ACTION TILES CARD V2 (separate from hero) ═══ */
   .action-card{margin-top:18px;background:#fff;border:1px solid var(--border);border-radius:24px;padding:22px;box-shadow:0 16px 40px -16px rgba(91,45,138,.12);position:relative;overflow:hidden}
   body.theme-dark .action-card{background:#1a1230;border-color:#2d1b4d;box-shadow:0 16px 40px -16px rgba(0,0,0,.45)}
@@ -5866,16 +5890,18 @@ async function renderReports() {
       </div>
     </div>
 
-    <!-- ═══ IMPORTED MONTHLY ACTIVITY (from Google Sheet) ═══ -->
-    <div class="card" style="margin-top:18px">
-      <div class="card-title">
-        <span><i class="fa-solid fa-chart-simple" style="color:#0f9d58"></i> মাসিক অ্যাক্টিভিটি (শিট থেকে ইম্পোর্টকৃত)</span>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select class="form-select" id="actViewMonth" onchange="loadImportedActivity()" style="width:auto;min-height:38px;padding:8px 30px 8px 12px;font-size:13px"></select>
-          <button class="btn btn-outline btn-sm" onclick="loadImportedActivity()"><i class="fa-solid fa-arrows-rotate"></i></button>
+    <!-- ═══ YEARLY ACTIVITY REPORT (app data, no sheet needed) ═══ -->
+    <div class="card" style="margin-top:18px;padding:0;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#2d1b69 0%,#5b2d8a 45%,#c2185b 100%);color:#fff;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h2 style="font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-chart-line"></i> সামগ্রিক উপস্থিতি রিপোর্ট</h2>
+          <p style="opacity:.8;font-size:13px;margin-top:4px">অ্যাপে সংরক্ষিত — প্রতি এমপ্লয়ীর বার্ষিক তথ্য (শিটের আর প্রয়োজন নেই)</p>
         </div>
+        <div id="actYearTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
-      <div id="importedActivityBox"><div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      <div style="padding:20px">
+        <div id="importedActivityBox"><div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
     </div>
   `;
 }
@@ -6079,101 +6105,136 @@ function renderEmpReportPctTable(cache) {
   }).join('');
 }
 
-// Render imported monthly_activity table in Reports
-async function loadImportedActivity() {
+// Render imported monthly_activity as YEAR-based employee cards (screenshot style)
+async function loadImportedActivity(forceYear) {
   const box = document.getElementById('importedActivityBox');
+  const tabsEl = document.getElementById('actYearTabs');
   if (!box) return;
-  const sel = document.getElementById('actViewMonth');
   try {
-    if (sel && !sel.options.length) {
-      const { data: months } = await sb.from('monthly_activity').select('month, month_label').order('month', { ascending: false });
-      const seen = new Set(); const opts = [];
-      (months||[]).forEach(m => { if (!seen.has(m.month)) { seen.add(m.month); opts.push(m); } });
-      if (opts.length === 0) {
-        box.innerHTML = `<div class="empty-state" style="padding:30px"><i class="fa-solid fa-cloud-arrow-up"></i><h3>এখনো কোনো অ্যাক্টিভিটি ইম্পোর্ট করা হয়নি</h3><p>ডাটা ইম্পোর্ট পেজ থেকে Google Sheet লিংক দিয়ে ইম্পোর্ট করুন</p><button class="btn btn-primary" style="margin-top:12px;width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>`;
-        return;
-      }
-      sel.innerHTML = `<option value="__all__">📊 সব মাস (সর্বমোট)</option>` + opts.map(m => `<option value="${m.month}">${escapeHtml(m.month_label||m.month)}</option>`).join('');
+    // Load all rows once
+    if (!_actAllRows) {
+      const { data, error } = await sb.from('monthly_activity').select('*');
+      if (error) throw error;
+      _actAllRows = data || [];
     }
-    const month = sel?.value || sel?.options[0]?.value;
-    if (!month) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>কোনো ডাটা নেই</h3></div>`; return; }
-
-    // ALL MONTHS aggregated view
-    if (month === '__all__') {
-      const { data: all } = await sb.from('monthly_activity').select('*');
-      if (!all || all.length === 0) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>কোনো ডাটা নেই</h3></div>`; return; }
-      const byEmp = {};
-      all.forEach(r => {
-        const key = r.employee_name;
-        if (!byEmp[key]) byEmp[key] = { name:key, code:r.emp_code, months:0, worked:0, present:0, late:0, leave:0, actSum:0, actCount:0 };
-        const u = byEmp[key];
-        u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0);
-        u.late += (r.late_count||0); u.leave += Number(r.total_leave||0);
-        if (Number(r.activity_pct) > 0) { u.actSum += Number(r.activity_pct); u.actCount++; }
-      });
-      const list = Object.values(byEmp).map(u => ({ ...u, avgAct: u.actCount ? u.actSum/u.actCount : 0 })).sort((a,b)=>b.avgAct-a.avgAct);
-      box.innerHTML = `
-        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
-          <table class="data-table" style="width:100%;min-width:720px">
-            <thead><tr><th>#</th><th>এমপ্লয়ী</th><th>মাস</th><th>মোট কাজ (ঘ.)</th><th>মোট ছুটি</th><th>গড় অ্যাক্টিভিটি%</th></tr></thead>
-            <tbody>
-              ${list.map((u,i) => {
-                const pct = Math.round(u.avgAct);
-                const clr = pct>=85?'#059669':pct>=60?'#d97706':'#dc2626';
-                const bg = pct>=85?'linear-gradient(90deg,#10b981,#059669)':pct>=60?'linear-gradient(90deg,#f59e0b,#d97706)':'linear-gradient(90deg,#ef4444,#dc2626)';
-                const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':bnDigits(i+1);
-                return `<tr>
-                  <td style="text-align:center;font-weight:800">${medal}</td>
-                  <td><b>${escapeHtml(u.name)}</b></td>
-                  <td class="num">${bnDigits(u.months)}</td>
-                  <td class="num">${bnDigits(u.worked.toFixed(1))}</td>
-                  <td class="num" style="color:#be185d;font-weight:700">${bnDigits(u.leave)}</td>
-                  <td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:${bg};border-radius:99px"></div></div><span class="num" style="font-weight:800;color:${clr};min-width:42px;text-align:right">${bnDigits(pct)}%</span></div></td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-        <div style="margin-top:10px;font-size:12px;color:var(--gray-500);text-align:right">${bnDigits(list.length)} জন · সব মাস মিলিয়ে</div>
-      `;
+    if (_actAllRows.length === 0) {
+      if (tabsEl) tabsEl.innerHTML = '';
+      box.innerHTML = `<div class="empty-state" style="padding:30px"><i class="fa-solid fa-cloud-arrow-up"></i><h3>এখনো কোনো অ্যাক্টিভিটি ইম্পোর্ট করা হয়নি</h3><p>ডাটা ইম্পোর্ট পেজ থেকে Google Sheet লিংক দিয়ে ইম্পোর্ট করুন</p><button class="btn btn-primary" style="margin-top:12px;width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>`;
       return;
     }
+    // Distinct years (desc)
+    const years = [...new Set(_actAllRows.map(r => (r.month||'').slice(0,4)).filter(Boolean))].sort((a,b)=>b-a);
+    const activeYear = forceYear || window._actActiveYear || years[0];
+    window._actActiveYear = activeYear;
+    if (tabsEl) {
+      tabsEl.innerHTML = years.map(y => `<button class="act-year-tab ${y===activeYear?'active':''}" onclick="loadImportedActivity('${y}')">${bnDigits(y)}</button>`).join('');
+    }
 
-    const { data: rows } = await sb.from('monthly_activity').select('*').eq('month', month).order('activity_pct', { ascending: false });
-    if (!rows || rows.length === 0) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>এই মাসে কোনো ডাটা নেই</h3></div>`; return; }
+    // Aggregate per employee for that year
+    const yearRows = _actAllRows.filter(r => (r.month||'').startsWith(activeYear));
+    const byEmp = {};
+    yearRows.forEach(r => {
+      const key = r.employee_name;
+      if (!byEmp[key]) byEmp[key] = { name:key, code:r.emp_code, designation:r.designation, user_id:r.user_id, months:0, worked:0, present:0, late:0, cl:0, sl:0, el:0, leave:0, actSum:0, actCount:0 };
+      const u = byEmp[key];
+      u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0); u.late += (r.late_count||0);
+      u.cl += Number(r.cl_days||0); u.sl += Number(r.sl_days||0); u.el += Number(r.el_days||0); u.leave += Number(r.total_leave||0);
+      if (Number(r.activity_pct) > 0) { u.actSum += Number(r.activity_pct); u.actCount++; }
+    });
+    const list = Object.values(byEmp).map(u => ({ ...u, avgAct: u.actCount ? Math.round(u.actSum/u.actCount) : 0 })).sort((a,b)=>b.avgAct-a.avgAct);
+    if (list.length === 0) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>${bnDigits(activeYear)} সালে কোনো ডাটা নেই</h3></div>`; return; }
+
+    const palette = [
+      'linear-gradient(135deg,#8b5cf6,#6d28d9)','linear-gradient(135deg,#ec4899,#be185d)',
+      'linear-gradient(135deg,#10b981,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)',
+      'linear-gradient(135deg,#f59e0b,#d97706)','linear-gradient(135deg,#ef4444,#b91c1c)',
+      'linear-gradient(135deg,#06b6d4,#0e7490)','linear-gradient(135deg,#84cc16,#4d7c0f)'
+    ];
     box.innerHTML = `
-      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
-        <table class="data-table" style="width:100%;min-width:820px">
-          <thead><tr><th>#</th><th>এমপ্লয়ী</th><th>উপস্থিত</th><th>লেট</th><th>কাজ (ঘ.)</th><th>CL</th><th>SL</th><th>EL</th><th>PH</th><th>ছুটি</th><th>অ্যাক্টিভিটি%</th></tr></thead>
-          <tbody>
-            ${rows.map((r,i) => {
-              const pct = Number(r.activity_pct)||0;
-              const clr = pct>=85?'#059669':pct>=60?'#d97706':'#dc2626';
-              const bg = pct>=85?'linear-gradient(90deg,#10b981,#059669)':pct>=60?'linear-gradient(90deg,#f59e0b,#d97706)':'linear-gradient(90deg,#ef4444,#dc2626)';
-              const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':bnDigits(i+1);
-              return `
-              <tr>
-                <td style="text-align:center;font-weight:800">${medal}</td>
-                <td><b>${escapeHtml(r.employee_name)}</b>${r.emp_code?`<br><small style="color:var(--gray-400)">${escapeHtml(r.emp_code)}</small>`:''}</td>
-                <td class="num" style="font-weight:700;color:#059669">${bnDigits(r.present_days)}</td>
-                <td class="num" style="font-weight:700;color:#dc2626">${bnDigits(r.late_count)}</td>
-                <td class="num">${bnDigits(Number(r.worked_hours||0).toFixed(1))}</td>
-                <td class="num">${bnDigits(r.cl_days)}</td>
-                <td class="num">${bnDigits(r.sl_days)}</td>
-                <td class="num">${bnDigits(r.el_days)}</td>
-                <td class="num">${bnDigits(r.ph_days)}</td>
-                <td class="num" style="font-weight:700;color:#be185d">${bnDigits(r.total_leave)}</td>
-                <td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:${bg};border-radius:99px"></div></div><span class="num" style="font-weight:800;color:${clr};min-width:42px;text-align:right">${bnDigits(Math.round(pct))}%</span></div></td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
+      <div class="act-grid">
+        ${list.map((u,i) => {
+          const grad = palette[i % palette.length];
+          const pct = u.avgAct;
+          const init = (u.name||'এ').charAt(0).toUpperCase();
+          return `
+          <div class="act-emp-card" onclick="openActivityEmpModal('${escapeHtml(u.name).replace(/'/g,'&#39;')}','${activeYear}')">
+            <div class="act-emp-head" style="background:${grad}">
+              <div class="ae-avatar">${init}</div>
+              <div style="min-width:0;flex:1">
+                <div class="ae-name">${escapeHtml(u.name)}</div>
+                <div class="ae-tags">Sick L · Casual L · Worked hrs · Late hrs · Activity%</div>
+              </div>
+              <div class="ae-pct"><b>${bnDigits(pct)}%</b><span>Activity</span></div>
+            </div>
+            <div class="act-emp-body">
+              <div class="act-stat-row">
+                <div class="act-stat"><div class="v" style="color:#dc2626">${bnDigits(u.sl)}</div><div class="l">SL</div></div>
+                <div class="act-stat"><div class="v" style="color:#d97706">${bnDigits(u.cl)}</div><div class="l">CL</div></div>
+                <div class="act-stat"><div class="v" style="color:#059669">${bnDigits(u.worked.toFixed(0))}</div><div class="l">কাজ (ঘ.)</div></div>
+              </div>
+              <div class="act-emp-foot">
+                <span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ${bnDigits(u.months)} মাস · ${bnDigits(u.late)} লেট</span>
+                <a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--gray-500);text-align:right">মোট ${bnDigits(rows.length)} জন</div>
+      <div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">${bnDigits(list.length)} জন · ${bnDigits(activeYear)} সাল</div>
     `;
   } catch (e) {
     box.innerHTML = `<div class="empty-state" style="padding:24px;color:var(--red-500)"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড ব্যর্থ</h3><p>${escapeHtml(e.message||'')} — supabase_v10 SQL চালানো হয়েছে কিনা দেখুন</p></div>`;
   }
+}
+
+// Detail modal for one employee across all months of a year
+function openActivityEmpModal(name, year) {
+  const rows = (_actAllRows||[]).filter(r => r.employee_name === name && (r.month||'').startsWith(year))
+    .sort((a,b)=> (a.month>b.month?1:-1));
+  if (rows.length === 0) return showToast('তথ্য নেই', 'error');
+  const totalW = rows.reduce((s,r)=>s+Number(r.worked_hours||0),0);
+  const totalLeave = rows.reduce((s,r)=>s+Number(r.total_leave||0),0);
+  const totalLate = rows.reduce((s,r)=>s+(r.late_count||0),0);
+  const acts = rows.filter(r=>Number(r.activity_pct)>0).map(r=>Number(r.activity_pct));
+  const avgAct = acts.length ? Math.round(acts.reduce((a,b)=>a+b,0)/acts.length) : 0;
+  const monthTable = rows.map(r => {
+    const pct = Number(r.activity_pct)||0;
+    const clr = pct>=85?'#059669':pct>=60?'#d97706':'#dc2626';
+    return `<tr>
+      <td><b>${escapeHtml(r.month_label||r.month)}</b></td>
+      <td class="num">${bnDigits(Number(r.worked_hours||0).toFixed(1))}</td>
+      <td class="num">${bnDigits(r.cl_days)}</td>
+      <td class="num">${bnDigits(r.sl_days)}</td>
+      <td class="num">${bnDigits(r.el_days)}</td>
+      <td class="num">${bnDigits(r.ph_days)}</td>
+      <td class="num" style="color:#dc2626">${bnDigits(r.late_count)}</td>
+      <td class="num" style="font-weight:800;color:${clr}">${pct?bnDigits(Math.round(pct))+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+  const init = (name||'এ').charAt(0).toUpperCase();
+  showModal(
+    `<i class="fa-solid fa-chart-line" style="color:var(--purple-600)"></i> ${escapeHtml(name)} — ${bnDigits(year)}`,
+    `
+    <div style="display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,var(--purple-50),var(--pink-100));border-radius:14px;margin-bottom:16px">
+      <div style="width:54px;height:54px;border-radius:14px;background:var(--gradient-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:var(--font-en)">${init}</div>
+      <div style="flex:1"><div style="font-size:18px;font-weight:800">${escapeHtml(name)}</div><div style="font-size:12px;color:var(--gray-500)">${bnDigits(rows.length)} মাসের তথ্য · ${bnDigits(year)} সাল</div></div>
+      <div style="text-align:center;background:#fff;border-radius:12px;padding:8px 14px"><div class="num" style="font-size:24px;font-weight:800;color:var(--purple-700)">${bnDigits(avgAct)}%</div><div style="font-size:10px;color:var(--gray-500);font-weight:700">গড় অ্যাক্টিভিটি</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">
+      <div style="padding:12px;background:#ecfdf5;border-left:3px solid #10b981;border-radius:10px"><div class="num" style="font-size:20px;font-weight:800;color:#059669">${bnDigits(totalW.toFixed(0))}</div><div style="font-size:11px;color:var(--gray-600);font-weight:700">মোট কাজ (ঘ.)</div></div>
+      <div style="padding:12px;background:#fce7f3;border-left:3px solid #ec4899;border-radius:10px"><div class="num" style="font-size:20px;font-weight:800;color:#be185d">${bnDigits(totalLeave)}</div><div style="font-size:11px;color:var(--gray-600);font-weight:700">মোট ছুটি</div></div>
+      <div style="padding:12px;background:#fee2e2;border-left:3px solid #ef4444;border-radius:10px"><div class="num" style="font-size:20px;font-weight:800;color:#dc2626">${bnDigits(totalLate)}</div><div style="font-size:11px;color:var(--gray-600);font-weight:700">মোট লেট</div></div>
+    </div>
+    <div class="card-title" style="margin-bottom:8px"><span><i class="fa-solid fa-table-list"></i> মাসিক বিবরণ</span></div>
+    <div style="overflow-x:auto;max-height:340px;overflow-y:auto;border:1px solid var(--gray-100);border-radius:10px">
+      <table class="data-table" style="width:100%;font-size:13px">
+        <thead style="position:sticky;top:0;background:white;z-index:1"><tr><th>মাস</th><th>কাজ(ঘ.)</th><th>CL</th><th>SL</th><th>EL</th><th>PH</th><th>লেট</th><th>Activity%</th></tr></thead>
+        <tbody>${monthTable}</tbody>
+      </table>
+    </div>
+    `,
+    `<button class="btn btn-outline" onclick="closeModal()">বন্ধ</button>`
+  );
 }
 
 function renderEmpReportGrid(cache) {
@@ -6646,6 +6707,7 @@ async function loadSheetCsv() {
 // and stores a per-employee monthly summary into monthly_activity.
 // ═══════════════════════════════════════════════════════════
 let _activityParsed = null;
+let _actAllRows = null;
 
 function parseSheetId(url) {
   const m = (url||'').match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -6849,6 +6911,7 @@ async function saveActivityImport() {
     } else {
       showToast('⚠️ সেভ হয়নি — monthly_activity টেবিল নেই? supabase_v10 SQL চালান', 'error');
     }
+    _actAllRows = null;
   } catch (e) {
     showToast('❌ ' + (e.message||'সেভ ব্যর্থ'), 'error');
   } finally { setBtnLoading(btn, false); }
@@ -6990,6 +7053,7 @@ async function saveOverallImport() {
     }
     if (saved > 0) showToast(`✅ ${bnDigits(saved)} টি মাসিক রেকর্ড সেভ হয়েছে`, 'success');
     else showToast('⚠️ সেভ হয়নি — supabase_v10 SQL চালান', 'error');
+    _actAllRows = null;
   } catch (e) {
     showToast('❌ ' + (e.message||'সেভ ব্যর্থ'), 'error');
   } finally { setBtnLoading(btn, false); }
