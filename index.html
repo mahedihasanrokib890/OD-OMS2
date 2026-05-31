@@ -486,6 +486,58 @@
   /* Smoother animated counters */
   .num-anim{display:inline-block}
 
+  /* ═══ ACTION TILES CARD V2 (separate from hero) ═══ */
+  .action-card{margin-top:18px;background:#fff;border:1px solid var(--border);border-radius:24px;padding:22px;box-shadow:0 16px 40px -16px rgba(91,45,138,.12);position:relative;overflow:hidden}
+  body.theme-dark .action-card{background:#1a1230;border-color:#2d1b4d;box-shadow:0 16px 40px -16px rgba(0,0,0,.45)}
+  .action-card::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(168,85,247,.08) 0%,transparent 60%);border-radius:50%;pointer-events:none}
+  body.theme-dark .action-card::before{background:radial-gradient(circle,rgba(168,85,247,.18) 0%,transparent 60%)}
+  .action-card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px;position:relative;z-index:1}
+  .ach-left{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+  .ach-icon{width:48px;height:48px;border-radius:14px;background:var(--gradient-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 10px 22px -8px rgba(91,45,138,.45)}
+  .ach-left h3{font-size:16px;font-weight:800;color:var(--gray-900);line-height:1.2}
+  body.theme-dark .ach-left h3{color:#ede5f7}
+  .ach-left p{font-size:12px;color:var(--gray-500);font-weight:600;margin-top:2px}
+  .ach-tag{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:.3px;border:1px solid rgba(217,119,6,.15)}
+  body.theme-dark .ach-tag{background:#3a2a0a;color:#fde68a;border-color:#5a4a1a}
+
+  .action-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;position:relative;z-index:1}
+  .action-tile{position:relative;display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1.5px solid transparent;background:var(--at-bg,#f8fafc);cursor:pointer;font-family:var(--font-bn);text-align:left;transition:all .25s cubic-bezier(.16,1,.3,1);overflow:hidden;min-height:74px}
+  body.theme-dark .action-tile{background:#241845}
+  .action-tile::before{content:'';position:absolute;left:-2px;top:0;bottom:0;width:6px;border-radius:6px;background:var(--at-grad);transition:width .25s,opacity .25s;opacity:.85}
+  .action-tile::after{content:'';position:absolute;inset:0;background:var(--at-grad);opacity:0;transition:opacity .3s;pointer-events:none;z-index:0;border-radius:14px}
+  .action-tile > *{position:relative;z-index:1;transition:color .25s}
+  .action-tile:hover{transform:translateY(-3px);box-shadow:0 18px 36px -10px var(--at-shadow,rgba(91,45,138,.35));border-color:rgba(255,255,255,.0)}
+  .action-tile:hover::after{opacity:1}
+  .action-tile:hover .at-title,.action-tile:hover .at-sub{color:#fff}
+  .action-tile:hover .at-icon{background:rgba(255,255,255,.22);box-shadow:0 8px 18px -6px rgba(0,0,0,.3)}
+  .action-tile:active{transform:translateY(-1px) scale(.99)}
+  .action-tile:disabled{opacity:.45;cursor:not-allowed;filter:saturate(.4)}
+  .at-icon{width:46px;height:46px;border-radius:13px;background:var(--at-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 8px 16px -6px var(--at-shadow,rgba(91,45,138,.45));transition:all .25s}
+  .at-body{flex:1;min-width:0}
+  .at-title{font-size:14px;font-weight:800;color:var(--gray-900);line-height:1.2}
+  body.theme-dark .at-title{color:#ede5f7}
+  .at-sub{font-size:11px;font-weight:600;color:var(--gray-500);margin-top:3px;line-height:1.3}
+  body.theme-dark .at-sub{color:#a594d3}
+  .at-check{width:24px;height:24px;border-radius:50%;background:#10b981;color:#fff;display:none;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;box-shadow:0 4px 10px rgba(16,185,129,.4);position:absolute;top:8px;right:8px;animation:scaleIn .35s cubic-bezier(.34,1.56,.64,1)}
+  .action-tile.done .at-check{display:flex}
+  .action-tile.done{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:rgba(16,185,129,.35)}
+  body.theme-dark .action-tile.done{background:linear-gradient(135deg,#0c2620,#0a3a2c);border-color:rgba(16,185,129,.4)}
+  .action-tile.done::before{background:linear-gradient(180deg,#10b981,#059669);opacity:1}
+
+  /* Per-action color palette */
+  .c-in   {--at-bg:#ecfdf5;--at-grad:linear-gradient(135deg,#10b981,#059669);--at-shadow:rgba(5,150,105,.45)}
+  .c-lout {--at-bg:#fffbeb;--at-grad:linear-gradient(135deg,#f59e0b,#d97706);--at-shadow:rgba(217,119,6,.45)}
+  .c-lin  {--at-bg:#eff6ff;--at-grad:linear-gradient(135deg,#3b82f6,#2563eb);--at-shadow:rgba(37,99,235,.45)}
+  .c-pout {--at-bg:#f5f3ff;--at-grad:linear-gradient(135deg,#a78bfa,#7c3aed);--at-shadow:rgba(124,58,237,.45)}
+  .c-pin  {--at-bg:#fdf2f8;--at-grad:linear-gradient(135deg,#f472b6,#db2777);--at-shadow:rgba(219,39,119,.45)}
+  .c-out  {--at-bg:#fef2f2;--at-grad:linear-gradient(135deg,#ef4444,#dc2626);--at-shadow:rgba(220,38,38,.45)}
+  body.theme-dark .c-in   {--at-bg:#0c2620}
+  body.theme-dark .c-lout {--at-bg:#2a1f0a}
+  body.theme-dark .c-lin  {--at-bg:#0a1d3e}
+  body.theme-dark .c-pout {--at-bg:#1f1542}
+  body.theme-dark .c-pin  {--at-bg:#3a0a26}
+  body.theme-dark .c-out  {--at-bg:#3a0a0a}
+
   /* ═══ ATTENDANCE HERO V2 ═══ */
   .att-hero{position:relative;border-radius:24px;padding:28px 30px;background:linear-gradient(135deg,#1a0533 0%,#2d1b69 35%,#5b2d8a 70%,#a73289 100%);color:#fff;overflow:hidden;box-shadow:0 24px 60px -16px rgba(91,45,138,.45);margin-bottom:0}
   body.theme-dark .att-hero{background:linear-gradient(135deg,#0a031f 0%,#1a0a3e 50%,#3b1370 100%)}
@@ -3117,10 +3169,11 @@ async function refreshTodayClockStatus() {
   try {
     const { data } = await sb.from('attendance').select('*').eq('user_id', App.user.id).eq('date', today()).maybeSingle();
 
-    // Mark .att-btn.done for completed actions
+    // Mark done state for completed actions
     const setDone = (key, ok) => {
-      const btn = document.querySelector(`.att-btn[onclick*="${key}"]`);
-      if (btn) btn.classList.toggle('done', !!ok);
+      document.querySelectorAll(`.action-tile[onclick*="${key}"]`).forEach(btn => btn.classList.toggle('done', !!ok));
+      // Backward compat for any old .att-btn left around
+      document.querySelectorAll(`.att-btn[onclick*="${key}"]`).forEach(btn => btn.classList.toggle('done', !!ok));
     };
     setDone('check_in',     data && data.check_in);
     setDone('lunch_out',    data && data.lunch_out);
@@ -3128,6 +3181,14 @@ async function refreshTodayClockStatus() {
     setDone('personal_out', data && data.personal_out);
     setDone('personal_in',  data && data.personal_in);
     setDone('check_out',    data && data.check_out);
+
+    // Update top-right tag in action card
+    const tag = document.getElementById('achTag');
+    if (tag) {
+      if (!data || !data.check_in) tag.innerHTML = '<i class="fa-regular fa-clock"></i> এখনও শুরু হয়নি';
+      else if (data.check_out)     tag.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> দিন শেষ';
+      else                          tag.innerHTML = '<i class="fa-solid fa-circle-play" style="color:#10b981"></i> চলমান';
+    }
 
     // Hero status big card
     if (big) {
@@ -3635,16 +3696,71 @@ function renderAttendance() {
           <div style="text-align:center;opacity:.85"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
         </div>
       </div>
-
-      <div class="att-actions">
-        <button class="att-btn in"   onclick="markAttendance('check_in')"><div class="att-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div><div><div class="att-btn-title">অফিস ইন</div><div class="att-btn-sub">কাজ শুরু করুন</div></div></button>
-        <button class="att-btn lout" onclick="markAttendance('lunch_out')"><div class="att-btn-icon"><i class="fa-solid fa-utensils"></i></div><div><div class="att-btn-title">লাঞ্চ আউট</div><div class="att-btn-sub">খেতে যাচ্ছেন</div></div></button>
-        <button class="att-btn lin"  onclick="markAttendance('lunch_in')"><div class="att-btn-icon"><i class="fa-solid fa-mug-hot"></i></div><div><div class="att-btn-title">লাঞ্চ ইন</div><div class="att-btn-sub">ফিরে এসেছেন</div></div></button>
-        <button class="att-btn pout" onclick="markAttendance('personal_out')"><div class="att-btn-icon"><i class="fa-solid fa-person-walking"></i></div><div><div class="att-btn-title">ব্রেক শুরু</div><div class="att-btn-sub">পার্সোনাল</div></div></button>
-        <button class="att-btn pin"  onclick="markAttendance('personal_in')"><div class="att-btn-icon"><i class="fa-solid fa-arrow-rotate-left"></i></div><div><div class="att-btn-title">ব্রেক শেষ</div><div class="att-btn-sub">ফিরে এলেন</div></div></button>
-        <button class="att-btn out"  onclick="markAttendance('check_out')"><div class="att-btn-icon"><i class="fa-solid fa-right-from-bracket"></i></div><div><div class="att-btn-title">অফিস আউট</div><div class="att-btn-sub">দিন শেষ করুন</div></div></button>
-      </div>
       <div class="clock-status" id="todayStatus" style="display:none"></div>
+    </div>
+
+    <!-- ═══ ACTION TILES (separate highlighted card) ═══ -->
+    <div class="action-card">
+      <div class="action-card-head">
+        <div class="ach-left">
+          <div class="ach-icon"><i class="fa-solid fa-bolt"></i></div>
+          <div>
+            <h3>আজকের কাজ মার্ক করুন</h3>
+            <p>চেক-ইন থেকে শুরু করে চেক-আউট পর্যন্ত — এক ক্লিকে</p>
+          </div>
+        </div>
+        <span class="ach-tag" id="achTag"><i class="fa-regular fa-clock"></i> আজ</span>
+      </div>
+      <div class="action-tiles">
+        <button class="action-tile c-in"   onclick="markAttendance('check_in')">
+          <div class="at-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+          <div class="at-body">
+            <div class="at-title">অফিস ইন</div>
+            <div class="at-sub">কাজ শুরু করুন</div>
+          </div>
+          <div class="at-check"><i class="fa-solid fa-check"></i></div>
+        </button>
+        <button class="action-tile c-lout" onclick="markAttendance('lunch_out')">
+          <div class="at-icon"><i class="fa-solid fa-utensils"></i></div>
+          <div class="at-body">
+            <div class="at-title">লাঞ্চ আউট</div>
+            <div class="at-sub">খেতে যাচ্ছেন</div>
+          </div>
+          <div class="at-check"><i class="fa-solid fa-check"></i></div>
+        </button>
+        <button class="action-tile c-lin"  onclick="markAttendance('lunch_in')">
+          <div class="at-icon"><i class="fa-solid fa-mug-hot"></i></div>
+          <div class="at-body">
+            <div class="at-title">লাঞ্চ ইন</div>
+            <div class="at-sub">ফিরে এসেছেন</div>
+          </div>
+          <div class="at-check"><i class="fa-solid fa-check"></i></div>
+        </button>
+        <button class="action-tile c-pout" onclick="markAttendance('personal_out')">
+          <div class="at-icon"><i class="fa-solid fa-person-walking"></i></div>
+          <div class="at-body">
+            <div class="at-title">ব্রেক শুরু</div>
+            <div class="at-sub">পার্সোনাল</div>
+          </div>
+          <div class="at-check"><i class="fa-solid fa-check"></i></div>
+        </button>
+        <button class="action-tile c-pin"  onclick="markAttendance('personal_in')">
+          <div class="at-icon"><i class="fa-solid fa-arrow-rotate-left"></i></div>
+          <div class="at-body">
+            <div class="at-title">ব্রেক শেষ</div>
+            <div class="at-sub">ফিরে এলেন</div>
+          </div>
+          <div class="at-check"><i class="fa-solid fa-check"></i></div>
+        </button>
+        <button class="action-tile c-out"  onclick="markAttendance('check_out')">
+          <div class="at-icon"><i class="fa-solid fa-right-from-bracket"></i></div>
+          <div class="at-body">
+            <div class="at-title">অফিস আউট</div>
+            <div class="at-sub">দিন শেষ করুন</div>
+          </div>
+          <div class="at-check"><i class="fa-solid fa-check"></i></div>
+        </button>
+      </div>
     </div>
 
     <!-- ═══ MONTHLY KPI ═══ -->
