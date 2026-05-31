@@ -3335,14 +3335,23 @@ async function refreshAttendanceList() {
       (ots||[]).forEach(o => { otMap[o.employee_type_id] = o; });
       otMap._default = (ots && ots.length) ? ots[0] : null;
     } catch {}
-    // Helper: effective late minutes for a record (recompute from office time)
     const otForRow = (r) => otMap[r.profiles?.employee_type_id] || App.myOfficeTime || otMap._default;
+
+    // Late minutes counting GRACE (used for status/stat — late only after grace).
     const effLate = (r) => {
       if (r.status === 'leave' || r.status === 'absent' || r.status === 'holiday') return 0;
       if (!r.check_in) return 0;
       const ot = otForRow(r);
       const computed = ot ? computeLateMinutes(r.check_in, ot) : (r.late_minutes || 0);
       return Math.max(computed, r.late_minutes || 0);
+    };
+    // STRICT seconds late vs office check-in time IGNORING grace (for red coloring of the time itself).
+    const strictLateSec = (r) => {
+      if (r.status === 'leave' || r.status === 'absent' || r.status === 'holiday') return 0;
+      if (!r.check_in) return 0;
+      const ot = otForRow(r);
+      if (!ot || !ot.check_in_time) return (r.late_minutes||0) > 0 ? 60 : 0;
+      return secondsLate(r.check_in, ot.check_in_time, 0); // no grace
     };
     // Lunch-in late seconds vs configured lunch end time
     const lunchLate = (r) => {
@@ -3360,7 +3369,7 @@ async function refreshAttendanceList() {
       el.textContent = bnDigits(val);
     };
     _setStat('aStatPresent', myData.filter(r => r.status === 'present' || r.status === 'late').length);
-    _setStat('aStatLate',    myData.filter(r => effLate(r) > 0).length);
+    _setStat('aStatLate',    myData.filter(r => strictLateSec(r) > 0).length);
     _setStat('aStatLeave',   myData.filter(r => r.status === 'leave' || r.status === 'absent').length);
     _setStat('aStatHours',   Math.round(myData.reduce((s, r) => s + (r.total_hours || 0), 0)));
     // Animate any uncounted numbers
@@ -3389,16 +3398,19 @@ async function refreshAttendanceList() {
 
     tbody.innerHTML = data.map(r => {
       const lateMin = effLate(r);
-      const isLate = lateMin > 0;
+      const sLateSec = strictLateSec(r);
+      const isStrictLate = sLateSec > 0;            // 1 sec past office time (ignores grace) → red
+      const isLate = lateMin > 0;                    // past grace → counted as official late
       const isLeave = r.status === 'leave' || r.status === 'absent' || r.status === 'holiday';
-      const rowClass = isLeave ? '' : (isLate ? 'row-late' : 'row-ok');
+      const rowClass = isLeave ? '' : (isStrictLate ? 'row-late' : 'row-ok');
       const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
-      // Check-in cell: bold red if late, bold green if on-time
+      // Check-in cell: RED bold if even 1 second past office time, GREEN bold if on-time/early
       const checkInCell = (() => {
         if (!r.check_in) return '<span style="color:var(--gray-300)">—</span>';
-        const cls = isLate ? 'ci-late' : 'ci-ontime';
-        const tt = isLate ? `${bnDigits(lateMin)} মিনিট লেট` : 'অন-টাইম';
-        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isLate?` <small>+${bnDigits(lateMin)}মি</small>`:''}</span>`;
+        const cls = isStrictLate ? 'ci-late' : 'ci-ontime';
+        const lateM = Math.ceil(sLateSec / 60);
+        const tt = isStrictLate ? `অফিস টাইমের ${bnDigits(lateM)} মিনিট পরে` : 'অন-টাইম';
+        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isStrictLate?` <small>+${bnDigits(lateM)}মি</small>`:''}</span>`;
       })();
       // Admin: small percentage pill near employee name
       const pct = App.isAdmin ? (empPct[r.user_id] ?? 0) : 0;
@@ -3427,8 +3439,9 @@ async function refreshAttendanceList() {
         const codeColors = { CL:'#3b82f6', SL:'#ef4444', EL:'#10b981', CoL:'#a78bfa', ML:'#ec4899', PH:'#f59e0b', UL:'#94a3b8', IL:'#dc2626' };
         const cc = codeColors[r.leave_code] || '#94a3b8';
         statusCell = `<span class="leave-status" style="background:${cc}22;color:${cc}">🏖️ ${r.leave_code || (r.status==='holiday'?'PH':'—')}</span>`;
-      } else if (isLate) {
-        statusCell = `<span class="leave-status pending">⚠️ লেট ${bnDigits(lateMin)}মি</span>`;
+      } else if (isStrictLate) {
+        const lateM = Math.ceil(sLateSec / 60);
+        statusCell = `<span class="leave-status pending">⚠️ লেট ${bnDigits(lateM)}মি</span>`;
       } else {
         statusCell = `<span class="leave-status approved">✓ নিয়মিত</span>`;
       }
