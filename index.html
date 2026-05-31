@@ -3173,15 +3173,29 @@ async function getMyOfficeTime() {
   return null;
 }
 
-// Compute late minutes for a given check-in timestamp against office time
+// Seconds late vs a target HH:MM (with optional grace minutes). 0 if on-time/early.
+function secondsLate(actualIso, hhmm, graceMin = 0) {
+  if (!actualIso || !hhmm) return 0;
+  const [h, m] = hhmm.split(':').map(Number);
+  const d = new Date(actualIso);
+  const target = new Date(d);
+  target.setHours(h, (m || 0) + (graceMin || 0), 0, 0);
+  const diff = d - target;
+  return diff > 0 ? Math.floor(diff / 1000) : 0;
+}
+
+// Compute late minutes for a given check-in timestamp against office time.
+// STRICT: any lateness ≥ 1 second counts (rounds up), so 1 sec late => marked late (red).
 function computeLateMinutes(checkInIso, officeTime) {
   if (!checkInIso || !officeTime || !officeTime.check_in_time) return 0;
-  const [oh, om] = officeTime.check_in_time.split(':').map(Number);
-  const ci = new Date(checkInIso);
-  const officeStart = new Date(ci);
-  officeStart.setHours(oh, (om || 0) + (officeTime.grace_minutes || 0), 0, 0);
-  const diff = ci - officeStart;
-  return diff > 0 ? Math.floor(diff / 60000) : 0;
+  const secs = secondsLate(checkInIso, officeTime.check_in_time, officeTime.grace_minutes || 0);
+  return secs > 0 ? Math.ceil(secs / 60) : 0;
+}
+
+// Lunch-in lateness in seconds vs lunch_end_time (no grace) — for table coloring.
+function lunchLateSeconds(lunchInIso, officeTime) {
+  if (!lunchInIso || !officeTime || !officeTime.lunch_end_time) return 0;
+  return secondsLate(lunchInIso, officeTime.lunch_end_time, 0);
 }
 
 // Admin: recompute & persist late_minutes for every attendance record using office times
@@ -3322,12 +3336,19 @@ async function refreshAttendanceList() {
       otMap._default = (ots && ots.length) ? ots[0] : null;
     } catch {}
     // Helper: effective late minutes for a record (recompute from office time)
+    const otForRow = (r) => otMap[r.profiles?.employee_type_id] || App.myOfficeTime || otMap._default;
     const effLate = (r) => {
       if (r.status === 'leave' || r.status === 'absent' || r.status === 'holiday') return 0;
       if (!r.check_in) return 0;
-      const ot = otMap[r.profiles?.employee_type_id] || App.myOfficeTime || otMap._default;
+      const ot = otForRow(r);
       const computed = ot ? computeLateMinutes(r.check_in, ot) : (r.late_minutes || 0);
       return Math.max(computed, r.late_minutes || 0);
+    };
+    // Lunch-in late seconds vs configured lunch end time
+    const lunchLate = (r) => {
+      if (!r.lunch_in) return 0;
+      const ot = otForRow(r);
+      return ot ? lunchLateSeconds(r.lunch_in, ot) : 0;
     };
 
     const myData = App.isAdmin ? (data||[]).filter(r => r.user_id === App.user.id) : (data||[]);
@@ -3392,6 +3413,15 @@ async function refreshAttendanceList() {
           </div>
         </div></td>` : '';
       const actionCell = App.isAdmin ? `<td><button class="icon-btn" onclick="editAttendance(${r.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button></td>` : '';
+      // Lunch-in cell: red bold if returned late from lunch, green bold if on-time
+      const llSec = lunchLate(r);
+      const lunchInCell = (() => {
+        if (!r.lunch_in) return '<span style="color:var(--gray-300)">—</span>';
+        const cls = llSec > 0 ? 'ci-late' : 'ci-ontime';
+        const lateM = Math.ceil(llSec / 60);
+        const tt = llSec > 0 ? `লাঞ্চ থেকে ${bnDigits(lateM)} মিনিট দেরিতে ফিরেছেন` : 'সময়মতো ফিরেছেন';
+        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.lunch_in)}${llSec>0?` <small>+${bnDigits(lateM)}মি</small>`:''}</span>`;
+      })();
       let statusCell;
       if (isLeave) {
         const codeColors = { CL:'#3b82f6', SL:'#ef4444', EL:'#10b981', CoL:'#a78bfa', ML:'#ec4899', PH:'#f59e0b', UL:'#94a3b8', IL:'#dc2626' };
@@ -3408,7 +3438,7 @@ async function refreshAttendanceList() {
           <td>${formatBnDate(r.date)}</td>
           <td class="num" style="font-size:12px">${checkInCell}</td>
           <td class="num" style="font-size:12px">${fmtT(r.lunch_out)}</td>
-          <td class="num" style="font-size:12px">${fmtT(r.lunch_in)}</td>
+          <td class="num" style="font-size:12px">${lunchInCell}</td>
           <td class="num" style="font-size:12px">${fmtT(r.personal_out)}</td>
           <td class="num" style="font-size:12px">${fmtT(r.personal_in)}</td>
           <td class="num" style="font-size:12px">${fmtT(r.check_out)}</td>
