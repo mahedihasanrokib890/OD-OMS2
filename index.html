@@ -4480,7 +4480,11 @@ async function refreshEmployeesList() {
           <span class="type-badge">${escapeHtml(e.employee_types?.name_bn || 'এমপ্লয়ী')}</span>
           ${roleBadge}
         </div>
-        ${App.isAdmin ? `<div style="margin-top:10px;display:flex;gap:6px;justify-content:center"><button class="icon-btn" onclick="event.stopPropagation();editEmployee('${e.id}')" title="এডিট"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" onclick="event.stopPropagation();deleteEmployee('${e.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button></div>` : ''}
+        ${App.isAdmin ? `<div style="margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          <button class="icon-btn" onclick="event.stopPropagation();editEmployee('${e.id}')" title="পূর্ণ এডিট"><i class="fa-solid fa-pen"></i></button>
+          <button class="icon-btn" style="color:var(--purple-600)" onclick="event.stopPropagation();openRoleChangeModal('${e.id}','${escapeHtml((e.full_name||'').replace(/'/g,'&#39;'))}','${e.role||'employee'}')" title="রোল পরিবর্তন"><i class="fa-solid fa-user-shield"></i></button>
+          <button class="icon-btn danger" onclick="event.stopPropagation();deleteEmployee('${e.id}')" title="ডিলিট"><i class="fa-solid fa-trash"></i></button>
+        </div>` : ''}
       </div>`;
     }).join('')}</div>
     <div style="text-align:center;margin-top:18px;color:var(--gray-500);font-size:13px">মোট ${bnDigits(filtered.length)} জন</div>`;
@@ -4643,6 +4647,7 @@ async function viewEmployee(id) {
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বন্ধ</button>${App.isAdmin?`
     <button class="btn btn-outline" style="color:var(--amber-600);border-color:var(--amber-200)" onclick="resetEmpPassword('${data.id}','${escapeHtml(data.email)}')"><i class="fa-solid fa-key"></i> পাসওয়ার্ড রিসেট</button>
+    <button class="btn btn-outline" style="color:var(--purple-700);border-color:var(--purple-200)" onclick="closeModal();openRoleChangeModal('${data.id}','${escapeHtml((data.full_name||'').replace(/'/g,'&#39;'))}','${data.role||'employee'}')"><i class="fa-solid fa-user-shield"></i> রোল পরিবর্তন</button>
     <button class="btn btn-primary" onclick="closeModal();editEmployee('${data.id}')"><i class="fa-solid fa-pen"></i> এডিট</button>`:''}`
   );
 
@@ -4746,6 +4751,82 @@ async function loadEmpQuickStats(userId) {
   } catch (e) {
     const statsEl = document.getElementById('empQuickStats');
     if (statsEl) statsEl.innerHTML = `<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--red-500);font-size:13px"><i class="fa-solid fa-triangle-exclamation"></i> পরিসংখ্যান লোড ব্যর্থ: ${escapeHtml(e.message||'')}</div>`;
+  }
+}
+
+// Admin: change role for any employee (admin / editor / employee)
+function openRoleChangeModal(userId, fullName, currentRole) {
+  if (!App.isAdmin) return showToast('শুধু এডমিন রোল পরিবর্তন করতে পারে', 'error');
+  if (userId === App.user.id) {
+    if (!confirm('⚠️ আপনি নিজের রোল পরিবর্তন করছেন। এটা করলে আপনি অ্যাডমিন এক্সেস হারাতে পারেন। চালিয়ে যাবেন?')) return;
+  }
+  const role = currentRole || 'employee';
+  showModal(
+    `<i class="fa-solid fa-user-shield" style="color:var(--purple-600)"></i> রোল পরিবর্তন — ${fullName}`,
+    `
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px">এই এমপ্লয়ীকে কী রোল দিতে চান? বর্তমান: <b style="color:var(--purple-700)">${role==='admin'?'অ্যাডমিন':role==='editor'?'এডিটর':'এমপ্লয়ী'}</b></p>
+
+    <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid ${role==='admin'?'var(--purple-500)':'var(--gray-200)'};border-radius:14px;cursor:pointer;margin-bottom:10px;transition:all .25s" onclick="document.getElementById('rcRole').value='admin';this.style.borderColor='var(--purple-500)';this.parentElement.querySelectorAll('label').forEach(l=>l!==this&&(l.style.borderColor='var(--gray-200)'))">
+      <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#5b2d8a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="fa-solid fa-shield-halved"></i></div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900)">👑 অ্যাডমিন</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">পূর্ণ সিস্টেম এক্সেস — সেটিংস, সকল ছুটি, এমপ্লয়ী, রিপোর্ট, ডিলিট</div>
+      </div>
+      <input type="radio" name="rcChoice" value="admin" ${role==='admin'?'checked':''} style="accent-color:var(--purple-600);width:18px;height:18px">
+    </label>
+
+    <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid ${role==='editor'?'var(--blue-500)':'var(--gray-200)'};border-radius:14px;cursor:pointer;margin-bottom:10px;transition:all .25s" onclick="document.getElementById('rcRole').value='editor';this.style.borderColor='var(--blue-500)';this.parentElement.querySelectorAll('label').forEach(l=>l!==this&&(l.style.borderColor='var(--gray-200)'))">
+      <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="fa-solid fa-pen"></i></div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900)">✍️ এডিটর</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">নোটিশ পোস্ট, ছুটি অনুমোদন, এমপ্লয়ী এডিট — সেটিংস ছাড়া</div>
+      </div>
+      <input type="radio" name="rcChoice" value="editor" ${role==='editor'?'checked':''} style="accent-color:var(--blue-500);width:18px;height:18px">
+    </label>
+
+    <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid ${role==='employee'?'var(--emerald-500)':'var(--gray-200)'};border-radius:14px;cursor:pointer;margin-bottom:10px;transition:all .25s" onclick="document.getElementById('rcRole').value='employee';this.style.borderColor='var(--emerald-500)';this.parentElement.querySelectorAll('label').forEach(l=>l!==this&&(l.style.borderColor='var(--gray-200)'))">
+      <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="fa-solid fa-user"></i></div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900)">👤 সাধারণ এমপ্লয়ী</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">নিজের প্রোফাইল, এটেন্ডেন্স, ছুটির আবেদন — কোনো ম্যানেজমেন্ট এক্সেস নেই</div>
+      </div>
+      <input type="radio" name="rcChoice" value="employee" ${role==='employee'?'checked':''} style="accent-color:var(--emerald-500);width:18px;height:18px">
+    </label>
+
+    <input type="hidden" id="rcRole" value="${role}">
+    `,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-primary" onclick="setEmployeeRole('${userId}')"><i class="fa-solid fa-check"></i> সংরক্ষণ</button>`
+  );
+
+  // Wire radio inputs to update hidden value
+  setTimeout(() => {
+    document.querySelectorAll('input[name="rcChoice"]').forEach(r => {
+      r.onchange = () => { document.getElementById('rcRole').value = r.value; };
+    });
+  }, 50);
+}
+
+async function setEmployeeRole(userId) {
+  if (!App.isAdmin) return showToast('শুধু এডমিন রোল পরিবর্তন করতে পারে', 'error');
+  const newRole = document.getElementById('rcRole')?.value || 'employee';
+  if (!['admin','editor','employee'].includes(newRole)) return showToast('অবৈধ রোল', 'error');
+  try {
+    const update = { role: newRole, is_admin: newRole === 'admin' };
+    // If promoting to admin, also link to admin employee_type for office-time consistency
+    if (newRole === 'admin') {
+      const adminType = (App.employeeTypes||[]).find(t => t.code === 'admin');
+      if (adminType?.id) update.employee_type_id = adminType.id;
+    }
+    const { error } = await sb.from('profiles').update(update).eq('id', userId);
+    if (error) throw error;
+    showToast('✅ রোল আপডেট হয়েছে — এমপ্লয়ীকে আবার লগইন করতে বলুন');
+    closeModal();
+    if (App.currentPage === 'employees') refreshEmployeesList();
+    // If admin changed own role, refresh page state
+    if (userId === App.user.id) setTimeout(() => location.reload(), 800);
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'রোল পরিবর্তন ব্যর্থ'), 'error');
   }
 }
 
