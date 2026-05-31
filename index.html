@@ -12,7 +12,8 @@
 <meta http-equiv="expires" content="0">
 <title>OD-HRMS · অর্ধেকদ্বীন HR সিস্টেম</title>
 <link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cpath d='M50 18 C36 18 28 28 28 44 L28 70 C28 86 36 96 50 96 L78 96 C92 96 100 86 100 70 L100 38 C100 26 92 18 80 18 Z' fill='%235b2d8a'/%3E%3Cpath d='M160 18 C148 18 140 26 140 38 L140 70 C140 86 148 96 162 96 L190 96 C204 96 212 86 212 70 L212 44 C212 28 204 18 190 18 Z' fill='%23e91e63'/%3E%3Cpath d='M120 222 L34 140 C18 124 16 96 32 80 C52 62 84 66 104 90 L120 112 L136 90 C156 66 188 62 208 80 C224 96 222 124 206 140 Z' fill='%235b2d8a'/%3E%3Cpath d='M120 112 L136 90 C156 66 188 62 208 80 C224 96 222 124 206 140 L120 222 C128 180 132 145 124 120 Z' fill='%23e91e63'/%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/solaimanlipi">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 <style>
   :root {
@@ -37,7 +38,7 @@
     --shadow-lg:0 20px 40px -8px rgba(91,45,138,.12),0 8px 16px -4px rgba(91,45,138,.06);
     --shadow-xl:0 32px 64px -12px rgba(91,45,138,.18);
     --r-md:12px; --r-lg:16px; --r-xl:24px; --r-2xl:32px;
-    --font-bn:'Hind Siliguri',system-ui,sans-serif;
+    --font-bn:'SolaimanLipi','SolaimanLipi',system-ui,sans-serif;
     --font-en:'Inter',system-ui,sans-serif;
     --sidebar-w:280px; --topbar-h:72px;
   }
@@ -548,7 +549,7 @@
     @page{size:A4;margin:0}
   }
   /* ═══ LEAVE LETTER DOC — global styles (needed for print context) ═══ */
-  .ll-letter-doc{font-family:'Hind Siliguri',sans-serif;color:#1e293b;background:#fff}
+  .ll-letter-doc{font-family:'SolaimanLipi',sans-serif;color:#1e293b;background:#fff}
   .ll-letter-doc *{box-sizing:border-box}
   .ll-letter-doc .ll-doc-page{position:relative;min-height:297mm;width:100%;background:#fff}
   .ll-letter-doc .ll-doc-header{display:flex;justify-content:space-between;align-items:center;padding:24px 36px;border-bottom:3px solid #5b2d8a;position:relative}
@@ -2434,7 +2435,7 @@ async function drawAdminDashCharts() {
           labels: ['উপস্থিত','লেট','ছুটিতে','অনুপস্থিত'],
           datasets: [{ data: [present, late, onLeave||0, absent], backgroundColor: ['#10b981','#f59e0b','#a78bfa','#ef4444'], borderWidth: 0 }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'Hind Siliguri'" } } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'SolaimanLipi'" } } } } }
       });
     }
   } catch (e) { console.warn(e); }
@@ -2466,7 +2467,7 @@ async function drawAdminDashCharts() {
             { label: 'লেট',     data: days.map(d => map[d].late),    backgroundColor: '#ef4444', borderRadius: 6 }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'Hind Siliguri'" } } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'SolaimanLipi'" } } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
       });
     }
   } catch (e) { console.warn(e); }
