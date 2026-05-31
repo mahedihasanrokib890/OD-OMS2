@@ -6093,10 +6093,52 @@ async function loadImportedActivity() {
         box.innerHTML = `<div class="empty-state" style="padding:30px"><i class="fa-solid fa-cloud-arrow-up"></i><h3>এখনো কোনো অ্যাক্টিভিটি ইম্পোর্ট করা হয়নি</h3><p>ডাটা ইম্পোর্ট পেজ থেকে Google Sheet লিংক দিয়ে ইম্পোর্ট করুন</p><button class="btn btn-primary" style="margin-top:12px;width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>`;
         return;
       }
-      sel.innerHTML = opts.map(m => `<option value="${m.month}">${escapeHtml(m.month_label||m.month)}</option>`).join('');
+      sel.innerHTML = `<option value="__all__">📊 সব মাস (সর্বমোট)</option>` + opts.map(m => `<option value="${m.month}">${escapeHtml(m.month_label||m.month)}</option>`).join('');
     }
     const month = sel?.value || sel?.options[0]?.value;
     if (!month) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>কোনো ডাটা নেই</h3></div>`; return; }
+
+    // ALL MONTHS aggregated view
+    if (month === '__all__') {
+      const { data: all } = await sb.from('monthly_activity').select('*');
+      if (!all || all.length === 0) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>কোনো ডাটা নেই</h3></div>`; return; }
+      const byEmp = {};
+      all.forEach(r => {
+        const key = r.employee_name;
+        if (!byEmp[key]) byEmp[key] = { name:key, code:r.emp_code, months:0, worked:0, present:0, late:0, leave:0, actSum:0, actCount:0 };
+        const u = byEmp[key];
+        u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0);
+        u.late += (r.late_count||0); u.leave += Number(r.total_leave||0);
+        if (Number(r.activity_pct) > 0) { u.actSum += Number(r.activity_pct); u.actCount++; }
+      });
+      const list = Object.values(byEmp).map(u => ({ ...u, avgAct: u.actCount ? u.actSum/u.actCount : 0 })).sort((a,b)=>b.avgAct-a.avgAct);
+      box.innerHTML = `
+        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
+          <table class="data-table" style="width:100%;min-width:720px">
+            <thead><tr><th>#</th><th>এমপ্লয়ী</th><th>মাস</th><th>মোট কাজ (ঘ.)</th><th>মোট ছুটি</th><th>গড় অ্যাক্টিভিটি%</th></tr></thead>
+            <tbody>
+              ${list.map((u,i) => {
+                const pct = Math.round(u.avgAct);
+                const clr = pct>=85?'#059669':pct>=60?'#d97706':'#dc2626';
+                const bg = pct>=85?'linear-gradient(90deg,#10b981,#059669)':pct>=60?'linear-gradient(90deg,#f59e0b,#d97706)':'linear-gradient(90deg,#ef4444,#dc2626)';
+                const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':bnDigits(i+1);
+                return `<tr>
+                  <td style="text-align:center;font-weight:800">${medal}</td>
+                  <td><b>${escapeHtml(u.name)}</b></td>
+                  <td class="num">${bnDigits(u.months)}</td>
+                  <td class="num">${bnDigits(u.worked.toFixed(1))}</td>
+                  <td class="num" style="color:#be185d;font-weight:700">${bnDigits(u.leave)}</td>
+                  <td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:${bg};border-radius:99px"></div></div><span class="num" style="font-weight:800;color:${clr};min-width:42px;text-align:right">${bnDigits(pct)}%</span></div></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--gray-500);text-align:right">${bnDigits(list.length)} জন · সব মাস মিলিয়ে</div>
+      `;
+      return;
+    }
+
     const { data: rows } = await sb.from('monthly_activity').select('*').eq('month', month).order('activity_pct', { ascending: false });
     if (!rows || rows.length === 0) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>এই মাসে কোনো ডাটা নেই</h3></div>`; return; }
     box.innerHTML = `
@@ -6416,8 +6458,9 @@ function renderImport() {
         <input class="form-input en" id="actSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." value="https://docs.google.com/spreadsheets/d/19K-DIY9P-b3A94LO5_JfPv9BpW_hGZlP_VeZC1OE2cY/edit?usp=sharing">
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-primary" id="actScanBtn" onclick="scanActivitySheet()" style="width:auto"><i class="fa-solid fa-magnifying-glass-chart"></i> শিট স্ক্যান করুন</button>
-        <span style="font-size:12px;color:var(--gray-500)">ট্যাবগুলো খুঁজে প্রিভিউ দেখাবে, তারপর সেভ করবেন</span>
+        <button class="btn btn-primary" id="actScanBtn" onclick="scanActivitySheet()" style="width:auto"><i class="fa-solid fa-magnifying-glass-chart"></i> ট্যাব স্ক্যান (এক মাস)</button>
+        <button class="btn btn-success" id="actOverallBtn" onclick="importOverall()" style="width:auto"><i class="fa-solid fa-layer-group"></i> Overall ইম্পোর্ট (শুরু থেকে সব মাস)</button>
+        <span style="font-size:12px;color:var(--gray-500)">Overall ট্যাব থেকে সব এমপ্লয়ীর সব মাসের ডাটা একসাথে</span>
       </div>
       <div id="actScanResult" style="margin-top:18px"></div>
     </div>
@@ -6806,6 +6849,147 @@ async function saveActivityImport() {
     } else {
       showToast('⚠️ সেভ হয়নি — monthly_activity টেবিল নেই? supabase_v10 SQL চালান', 'error');
     }
+  } catch (e) {
+    showToast('❌ ' + (e.message||'সেভ ব্যর্থ'), 'error');
+  } finally { setBtnLoading(btn, false); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// OVERALL IMPORT — all employees, all months (from Overall tab)
+// ═══════════════════════════════════════════════════════════
+let _overallParsed = null;
+
+function ov_clean(v){ v=(v==null?'':String(v)).trim(); return v=='"'?'':v; }
+function ov_hms(s){ s=ov_clean(s); if(!s||!s.includes(':'))return 0; const p=s.split(':').map(Number); if(p.some(isNaN))return 0; return Math.round((p[0]+(p[1]||0)/60+(p[2]||0)/3600)*100)/100; }
+function monthToISO(label){
+  // "January 2023" → "2023-01"
+  const m = { january:'01',february:'02',march:'03',april:'04',may:'05',june:'06',july:'07',august:'08',september:'09',october:'10',november:'11',december:'12' };
+  const parts = label.trim().split(/\s+/);
+  const mm = m[(parts[0]||'').toLowerCase()];
+  const yy = parts[1];
+  return (mm && yy) ? `${yy}-${mm}` : null;
+}
+
+async function importOverall() {
+  const url = document.getElementById('actSheetUrl').value.trim();
+  const sheetId = parseSheetId(url);
+  if (!sheetId) return showToast('সঠিক Google Sheet লিংক দিন', 'error');
+  const btn = document.getElementById('actOverallBtn');
+  setBtnLoading(btn, true);
+  const res = document.getElementById('actScanResult');
+  res.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> Overall ট্যাব পড়া হচ্ছে...</div>`;
+  try {
+    // 1. tab names (employee order = block order in Overall)
+    const html = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/htmlview`).then(r => r.text());
+    let tabs = [...html.matchAll(/items\.push\(\{name:\s*"([^"]*)"/g)].map(x => x[1]).filter(Boolean);
+    tabs = [...new Set(tabs)].filter(t => !['overall','summary','sheet1','template','master'].includes(t.trim().toLowerCase()));
+
+    // 2. Overall CSV
+    const csv = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Overall`).then(r => r.text());
+    const rows = csvToRows(csv);
+    // find header row with "Worked hrs"
+    let whRowIdx = rows.findIndex(r => r.filter(c => /worked hrs/i.test(c||'')).length >= 2);
+    if (whRowIdx < 0) whRowIdx = 3;
+    const anchors = rows[whRowIdx].map((c,j)=>/worked hrs/i.test(c||'')?j:null).filter(x=>x!==null);
+    if (anchors.length === 0) throw new Error('Overall ট্যাবে "Worked hrs" কলাম পাওয়া যায়নি');
+
+    // 3. month rows
+    const monthRows = rows.map((r,i)=>({i,label:ov_clean(r[0])})).filter(x=>/^[A-Za-z]+ \d{4}$/.test(x.label));
+
+    const records = [];
+    monthRows.forEach(({i,label}) => {
+      const r = rows[i];
+      const monthISO = monthToISO(label);
+      if (!monthISO) return;
+      anchors.forEach((a, bi) => {
+        const name = tabs[bi] || ('Block ' + (bi+1));
+        const worked = ov_hms(r[a]);
+        let late = 0, act = 0;
+        const c1 = ov_clean(r[a+1]), c2 = ov_clean(r[a+2]);
+        if (/^\d+(\.\d+)?$/.test(c1) && /^\d+(\.\d+)?$/.test(c2)) { late = parseFloat(c1); act = parseFloat(c2); }
+        else if (/^\d+(\.\d+)?$/.test(c1)) { act = parseFloat(c1); }
+        if (worked > 0 || act > 0) {
+          records.push({
+            employee_name: name, emp_code: '', designation: '',
+            month: monthISO, month_label: label,
+            present_days: 0, late_count: 0,
+            worked_hours: worked, late_hours: late,
+            cl_days:0, sl_days:0, el_days:0, col_days:0, ml_days:0, ph_days:0, ul_days:0, il_days:0,
+            total_leave: 0,
+            activity_pct: act, attendance_pct: act,
+            source: 'overall'
+          });
+        }
+      });
+    });
+
+    _overallParsed = records;
+    setBtnLoading(btn, false);
+
+    if (records.length === 0) { res.innerHTML = `<div class="note-banner" style="background:#fee2e2;border-color:#ef4444;color:#7f1d1d">কোনো ডাটা পড়া যায়নি</div>`; return; }
+
+    // Group by employee for preview
+    const byEmp = {};
+    records.forEach(r => { (byEmp[r.employee_name] = byEmp[r.employee_name] || []).push(r); });
+    const empNames = Object.keys(byEmp);
+
+    res.innerHTML = `
+      <div class="note-banner" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-color:var(--emerald-500);color:var(--gray-800)">
+        <i class="fa-solid fa-circle-check"></i> ${bnDigits(empNames.length)} জন এমপ্লয়ীর মোট <b>${bnDigits(records.length)}</b> মাসের রেকর্ড পড়া হয়েছে (${escapeHtml(monthRows[0].label)} — ${escapeHtml(monthRows[monthRows.length-1].label)})
+      </div>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:12px 0;max-height:340px;overflow-y:auto">
+        <table class="data-table" style="width:100%;min-width:520px">
+          <thead style="position:sticky;top:0;background:white;z-index:1"><tr><th>এমপ্লয়ী</th><th>মাস সংখ্যা</th><th>মোট কাজ (ঘ.)</th><th>গড় অ্যাক্টিভিটি%</th></tr></thead>
+          <tbody>
+            ${empNames.map(n => {
+              const list = byEmp[n];
+              const totalW = list.reduce((s,x)=>s+x.worked_hours,0);
+              const acts = list.filter(x=>x.activity_pct>0).map(x=>x.activity_pct);
+              const avgAct = acts.length ? Math.round(acts.reduce((a,b)=>a+b,0)/acts.length) : 0;
+              return `<tr><td><b>${escapeHtml(n)}</b></td><td class="num">${bnDigits(list.length)}</td><td class="num">${bnDigits(totalW.toFixed(1))}</td><td><span class="att-pct-pill num" style="background:${avgAct>=85?'#d1fae5':avgAct>=60?'#fef3c7':'#fee2e2'};color:${avgAct>=85?'#059669':avgAct>=60?'#d97706':'#dc2626'}">${bnDigits(avgAct)}%</span></td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="document.getElementById('actScanResult').innerHTML='';_overallParsed=null">বাতিল</button>
+        <button class="btn btn-success" id="ovSaveBtn" onclick="saveOverallImport()"><i class="fa-solid fa-cloud-arrow-up"></i> ${bnDigits(records.length)} টি মাসিক রেকর্ড সেভ করুন</button>
+      </div>
+    `;
+  } catch (e) {
+    setBtnLoading(btn, false);
+    res.innerHTML = `<div class="note-banner" style="background:#fee2e2;border-color:#ef4444;color:#7f1d1d"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function saveOverallImport() {
+  if (!_overallParsed || !_overallParsed.length) return;
+  const btn = document.getElementById('ovSaveBtn');
+  setBtnLoading(btn, true);
+  let saved = 0, linked = 0, failed = 0;
+  try {
+    const { data: profs } = await sb.from('profiles').select('id, full_name');
+    const norm = (s) => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+    const findProfile = (name) => {
+      const n = norm(name);
+      let p = (profs||[]).find(x => norm(x.full_name) === n);
+      if (!p) p = (profs||[]).find(x => norm(x.full_name).split(' ')[0] === n.split(' ')[0]);
+      return p;
+    };
+    // Save in batches via upsert
+    const batchSize = 100;
+    for (let i = 0; i < _overallParsed.length; i += batchSize) {
+      const batch = _overallParsed.slice(i, i + batchSize).map(rec => {
+        const prof = findProfile(rec.employee_name);
+        if (prof) { rec.user_id = prof.id; }
+        return rec;
+      });
+      linked += batch.filter(b => b.user_id).length;
+      const { error } = await sb.from('monthly_activity').upsert(batch, { onConflict: 'employee_name,month' });
+      if (error) { failed += batch.length; console.warn(error); } else saved += batch.length;
+    }
+    if (saved > 0) showToast(`✅ ${bnDigits(saved)} টি মাসিক রেকর্ড সেভ হয়েছে`, 'success');
+    else showToast('⚠️ সেভ হয়নি — supabase_v10 SQL চালান', 'error');
   } catch (e) {
     showToast('❌ ' + (e.message||'সেভ ব্যর্থ'), 'error');
   } finally { setBtnLoading(btn, false); }
