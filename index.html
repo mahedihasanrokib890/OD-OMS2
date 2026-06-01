@@ -2199,6 +2199,13 @@ async function renderDashboard() {
         </div>
       </div>
 
+      <!-- ═══ ADMIN QUICK ACTIONS ═══ -->
+      <div style="display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap">
+        <button class="btn" style="flex:1;background:var(--purple-600);color:white;min-width:140px;box-shadow:0 4px 12px rgba(139,92,246,0.3)" onclick="navigate('employees')"><i class="fa-solid fa-user-plus"></i> নতুন এমপ্লয়ী</button>
+        <button class="btn" style="flex:1;background:var(--amber-500);color:white;min-width:140px;box-shadow:0 4px 12px rgba(245,158,11,0.3)" onclick="navigate('notices')"><i class="fa-solid fa-bullhorn"></i> নতুন নোটিশ</button>
+        <button class="btn btn-outline" style="flex:1;min-width:140px;background:white" onclick="navigate('reports')"><i class="fa-solid fa-file-export"></i> রিপোর্ট ডাউনলোড</button>
+      </div>
+
       ${renderAdminInsights(stats, { total, present, late, onLeave, absent })}
 
       <!-- ═══ KPI GRID ═══ -->
@@ -2239,7 +2246,7 @@ async function renderDashboard() {
         <div class="kpi-card clickable" onclick="navigate('inbox')" style="--accent:linear-gradient(135deg,#ec4899,#be185d);--accent-shadow:rgba(190,24,93,.4)">
           <div class="kpi-head">
             <div class="kpi-icon"><i class="fa-solid fa-inbox"></i></div>
-            ${stats.pendingLeaves > 0 ? `<span class="kpi-trend down"><i class="fa-solid fa-bell"></i> অপেক্ষমাণ</span>` : `<span class="kpi-trend up"><i class="fa-solid fa-check"></i> ক্লিয়ার</span>`}
+            ${stats.pendingLeaves > 0 ? \`<span class="kpi-trend down"><i class="fa-solid fa-bell"></i> অপেক্ষমাণ</span>\` : \`<span class="kpi-trend up"><i class="fa-solid fa-check"></i> ক্লিয়ার</span>\`}
           </div>
           <div class="kpi-value">${bnDigits(stats.pendingLeaves || 0)}</div>
           <div class="kpi-label">অনুমোদনের অপেক্ষায়</div>
@@ -2273,6 +2280,30 @@ async function renderDashboard() {
         </div>
       </div>
 
+      <!-- ═══ ACTIONABLE ALERTS + ACTIVITY ═══ -->
+      <div class="card-grid" style="margin-bottom:18px">
+        <div class="card">
+          <div class="card-title">
+            <span><i class="fa-solid fa-bell-concierge" style="color:#f59e0b"></i> অ্যাডমিন অ্যালার্টস (লেট ও অনুপস্থিতি)</span>
+          </div>
+          <div id="dashTopLate"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <span><i class="fa-solid fa-bolt" style="color:var(--purple-600)"></i> সাম্প্রতিক কর্মকাণ্ড</span>
+          </div>
+          <div id="dashActivity"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+        </div>
+      </div>
+
+      <!-- ═══ DEPARTMENT OVERVIEW ═══ -->
+      <div class="card" style="margin-bottom:18px;border-left:4px solid var(--emerald-500)">
+        <div class="card-title">
+          <span><i class="fa-solid fa-sitemap" style="color:var(--emerald-600)"></i> ডিপার্টমেন্ট ভিত্তিক উপস্থিতি</span>
+        </div>
+        <div id="dashDeptStats" style="padding:16px"><div style="text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
+
       <!-- ═══ PENDING + RECENT NOTICES ═══ -->
       <div class="card-grid" style="margin-bottom:18px">
         <div class="card">
@@ -2291,23 +2322,6 @@ async function renderDashboard() {
         </div>
       </div>
 
-      <!-- ═══ TOP LATE + ACTIVITY ═══ -->
-      <div class="card-grid">
-        <div class="card">
-          <div class="card-title">
-            <span><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i> এ মাসের সবচেয়ে বেশি লেট</span>
-            <span style="font-size:12px;color:var(--gray-400);font-weight:700">${formatBnDate(today()).split(' ').slice(1).join(' ')}</span>
-          </div>
-          <div id="dashTopLate"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
-        </div>
-        <div class="card">
-          <div class="card-title">
-            <span><i class="fa-solid fa-bolt" style="color:var(--purple-600)"></i> সাম্প্রতিক কর্মকাণ্ড</span>
-          </div>
-          <div id="dashActivity"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
-        </div>
-      </div>
-
       <!-- ═══ EMPLOYEE HANDBOOK (ADMIN) ═══ -->
       <div class="card" style="margin-top:18px;border-top:3px solid var(--blue-500)">
         <div class="card-title">
@@ -2317,10 +2331,7 @@ async function renderDashboard() {
         </div>
         <div id="dashHandbookAdmin"><div style="padding:20px;text-align:center;color:var(--gray-400)">লোড হচ্ছে...</div></div>
       </div>
-
-      <!-- ═══ BIRTHDAYS ═══ -->
-      <div class="card bday-card" style="margin-top:18px" id="dashBdayCard"></div>
-    `;
+    \`;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -2328,7 +2339,7 @@ async function renderDashboard() {
   // ═══════════════════════════════════════════════════════════
   const greet = greetingText();
   const ot = App.myOfficeTime;
-  const officeTimeText = ot ? `${ot.check_in_time.slice(0,5)} — ${ot.check_out_time.slice(0,5)}` : 'নির্ধারিত নয়';
+  const officeTimeText = ot ? \`${ot.check_in_time.slice(0,5)} — ${ot.check_out_time.slice(0,5)}\` : 'নির্ধারিত নয়';
   const tips = [
     'প্রতিদিনের ছোট প্রচেষ্টাই বড় অর্জনে পরিণত হয়।',
     'সময়ের কাজ সময়ে — সাফল্যের প্রথম শর্ত।',
@@ -2343,32 +2354,46 @@ async function renderDashboard() {
   const monthDays = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
   const dayPassed = new Date().getDate();
   const monthlyAttRate = dayPassed ? Math.round(((stats.myMonthPresent||0) / dayPassed) * 100) : 0;
+  
+  const insightIcon = monthlyAttRate >= 90 ? 'fa-medal" style="color:#f59e0b"' : (monthlyAttRate >= 70 ? 'fa-thumbs-up" style="color:var(--emerald-500)"' : 'fa-triangle-exclamation" style="color:var(--red-500)"');
+  const insightText = monthlyAttRate >= 90 ? 'অসাধারণ পারফরম্যান্স! এই মাসে আপনার উপস্থিতি হার চমৎকার। এভাবেই চালিয়ে যান!' : (monthlyAttRate >= 70 ? 'ভালো কাজ! উপস্থিতি আরও কিছুটা বাড়ালে পারফরম্যান্স চমৎকার হবে।' : 'আপনাকে আরও নিয়মিত হতে হবে। সময়মতো অফিসে আসার চেষ্টা করুন।');
 
-  return `
+  return \`
     <!-- ═══ EMPLOYEE HERO ═══ -->
     <div class="dash-hero employee">
       <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
         <div style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#a78bfa,#f472b6);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;font-family:var(--font-en);border:3px solid rgba(255,255,255,.25);flex-shrink:0;overflow:hidden;text-transform:uppercase;box-shadow:0 12px 30px rgba(0,0,0,.25)">
-          ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;height:100%;object-fit:cover">` : (p.full_name||'আ').charAt(0)}
+          \${p.photo_url ? \`<img src="\${p.photo_url}" style="width:100%;height:100%;object-fit:cover">\` : (p.full_name||'আ').charAt(0)}
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-size:11px;opacity:.75;font-weight:800;letter-spacing:2px;text-transform:uppercase">👤 এমপ্লয়ী পোর্টাল</div>
-          <h1 style="font-size:24px;font-weight:800;margin:5px 0 4px">${greet}, ${escapeHtml(name)}!</h1>
-          <p style="opacity:.85;font-size:13px;font-weight:500">${dayName(today())}, ${formatBnDate(today())} · <i style="opacity:.85">"${escapeHtml(tip)}"</i></p>
+          <h1 style="font-size:24px;font-weight:800;margin:5px 0 4px">\${greet}, \${escapeHtml(name)}!</h1>
+          <p style="opacity:.85;font-size:13px;font-weight:500">\${dayName(today())}, \${formatBnDate(today())} · <i style="opacity:.85">"\${escapeHtml(tip)}"</i></p>
           <div class="hero-meta">
             <span class="hero-pill"><span class="live-dot"></span> অনলাইন</span>
             <span class="hero-pill"><i class="fa-regular fa-clock"></i> <span class="hero-clock" id="dashHeroClock">--:--:--</span></span>
-            <span class="hero-pill"><i class="fa-solid fa-business-time"></i> অফিস: ${officeTimeText}</span>
+            <span class="hero-pill"><i class="fa-solid fa-business-time"></i> অফিস: \${officeTimeText}</span>
             <span class="hero-pill" id="myStreakPill" style="display:none"></span>
           </div>
         </div>
       </div>
+      <div style="margin-top:16px;padding:12px 16px;background:rgba(255,255,255,0.25);border-radius:10px;border:1px solid rgba(255,255,255,0.4);color:var(--gray-800);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:12px;box-shadow:inset 0 1px 4px rgba(255,255,255,0.5)">
+        <i class="fa-solid \${insightIcon} style="font-size:18px"></i>
+        <span>\${insightText}</span>
+      </div>
+    </div>
+
+    <!-- ═══ EMPLOYEE QUICK ACTIONS ═══ -->
+    <div style="display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap">
+      <button class="btn" style="flex:1;background:var(--emerald-600);color:white;min-width:140px;box-shadow:0 4px 12px rgba(5,150,105,0.3)" onclick="navigate('attendance')"><i class="fa-solid fa-fingerprint"></i> চেক-ইন / আউট</button>
+      <button class="btn" style="flex:1;background:var(--pink-500);color:white;min-width:140px;box-shadow:0 4px 12px rgba(236,72,153,0.3)" onclick="navigate('leaves')"><i class="fa-solid fa-plus"></i> ছুটির আবেদন</button>
+      <button class="btn btn-outline" style="flex:1;min-width:140px;background:white" onclick="navigate('profile')"><i class="fa-solid fa-user-pen"></i> প্রোফাইল আপডেট</button>
     </div>
 
     <!-- ═══ TODAY LIVE STATUS ═══ -->
     <div class="card" style="margin-bottom:22px;border-left:4px solid var(--purple-500)" id="dashTodayLiveCard">
       <div class="card-title"><span><i class="fa-solid fa-calendar-day" style="color:var(--purple-600)"></i> আজকের অবস্থা</span>
-        <span style="font-size:12px;color:var(--gray-400);font-weight:700">${formatBnDate(today())}</span>
+        <span style="font-size:12px;color:var(--gray-400);font-weight:700">\${formatBnDate(today())}</span>
       </div>
       <div id="dashTodayLive"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
     </div>
@@ -2378,34 +2403,34 @@ async function renderDashboard() {
       <div class="kpi-card clickable" onclick="navigate('attendance')" style="--accent:linear-gradient(135deg,#10b981,#059669);--accent-shadow:rgba(5,150,105,.4)">
         <div class="kpi-head">
           <div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
-          <span class="kpi-trend ${monthlyAttRate>=85?'up':monthlyAttRate>=60?'neutral':'down'}">${bnDigits(monthlyAttRate)}%</span>
+          <span class="kpi-trend \${monthlyAttRate>=85?'up':monthlyAttRate>=60?'neutral':'down'}">\${bnDigits(monthlyAttRate)}%</span>
         </div>
-        <div class="kpi-value">${bnDigits(stats.myMonthPresent||0)}<span style="font-size:16px;color:var(--gray-400)">/${bnDigits(dayPassed)}</span></div>
+        <div class="kpi-value">\${bnDigits(stats.myMonthPresent||0)}<span style="font-size:16px;color:var(--gray-400)">/\${bnDigits(dayPassed)}</span></div>
         <div class="kpi-label">এই মাসে উপস্থিত</div>
-        <div class="kpi-bar"><span style="width:${monthlyAttRate}%;background:linear-gradient(90deg,#10b981,#059669)"></span></div>
+        <div class="kpi-bar"><span style="width:\${monthlyAttRate}%;background:linear-gradient(90deg,#10b981,#059669)"></span></div>
       </div>
       <div class="kpi-card" style="--accent:linear-gradient(135deg,#f59e0b,#d97706);--accent-shadow:rgba(217,119,6,.4)">
         <div class="kpi-head">
           <div class="kpi-icon"><i class="fa-solid fa-clock"></i></div>
-          <span class="kpi-trend ${(stats.myMonthLate||0)===0?'up':(stats.myMonthLate||0)<=2?'neutral':'down'}">${(stats.myMonthLate||0)===0?'<i class="fa-solid fa-check"></i> চমৎকার':bnDigits(stats.myMonthLate||0)+' বার'}</span>
+          <span class="kpi-trend \${(stats.myMonthLate||0)===0?'up':(stats.myMonthLate||0)<=2?'neutral':'down'}">\${(stats.myMonthLate||0)===0?'<i class="fa-solid fa-check"></i> চমৎকার':bnDigits(stats.myMonthLate||0)+' বার'}</span>
         </div>
-        <div class="kpi-value">${bnDigits(stats.myMonthLate||0)}</div>
+        <div class="kpi-value">\${bnDigits(stats.myMonthLate||0)}</div>
         <div class="kpi-label">লেট হয়েছেন (মাসিক)</div>
       </div>
       <div class="kpi-card clickable" onclick="navigate('leaves')" style="--accent:linear-gradient(135deg,#ec4899,#be185d);--accent-shadow:rgba(190,24,93,.4)">
         <div class="kpi-head">
           <div class="kpi-icon"><i class="fa-solid fa-umbrella-beach"></i></div>
-          <span class="kpi-trend neutral"><i class="fa-solid fa-arrow-right"></i> আবেদন</span>
+          <span class="kpi-trend neutral"><i class="fa-solid fa-arrow-right"></i> বিস্তারিত</span>
         </div>
-        <div class="kpi-value">${bnDigits(stats.myMonthLeave||0)}</div>
-        <div class="kpi-label">ছুটি (এ মাস)</div>
+        <div class="kpi-value">\${bnDigits(stats.myMonthLeave||0)}</div>
+        <div class="kpi-label">ছুটি নিয়েছেন (এ মাস)</div>
       </div>
       <div class="kpi-card" style="--accent:linear-gradient(135deg,#8b5cf6,#5b2d8a);--accent-shadow:rgba(91,45,138,.4)">
         <div class="kpi-head">
           <div class="kpi-icon"><i class="fa-solid fa-business-time"></i></div>
           <span class="kpi-trend neutral"><i class="fa-solid fa-stopwatch"></i> ঘন্টা</span>
         </div>
-        <div class="kpi-value">${bnDigits(stats.myMonthHours||0)}<span style="font-size:16px;color:var(--gray-400)"> ঘ.</span></div>
+        <div class="kpi-value">\${bnDigits(stats.myMonthHours||0)}<span style="font-size:16px;color:var(--gray-400)"> ঘ.</span></div>
         <div class="kpi-label">মোট কাজের ঘন্টা</div>
       </div>
     </div>
@@ -2419,25 +2444,24 @@ async function renderDashboard() {
         <div id="dashLeaveBalance"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
       <div class="card" style="border-top:3px solid var(--purple-500)">
-        <div class="card-title"><span><i class="fa-solid fa-chart-column" style="color:var(--purple-600)"></i> আমার সাপ্তাহিক উপস্থিতি</span>
+        <div class="card-title"><span><i class="fa-solid fa-chart-column" style="color:var(--purple-600)"></i> সাপ্তাহিক উপস্থিতি ট্র্যাকার</span>
           <span style="font-size:12px;color:var(--gray-400);font-weight:700">শেষ ৭ দিন</span>
         </div>
         <div style="position:relative;height:220px"><canvas id="dashEmpWeekChart"></canvas></div>
       </div>
     </div>
 
-    <!-- ═══ MY LEAVES + NOTICES ═══ -->
+    <!-- ═══ HOLIDAYS + NOTICES ═══ -->
     <div class="card-grid">
-      <div class="card" style="border-top:3px solid var(--emerald-500)">
+      <div class="card" style="border-top:3px solid var(--sky-500)">
         <div class="card-title">
-          <span><i class="fa-solid fa-calendar-plus" style="color:var(--emerald-500)"></i> আমার ছুটির আবেদন</span>
-          <button class="btn btn-outline btn-sm" onclick="navigate('leaves')">সব</button>
+          <span><i class="fa-solid fa-calendar-days" style="color:var(--sky-600)"></i> আসন্ন ছুটির দিনপঞ্জিকা</span>
         </div>
-        <div id="dashMyLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+        <div id="dashHolidays"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
       <div class="card" style="border-top:3px solid var(--amber-500)">
         <div class="card-title"><span><i class="fa-solid fa-bullhorn" style="color:var(--amber-500)"></i> সাম্প্রতিক নোটিশ</span>
-          <button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব</button>
+          <button class="btn btn-outline btn-sm" onclick="navigate('notices')">সব দেখুন</button>
         </div>
         <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
@@ -2450,10 +2474,7 @@ async function renderDashboard() {
       </div>
       <div id="dashHandbookEmp"><div style="padding:20px;text-align:center;color:var(--gray-400)">লোড হচ্ছে...</div></div>
     </div>
-
-    <!-- ═══ BIRTHDAYS ═══ -->
-    <div class="card bday-card" style="margin-top:18px" id="dashBdayCard"></div>
-  `;
+  \`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2557,8 +2578,8 @@ async function loadDashboardLists() {
   // Start hero clock for any role
   startDashHeroClock();
 
-  // Birthday widget (shared)
-  loadDashBirthdays();
+  // Holidays widget (shared)
+  loadDashHolidays();
 
   // Streak pill (employee only)
   if (!App.isAdmin && !App.isEditor) loadMyStreakPill();
@@ -2702,6 +2723,10 @@ async function loadDashboardLists() {
         `).join('');
       }
     } catch (e) { console.warn(e); }
+
+    // 5. Dept Stats (Admin)
+    loadDashDeptStats();
+
     return;
   }
 
@@ -3064,52 +3089,79 @@ async function getMyStreak() {
   } catch { return { streak: 0, best: 0 }; }
 }
 
-// 8. UPCOMING BIRTHDAYS — next 30 days
-async function getUpcomingBirthdays() {
-  try {
-    const { data } = await sb.from('profiles').select('id, full_name, photo_url, date_of_birth').eq('is_active', true).not('date_of_birth', 'is', null);
-    const today = new Date();
-    const ms30 = 30 * 24 * 60 * 60 * 1000;
-    const list = [];
-    (data||[]).forEach(p => {
-      const dob = new Date(p.date_of_birth);
-      const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
-      if (next < today) next.setFullYear(today.getFullYear()+1);
-      const days = Math.ceil((next - today) / (24*60*60*1000));
-      if (days <= 30) list.push({ ...p, days, nextDate: next });
-    });
-    return list.sort((a,b) => a.days - b.days).slice(0, 5);
-  } catch { return []; }
-}
-
-// Render birthday widget
-async function loadDashBirthdays() {
-  const el = document.getElementById('dashBdayCard');
+// 8. UPCOMING HOLIDAYS
+async function loadDashHolidays() {
+  const el = document.getElementById('dashHolidays');
   if (!el) return;
-  const list = await getUpcomingBirthdays();
-  if (list.length === 0) {
-    el.innerHTML = `<h4><i class="fa-solid fa-cake-candles"></i> আসন্ন জন্মদিন</h4><div style="padding:14px;text-align:center;color:var(--gray-500);font-size:13px;font-weight:600">পরবর্তী ৩০ দিনে কোনো জন্মদিন নেই</div>`;
+  // Static upcoming holidays for demonstration
+  const allHolidays = [
+    { date: '2026-06-17', name: 'ঈদুল আযহা (সম্ভাব্য)' },
+    { date: '2026-07-16', name: 'পবিত্র আশুরা' },
+    { date: '2026-08-15', name: 'জাতীয় শোক দিবস' },
+    { date: '2026-08-26', name: 'শুভ জন্মাষ্টমী' }
+  ];
+  const upcoming = allHolidays.filter(h => new Date(h.date) >= new Date()).slice(0, 3);
+  
+  if (!upcoming.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:20px"><i class="fa-solid fa-calendar-days"></i><p style="margin-top:8px">আগামী ১ মাসে কোনো সরকারি বা সাধারণ ছুটি নেই</p></div>`;
     return;
   }
-  const todayList = list.filter(b => b.days === 0);
-  const upcoming  = list.filter(b => b.days > 0);
-  let html = `<h4><i class="fa-solid fa-cake-candles"></i> আসন্ন জন্মদিন (${bnDigits(list.length)})</h4>`;
-  if (todayList.length) {
-    html += `<div style="background:rgba(255,255,255,.55);border-radius:12px;padding:8px 12px;margin-bottom:8px;backdrop-filter:blur(4px)">`;
-    html += `<div style="font-size:11px;font-weight:800;color:#831843;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">🎉 আজকেই!</div>`;
-    todayList.forEach(b => {
-      const init = (b.full_name||'এ').charAt(0).toUpperCase();
-      const photo = b.photo_url ? `<img src="${escapeHtml(b.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : init;
-      html += `<div class="bday-row"><div class="bd-avatar">${photo}</div><div style="flex:1"><div class="bd-name">${escapeHtml(b.full_name)}</div><div class="bd-date">শুভ জন্মদিন! 🎂</div></div></div>`;
-    });
-    html += `</div>`;
-  }
-  upcoming.forEach(b => {
-    const init = (b.full_name||'এ').charAt(0).toUpperCase();
-    const photo = b.photo_url ? `<img src="${escapeHtml(b.photo_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : init;
-    html += `<div class="bday-row"><div class="bd-avatar">${photo}</div><div style="flex:1"><div class="bd-name">${escapeHtml(b.full_name)}</div><div class="bd-date">${formatBnDate(b.nextDate)} — আর ${bnDigits(b.days)} দিন</div></div></div>`;
+  let html = `<div style="display:flex;flex-direction:column;gap:10px">`;
+  upcoming.forEach(h => {
+    html += `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--gray-50);border-radius:10px;border:1px solid var(--border)">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(14,165,233,.1);color:var(--sky-600);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0">${bnDigits(new Date(h.date).getDate())}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;color:var(--gray-800);font-size:14px">${escapeHtml(h.name)}</div>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:2px">${dayName(h.date)}, ${formatBnDate(h.date)}</div>
+        </div>
+      </div>
+    `;
   });
+  html += `</div>`;
   el.innerHTML = html;
+}
+
+// 9. DEPARTMENT STATS (ADMIN)
+async function loadDashDeptStats() {
+  const el = document.getElementById('dashDeptStats');
+  if (!el) return;
+  try {
+    const { data: deptAtt } = await sb.from('attendance').select('user_id, profiles!user_id(department)').eq('date', today());
+    const { data: allProfs } = await sb.from('profiles').select('department').eq('is_active', true);
+    
+    const deptMap = {};
+    (allProfs||[]).forEach(p => {
+      const d = p.department || 'অন্যান্য';
+      if (!deptMap[d]) deptMap[d] = { total: 0, present: 0 };
+      deptMap[d].total++;
+    });
+    (deptAtt||[]).forEach(a => {
+      const d = a.profiles?.department || 'অন্যান্য';
+      if (deptMap[d]) deptMap[d].present++;
+    });
+    
+    const depts = Object.keys(deptMap).map(k => ({ name: k, ...deptMap[k] })).sort((a,b) => b.total - a.total);
+    if (depts.length === 0) {
+      el.innerHTML = `<div class="empty-state" style="padding:20px"><p>কোনো ডেটা নেই</p></div>`;
+    } else {
+      el.innerHTML = depts.map(d => {
+        const pct = d.total ? Math.round((d.present/d.total)*100) : 0;
+        return `
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span style="font-weight:700;color:var(--gray-800)">${escapeHtml(d.name)}</span>
+              <span style="font-weight:600;color:var(--gray-600)">${bnDigits(d.present)} / ${bnDigits(d.total)} <span style="opacity:0.5">(${bnDigits(pct)}%)</span></span>
+            </div>
+            <div class="progress-pill" style="height:6px"><span style="width:${pct}%;background:var(--emerald-500)"></span></div>
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (e) {
+    console.warn('dept stats', e);
+    el.innerHTML = `<div class="empty-state" style="padding:20px"><p>ডেটা লোড করতে সমস্যা হয়েছে</p></div>`;
+  }
 }
 
 // Streak pill in employee hero
