@@ -2296,6 +2296,16 @@ async function renderDashboard() {
         </div>
       </div>
 
+      <!-- ═══ EMPLOYEE HANDBOOK (ADMIN) ═══ -->
+      <div class="card" style="margin-top:18px;border-top:3px solid var(--blue-500)">
+        <div class="card-title">
+          <span><i class="fa-solid fa-book" style="color:var(--blue-600)"></i> এমপ্লয়ী হ্যান্ডবুক (PDF)</span>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('handbookUploadInput').click()">আপলোড / পরিবর্তন</button>
+          <input type="file" id="handbookUploadInput" accept="application/pdf" style="display:none" onchange="uploadHandbook(event)">
+        </div>
+        <div id="dashHandbookAdmin"><div style="padding:20px;text-align:center;color:var(--gray-400)">লোড হচ্ছে...</div></div>
+      </div>
+
       <!-- ═══ BIRTHDAYS ═══ -->
       <div class="card bday-card" style="margin-top:18px" id="dashBdayCard"></div>
     `;
@@ -2419,6 +2429,14 @@ async function renderDashboard() {
         </div>
         <div id="dashRecentNotices"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
+    </div>
+
+    <!-- ═══ EMPLOYEE HANDBOOK ═══ -->
+    <div class="card" style="margin-top:18px;border-top:3px solid var(--blue-500)">
+      <div class="card-title">
+        <span><i class="fa-solid fa-book" style="color:var(--blue-600)"></i> এমপ্লয়ী হ্যান্ডবুক</span>
+      </div>
+      <div id="dashHandbookEmp"><div style="padding:20px;text-align:center;color:var(--gray-400)">লোড হচ্ছে...</div></div>
     </div>
 
     <!-- ═══ BIRTHDAYS ═══ -->
@@ -2557,6 +2575,30 @@ async function loadDashboardLists() {
       }
     }
   } catch (e) { console.warn(e); }
+
+  // Load Handbook
+  try {
+    const { data } = await sb.from('app_settings').select('value').eq('key', 'handbook_url').maybeSingle();
+    const url = data?.value?.url;
+    const adminEl = document.getElementById('dashHandbookAdmin');
+    const empEl = document.getElementById('dashHandbookEmp');
+    
+    const hbHtml = url ? `
+      <div style="padding:16px;background:var(--blue-50);border-radius:12px;border:1px solid var(--blue-100);display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:48px;height:48px;background:white;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--red-500);font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,0.05)"><i class="fa-solid fa-file-pdf"></i></div>
+          <div>
+            <h4 style="font-size:15px;font-weight:800;color:var(--blue-900);margin-bottom:4px">কোম্পানি পলিসি ও রুলস</h4>
+            <p style="font-size:12px;color:var(--blue-700);margin:0">অফিসের সব নিয়মকানুন বিস্তারিত জানুন</p>
+          </div>
+        </div>
+        <a href="${url}" target="_blank" class="btn btn-sm" style="background:var(--blue-600);color:white"><i class="fa-solid fa-book-open"></i> পড়ুন</a>
+      </div>
+    ` : `<div class="empty-state" style="padding:20px"><i class="fa-solid fa-book"></i><p style="margin-top:8px">এখনো কোনো হ্যান্ডবুক আপলোড করা হয়নি</p></div>`;
+    
+    if (adminEl) adminEl.innerHTML = hbHtml;
+    if (empEl) empEl.innerHTML = hbHtml;
+  } catch (e) { console.warn('handbook:', e); }
 
   // ═══ ADMIN / EDITOR ═══
   if (App.isAdmin || App.isEditor) {
@@ -8144,8 +8186,34 @@ async function deleteType(id) {
       }
     }
   });
-})();
+})();async function uploadHandbook(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') {
+    return showToast('❌ শুধুমাত্র PDF ফাইল আপলোড করা যাবে', 'error');
+  }
+  
+  showToast('⏳ আপলোড হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন');
+  
+  try {
+    const fileName = `handbook_${Date.now()}.pdf`;
+    const { error: upErr } = await sb.storage.from('documents').upload(fileName, file);
+    if (upErr) throw upErr;
+    
+    const { data: urlData } = sb.storage.from('documents').getPublicUrl(fileName);
+    const url = urlData.publicUrl;
+    
+    const { error: saveErr } = await sb.from('app_settings')
+      .upsert({ key: 'handbook_url', value: { url: url } });
+    if (saveErr) throw saveErr;
+    
+    showToast('✅ হ্যান্ডবুক আপলোড সফল হয়েছে!');
+    refreshDashboard();
+  } catch (err) {
+    showToast('❌ আপলোড ব্যর্থ: ' + err.message, 'error');
+  }
+  e.target.value = '';
+}
 </script>
-
 </body>
 </html>
