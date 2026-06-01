@@ -3095,10 +3095,13 @@ async function loadDashHolidays() {
   if (!el) return;
   // Static upcoming holidays for demonstration
   const allHolidays = [
-    { date: '2026-06-17', name: 'ঈদুল আযহা (সম্ভাব্য)' },
-    { date: '2026-07-16', name: 'পবিত্র আশুরা' },
-    { date: '2026-08-15', name: 'জাতীয় শোক দিবস' },
-    { date: '2026-08-26', name: 'শুভ জন্মাষ্টমী' }
+    { date: '2026-06-26', name: 'পবিত্র আশুরা' },
+    { date: '2026-08-05', name: 'শহীদ দিবস ও জুলাই গণঅভ্যুত্থান' },
+    { date: '2026-08-26', name: 'ঈদে মিলাদুন্নবী (সা.)' },
+    { date: '2026-09-04', name: 'শুভ জন্মাষ্টমী' },
+    { date: '2026-10-21', name: 'শারদীয় দুর্গাপূজা (বিজয়া দশমী)' },
+    { date: '2026-12-16', name: 'মহান বিজয় দিবস' },
+    { date: '2026-12-25', name: 'শুভ বড়দিন' }
   ];
   const upcoming = allHolidays.filter(h => new Date(h.date) >= new Date()).slice(0, 3);
   
