@@ -6600,8 +6600,8 @@ async function renderReports() {
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <!-- Mode toggle -->
           <div style="display:flex;background:rgba(0,0,0,.25);border-radius:99px;padding:3px;gap:2px">
-            <button id="actModeYear" onclick="switchActMode('year')" style="padding:6px 14px;border-radius:99px;border:none;background:#fff;color:var(--purple-700);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-days"></i> বছর</button>
-            <button id="actModeMonth" onclick="switchActMode('month')" style="padding:6px 14px;border-radius:99px;border:none;background:transparent;color:rgba(255,255,255,.75);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-week"></i> মাস</button>
+            <button id="actModeYear" onclick="switchActMode('year')" style="padding:6px 14px;border-radius:99px;border:none;background:transparent;color:rgba(255,255,255,.75);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-days"></i> বছর</button>
+            <button id="actModeMonth" onclick="switchActMode('month')" style="padding:6px 14px;border-radius:99px;border:none;background:#fff;color:var(--purple-700);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-week"></i> মাস</button>
           </div>
           <!-- Year tabs (year mode) -->
           <div id="actYearTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
@@ -6817,7 +6817,7 @@ function renderEmpReportPctTable(cache) {
 }
 
 // Mode toggle: year vs month
-let _actMode = 'year';
+let _actMode = 'month';
 function switchActMode(mode) {
   _actMode = mode;
   window._actMode = mode;
@@ -6875,8 +6875,11 @@ async function loadImportedActivity(forceYear) {
     }
 
     let bonusSet = { per_hour: 0, att_pct: 100, att_amt: 0 };
+    let leavePol = [];
     try {
       const { data } = await sb.from('bonus_settings').select('*').eq('id', 1).maybeSingle();
+      const p = await sb.from('leave_policies').select('*').eq('is_active', true);
+      if (p.data) leavePol = p.data;
       if (data) {
         bonusSet.per_hour = parseFloat(data.bonus_per_hour)||0;
         bonusSet.att_pct = parseFloat(data.bonus_attendance_pct)||100;
@@ -6899,7 +6902,7 @@ async function loadImportedActivity(forceYear) {
     if (tabsEl) {
       tabsEl.innerHTML = years.map(y => `<button class="act-year-tab ${y===activeYear?'active':''}" onclick="loadImportedActivity('${y}')">${bnDigits(y)}</button>`).join('');
       // Show/hide based on mode
-      const mode = window._actMode || 'year';
+      const mode = window._actMode || 'month';
       tabsEl.style.display = mode === 'year' ? 'flex' : 'none';
       const mp = document.getElementById('actMonthPicker');
       if (mp) {
@@ -6921,9 +6924,16 @@ async function loadImportedActivity(forceYear) {
     }
 
     // ═══ MONTH MODE ═══
-    if ((window._actMode || 'year') === 'month') {
+    if ((window._actMode || 'month') === 'month') {
       const selMonth = document.getElementById('actMonthPicker')?.value || today().slice(0,7);
       const monthRows = [..._actAllRows].filter(r => r.month === selMonth).sort((a,b)=>(a.sort_order||999)-(b.sort_order||999)||(a.employee_name||'').localeCompare(b.employee_name||''));
+      const activeYearStr = selMonth.slice(0,4);
+      // Calculate yearly leaves so far for each user
+      const yearlyLeaves = {};
+      _actAllRows.filter(r => (r.month||'').startsWith(activeYearStr)).forEach(r => {
+         yearlyLeaves[r.employee_name] = (yearlyLeaves[r.employee_name]||0) + Number(r.total_leave||0);
+      });
+      const totalAllowed = leavePol.reduce((s,po) => s + (po.yearly_limit||0), 0);
       if (monthRows.length === 0) {
         box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>${escapeHtml(selMonth)} মাসে কোনো ডাটা নেই</h3></div>`;
         return;
@@ -6952,7 +6962,7 @@ async function loadImportedActivity(forceYear) {
               <div class="act-emp-body">
                 <div class="act-stat-row">
                   <div class="act-stat"><div class="v" style="color:#059669">${bnDigits(Number(r.worked_hours||0).toFixed(0))}</div><div class="l">কাজ (ঘ.)</div></div>
-                  <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(r.total_leave||0)}</div><div class="l">মোট ছুটি</div></div>
+                  <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(r.total_leave||0)}</div><div class="l">ছুটি: ${bnDigits(yearlyLeaves[r.employee_name]||0)} (বাকি ${bnDigits(Math.max(0, totalAllowed - (yearlyLeaves[r.employee_name]||0)))})</div></div>
                   <div class="act-stat"><div class="v" style="color:#dc2626">${bnDigits(Number(r.late_hours||0).toFixed(1))}</div><div class="l">লেট (ঘ.)</div></div>
                 </div>
                 ${bnsHtml}
@@ -7011,7 +7021,7 @@ async function loadImportedActivity(forceYear) {
             <div class="act-emp-body">
               <div class="act-stat-row">
                 <div class="act-stat"><div class="v" style="color:#059669">${bnDigits(u.worked.toFixed(0))}</div><div class="l">কাজ (ঘ.)</div></div>
-                <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(u.leave)}</div><div class="l">মোট ছুটি</div></div>
+                <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(u.leave)}</div><div class="l">ছুটি (বাকি ${bnDigits(Math.max(0, leavePol.reduce((s,po) => s + (po.yearly_limit||0), 0) - u.leave))})</div></div>
                 <div class="act-stat"><div class="v" style="color:#dc2626">${bnDigits(u.late)}</div><div class="l">লেট</div></div>
               </div>
               ${u.bonus > 0 ? `<div style="font-size:12px;color:var(--emerald-600);font-weight:700;margin-top:10px;text-align:center"><i class="fa-solid fa-gift"></i> অর্জন: ৳ ${bnDigits(Math.round(u.bonus))}</div>` : ''}
@@ -7360,9 +7370,8 @@ function renderImport() {
         <input class="form-input en" id="actSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." value="https://docs.google.com/spreadsheets/d/19K-DIY9P-b3A94LO5_JfPv9BpW_hGZlP_VeZC1OE2cY/edit?usp=sharing">
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-primary" id="actScanBtn" onclick="scanActivitySheet()" style="width:auto"><i class="fa-solid fa-magnifying-glass-chart"></i> ট্যাব স্ক্যান (এক মাস)</button>
-        <button class="btn btn-success" id="actOverallBtn" onclick="importOverall()" style="width:auto"><i class="fa-solid fa-layer-group"></i> Overall ইম্পোর্ট (শুরু থেকে সব মাস)</button>
-        <span style="font-size:12px;color:var(--gray-500)">Overall ট্যাব থেকে সব এমপ্লয়ীর সব মাসের ডাটা একসাথে</span>
+        <button class="btn btn-success" id="actOverallBtn" onclick="importOverall()" style="width:auto"><i class="fa-solid fa-layer-group"></i> Overall ইম্পোর্ট (সব মাস একসাথে)</button>
+        <span style="font-size:12px;color:var(--gray-500)">Overall ট্যাব থেকে সব এমপ্লয়ীর সব মাসের ডাটা একসাথে পড়া হবে</span>
       </div>
       <div id="actScanResult" style="margin-top:18px"></div>
     </div>
@@ -8035,8 +8044,12 @@ async function renderBonusSettings() {
   if (!container) return;
   try {
     const { data, error } = await sb.from('bonus_settings').select('*').eq('id', 1).maybeSingle();
-    const b = data || { bonus_per_hour: 0, bonus_attendance_pct: 100, bonus_attendance_amount: 0 };
+    const b = data || { bonus_per_hour: 0, bonus_attendance_pct: 100, bonus_attendance_amount: 0, monthly_working_days: 26 };
     container.innerHTML = `
+      <div class="form-group" style="max-width:300px">
+        <label>মাসে মোট কর্মদিবস (দিন)</label>
+        <input type="number" class="form-input num" id="bs_days" value="${b.monthly_working_days||26}">
+      </div>
       <div class="form-group" style="max-width:300px">
         <label>প্রতি কাজের ঘন্টায় বোনাস (৳)</label>
         <input type="number" class="form-input num" id="bs_hour" value="${b.bonus_per_hour||0}">
@@ -8067,6 +8080,7 @@ async function saveBonusSettings(e) {
       bonus_per_hour: parseFloat(document.getElementById('bs_hour').value)||0,
       bonus_attendance_pct: parseFloat(document.getElementById('bs_pct').value)||100,
       bonus_attendance_amount: parseFloat(document.getElementById('bs_amt').value)||0,
+      monthly_working_days: parseInt(document.getElementById('bs_days').value)||26,
       updated_at: new Date().toISOString()
     };
     const { error } = await sb.from('bonus_settings').upsert(data);
