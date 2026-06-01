@@ -2198,14 +2198,7 @@ async function renderDashboard() {
           </div>
         </div>
       </div>
-
-      <!-- ═══ ADMIN QUICK ACTIONS ═══ -->
-      <div style="display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap">
-        <button class="btn" style="flex:1;background:var(--purple-600);color:white;min-width:140px;box-shadow:0 4px 12px rgba(139,92,246,0.3)" onclick="navigate('employees')"><i class="fa-solid fa-user-plus"></i> নতুন এমপ্লয়ী</button>
-        <button class="btn" style="flex:1;background:var(--amber-500);color:white;min-width:140px;box-shadow:0 4px 12px rgba(245,158,11,0.3)" onclick="navigate('notices')"><i class="fa-solid fa-bullhorn"></i> নতুন নোটিশ</button>
-        <button class="btn btn-outline" style="flex:1;min-width:140px;background:white" onclick="navigate('reports')"><i class="fa-solid fa-file-export"></i> রিপোর্ট ডাউনলোড</button>
-      </div>
-
+      <!-- ═══ ADMIN QUICK ACTIONS REMOVED (NO DUPLICATE NAV) ═══ -->
       <!-- ═══ KPI GRID ═══ -->
       <div class="kpi-grid">
         <div class="kpi-card clickable" onclick="navigate('employees')" style="--accent:linear-gradient(135deg,#8b5cf6,#5b2d8a);--accent-shadow:rgba(91,45,138,.4)">
@@ -2357,14 +2350,7 @@ async function renderDashboard() {
         </div>
       </div>
     </div>
-
-    <!-- ═══ EMPLOYEE QUICK ACTIONS ═══ -->
-    <div style="display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap">
-      <button class="btn" style="flex:1;background:linear-gradient(135deg, #ec4899, #be185d);color:white;min-width:140px;border-radius:50px;padding:12px 20px;font-size:15px;box-shadow:0 6px 16px rgba(190,24,93,0.3)" onclick="navigate('leaves')"><i class="fa-solid fa-umbrella-beach"></i> ছুটির আবেদন</button>
-      <button class="btn" style="flex:1;background:linear-gradient(135deg, #3b82f6, #1d4ed8);color:white;min-width:140px;border-radius:50px;padding:12px 20px;font-size:15px;box-shadow:0 6px 16px rgba(29,78,216,0.3)" onclick="document.getElementById('dashHandbookEmp').scrollIntoView({behavior:'smooth'})"><i class="fa-solid fa-book"></i> হ্যান্ডবুক</button>
-      <button class="btn" style="flex:1;background:linear-gradient(135deg, #8b5cf6, #5b2d8a);color:white;min-width:140px;border-radius:50px;padding:12px 20px;font-size:15px;box-shadow:0 6px 16px rgba(91,45,138,0.3)" onclick="navigate('profile')"><i class="fa-solid fa-user-pen"></i> প্রোফাইল আপডেট</button>
-    </div>
-
+    <!-- ═══ EMPLOYEE QUICK ACTIONS REMOVED (NO DUPLICATE NAV) ═══ -->
     <!-- ═══ TODAY LIVE STATUS ═══ -->
     <div class="card" style="margin-bottom:22px;border-left:4px solid var(--purple-500)" id="dashTodayLiveCard">
       <div class="card-title"><span><i class="fa-solid fa-calendar-day" style="color:var(--purple-600)"></i> আজকের অবস্থা</span>
