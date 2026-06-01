@@ -8208,7 +8208,7 @@ async function deleteType(id) {
     if (saveErr) throw saveErr;
     
     showToast('✅ হ্যান্ডবুক আপলোড সফল হয়েছে!');
-    refreshDashboard();
+    navigate('dashboard');
   } catch (err) {
     showToast('❌ আপলোড ব্যর্থ: ' + err.message, 'error');
   }
