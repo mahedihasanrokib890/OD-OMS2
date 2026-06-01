@@ -1,0 +1,12 @@
+{
+  "type": "leave_applied",
+  "to": "mahedihasanrokib83@gmail.com",
+  "data": {
+    "employee": "Test User",
+    "leaveType": "Casual Leave (CL)",
+    "startDate": "01 June 2026",
+    "endDate": "03 June 2026",
+    "days": "3",
+    "reason": "This is a test email from OD-OMS"
+  }
+}
