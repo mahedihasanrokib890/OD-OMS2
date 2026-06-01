@@ -148,12 +148,12 @@
   .nav-item:hover .nav-item-left i{transform:scale(1.15)}
   .nav-badge{background:linear-gradient(135deg,#ef4444,#dc2626);color:white;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:800;min-width:22px;text-align:center;box-shadow:0 2px 6px rgba(239,68,68,.3)}
   .nav-badge.pink{background:linear-gradient(135deg,var(--pink-500),var(--pink-400));box-shadow:0 2px 6px rgba(233,30,99,.3)}
-  .admin-only{display:none}
-  .is-admin .admin-only{display:block}
-  .editor-or-admin{display:none}
-  .is-admin .editor-or-admin, .is-editor .editor-or-admin{display:block}
-  .employee-only{display:none}
-  .is-employee .employee-only{display:block}
+  .admin-only{display:none !important}
+  .is-admin .admin-only{display:block !important}
+  .editor-or-admin{display:none !important}
+  .is-admin .editor-or-admin, .is-editor .editor-or-admin{display:block !important}
+  .employee-only{display:none !important}
+  .is-employee .employee-only{display:block !important}
   .sidebar-user{padding:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(250,245,255,.8))}
   .sidebar-user .avatar{width:42px;height:42px;border-radius:12px;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-family:var(--font-en);border:2px solid var(--purple-300);text-transform:uppercase}
   .sidebar-user-info{flex:1;min-width:0}
@@ -1019,9 +1019,11 @@
     </div>
     <nav class="sidebar-nav">
       <!-- Admin role indicator badge -->
-      <div class="admin-only" style="margin:0 12px 12px;padding:8px 12px;background:linear-gradient(135deg,rgba(91,45,138,.15),rgba(233,30,99,.1));border-radius:10px;border:1px solid rgba(91,45,138,.2);display:flex;align-items:center;gap:8px">
-        <i class="fa-solid fa-shield-halved" style="color:var(--purple-600);font-size:13px"></i>
-        <span style="font-size:11px;font-weight:800;color:var(--purple-700);text-transform:uppercase;letter-spacing:.5px">Admin Access</span>
+      <div class="admin-only">
+        <div style="margin:0 12px 12px;padding:8px 12px;background:linear-gradient(135deg,rgba(91,45,138,.15),rgba(233,30,99,.1));border-radius:10px;border:1px solid rgba(91,45,138,.2);display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-shield-halved" style="color:var(--purple-600);font-size:13px"></i>
+          <span style="font-size:11px;font-weight:800;color:var(--purple-700);text-transform:uppercase;letter-spacing:.5px">Admin Access</span>
+        </div>
       </div>
 
       <div class="sidebar-section-title">প্রধান মেনু</div>
@@ -1761,9 +1763,18 @@ async function loadUserAndStart() {
     const { data: p, error } = await sb.from('profiles').select('*, employee_types(name_bn, code, is_admin)').eq('id', user.id).maybeSingle();
     if (!error && p) {
       App.profile = { ...App.profile, ...p };
-      App.role     = p.role || (p.is_admin ? 'admin' : 'employee');
-      App.isAdmin  = App.role === 'admin';
-      App.isEditor = App.role === 'editor';
+      
+      const isTypeAdmin = p.employee_types?.is_admin === true;
+      if (App.isAdmin || isTypeAdmin || p.role === 'admin') {
+        App.role = 'admin';
+        App.isAdmin = true;
+      } else if (p.role === 'editor') {
+        App.role = 'editor';
+        App.isEditor = true;
+      } else {
+        App.role = 'employee';
+      }
+      
       // Also cache office_time for late detection
       if (p.employee_type_id) {
         sb.from('office_times').select('*').eq('employee_type_id', p.employee_type_id).maybeSingle()
