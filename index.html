@@ -6874,16 +6874,26 @@ async function loadImportedActivity(forceYear) {
       }
     }
 
-    let bonusSet = { per_hour: 0, att_pct: 100, att_amt: 0 };
+    let bnsSet = {
+      working_days: 26, exempt_leaves: ['EL','CL'],
+      min_act: 98, max_ld: 3, max_lh: 3.0,
+      base: 1500, gap1: 1000, gap2: 500, gap3: 0
+    };
     let leavePol = [];
     try {
       const { data } = await sb.from('bonus_settings').select('*').eq('id', 1).maybeSingle();
       const p = await sb.from('leave_policies').select('*').eq('is_active', true);
       if (p.data) leavePol = p.data;
       if (data) {
-        bonusSet.per_hour = parseFloat(data.bonus_per_hour)||0;
-        bonusSet.att_pct = parseFloat(data.bonus_attendance_pct)||100;
-        bonusSet.att_amt = parseFloat(data.bonus_attendance_amount)||0;
+        bnsSet.working_days = data.monthly_working_days != null ? data.monthly_working_days : 26;
+        bnsSet.exempt_leaves = (data.rule_exempt_leaves||'EL,CL').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+        bnsSet.min_act = data.rule_min_activity != null ? parseFloat(data.rule_min_activity) : 98;
+        bnsSet.max_ld = data.rule_max_late_days != null ? parseInt(data.rule_max_late_days) : 3;
+        bnsSet.max_lh = data.rule_max_late_hours != null ? parseFloat(data.rule_max_late_hours) : 3.0;
+        bnsSet.base = data.rule_base_amount != null ? parseFloat(data.rule_base_amount) : 1500;
+        bnsSet.gap1 = data.rule_gap_1_amount != null ? parseFloat(data.rule_gap_1_amount) : 1000;
+        bnsSet.gap2 = data.rule_gap_2_amount != null ? parseFloat(data.rule_gap_2_amount) : 500;
+        bnsSet.gap3 = data.rule_gap_3_amount != null ? parseFloat(data.rule_gap_3_amount) : 0;
       }
     } catch(e){}
 
@@ -6945,8 +6955,26 @@ async function loadImportedActivity(forceYear) {
             const grad = palette[i % palette.length];
             const pct = Math.round(Number(r.activity_pct)||0);
             const init = (r.employee_name||'এ').charAt(0).toUpperCase();
-            const w = Number(r.worked_hours)||0;
-            const bns = (w * bonusSet.per_hour) + (pct >= bonusSet.att_pct ? bonusSet.att_amt : 0);
+            
+            // Advanced Bonus Logic
+            let exemptDays = 0;
+            if (bnsSet.exempt_leaves.includes('CL')) exemptDays += Number(r.cl_days||0);
+            if (bnsSet.exempt_leaves.includes('SL')) exemptDays += Number(r.sl_days||0);
+            if (bnsSet.exempt_leaves.includes('EL')) exemptDays += Number(r.el_days||0);
+            
+            const present = Number(r.present_days||0);
+            const lateCount = Number(r.late_count||0);
+            const lateHours = Number(r.late_hours||0);
+            const gapDays = Math.max(0, bnsSet.working_days - (present + exemptDays));
+            
+            let bns = 0;
+            if (pct >= bnsSet.min_act && lateCount <= bnsSet.max_ld && lateHours <= bnsSet.max_lh) {
+              if (gapDays === 0) bns = bnsSet.base;
+              else if (gapDays === 1) bns = bnsSet.gap1;
+              else if (gapDays === 2) bns = bnsSet.gap2;
+              else bns = bnsSet.gap3;
+            }
+            
             const bnsHtml = (bns > 0 && App.isAdmin) ? `<div style="font-size:12px;color:var(--emerald-600);font-weight:700;margin-top:10px;text-align:center"><i class="fa-solid fa-gift"></i> অর্জন: ৳ ${bnDigits(Math.round(bns))}</div>` : (bns > 0 ? `<div style="font-size:12px;color:var(--emerald-600);font-weight:700;margin-top:10px;text-align:center"><i class="fa-solid fa-gift"></i> বোনাস: ৳ ${bnDigits(Math.round(bns))}</div>` : '');
             
             return `
@@ -6988,9 +7016,27 @@ async function loadImportedActivity(forceYear) {
       u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0); u.late += (r.late_count||0);
       u.cl += Number(r.cl_days||0); u.sl += Number(r.sl_days||0); u.el += Number(r.el_days||0); u.leave += Number(r.total_leave||0);
       if (r.sort_order != null) u.order = r.sort_order;
-      const pct = Number(r.activity_pct)||0;
+      const pct = Math.round(Number(r.activity_pct)||0);
       if (pct > 0) { u.actSum += pct; u.actCount++; }
-      u.bonus += (Number(r.worked_hours||0) * bonusSet.per_hour) + (pct >= bonusSet.att_pct ? bonusSet.att_amt : 0);
+      
+      let exemptDays = 0;
+      if (bnsSet.exempt_leaves.includes('CL')) exemptDays += Number(r.cl_days||0);
+      if (bnsSet.exempt_leaves.includes('SL')) exemptDays += Number(r.sl_days||0);
+      if (bnsSet.exempt_leaves.includes('EL')) exemptDays += Number(r.el_days||0);
+      
+      const present = Number(r.present_days||0);
+      const lateCount = Number(r.late_count||0);
+      const lateHours = Number(r.late_hours||0);
+      const gapDays = Math.max(0, bnsSet.working_days - (present + exemptDays));
+      
+      let bns = 0;
+      if (pct >= bnsSet.min_act && lateCount <= bnsSet.max_ld && lateHours <= bnsSet.max_lh) {
+        if (gapDays === 0) bns = bnsSet.base;
+        else if (gapDays === 1) bns = bnsSet.gap1;
+        else if (gapDays === 2) bns = bnsSet.gap2;
+        else bns = bnsSet.gap3;
+      }
+      u.bonus += bns;
     });
     // Preserve sheet/tab order (sort_order); fall back to name
     const list = Object.values(byEmp).map(u => ({ ...u, avgAct: u.actCount ? Math.round(u.actSum/u.actCount) : 0 })).sort((a,b)=> (a.order-b.order) || a.name.localeCompare(b.name));
