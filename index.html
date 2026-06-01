@@ -8413,7 +8413,9 @@ async function deleteType(id) {
       }
     }
   });
-})();async function uploadHandbook(e) {
+})();
+
+async function uploadHandbook(e) {
   const file = e.target.files[0];
   if (!file) return;
   if (file.type !== 'application/pdf') {
@@ -8434,7 +8436,15 @@ async function deleteType(id) {
       .upsert({ key: 'handbook_url', value: { url: url } });
     if (saveErr) throw saveErr;
     
-    showToast('✅ হ্যান্ডবুক আপলোড সফল হয়েছে!');
+    // Automatically create a notice for all employees
+    await sb.from('notices').insert({
+      title: 'নতুন এমপ্লয়ী হ্যান্ডবুক আপলোড করা হয়েছে',
+      content: `অ্যাডমিন নতুন এমপ্লয়ী হ্যান্ডবুক (PDF) আপলোড করেছেন। আপনি চাইলে সেটি [এখান থেকে ডাউনলোড](${url}) করে পড়তে পারেন অথবা আপনার ড্যাশবোর্ডের উপরে "রুলস পিডিএফ" বাটনে ক্লিক করে দেখতে পারেন।`,
+      priority: 'important',
+      posted_by: App.user?.id || null
+    });
+    
+    showToast('✅ হ্যান্ডবুক আপলোড সফল এবং নোটিশ পাঠানো হয়েছে!');
     navigate('dashboard');
   } catch (err) {
     showToast('❌ আপলোড ব্যর্থ: ' + err.message, 'error');
