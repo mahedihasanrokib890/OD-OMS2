@@ -8090,27 +8090,54 @@ async function renderBonusSettings() {
   if (!container) return;
   try {
     const { data, error } = await sb.from('bonus_settings').select('*').eq('id', 1).maybeSingle();
-    const b = data || { bonus_per_hour: 0, bonus_attendance_pct: 100, bonus_attendance_amount: 0, monthly_working_days: 26 };
+    const b = data || {};
     container.innerHTML = `
-      <div class="form-group" style="max-width:300px">
-        <label>মাসে মোট কর্মদিবস (দিন)</label>
-        <input type="number" class="form-input num" id="bs_days" value="${b.monthly_working_days||26}">
-      </div>
-      <div class="form-group" style="max-width:300px">
-        <label>প্রতি কাজের ঘন্টায় বোনাস (৳)</label>
-        <input type="number" class="form-input num" id="bs_hour" value="${b.bonus_per_hour||0}">
-      </div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap">
-        <div class="form-group" style="flex:1;min-width:140px">
-          <label>অ্যাক্টিভিটি লক্ষমাত্রা (%)</label>
-          <input type="number" class="form-input num" id="bs_pct" value="${b.bonus_attendance_pct||100}">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="form-group" style="flex:1;min-width:200px">
+          <label>মাসে মোট কর্মদিবস (দিন)</label>
+          <input type="number" class="form-input num" id="bs_days" value="${b.monthly_working_days!=null?b.monthly_working_days:26}">
         </div>
-        <div class="form-group" style="flex:1;min-width:140px">
-          <label>লক্ষমাত্রা অর্জনে ফিক্সড বোনাস (৳)</label>
-          <input type="number" class="form-input num" id="bs_amt" value="${b.bonus_attendance_amount||0}">
+        <div class="form-group" style="flex:1;min-width:200px">
+          <label>ছাড়প্রাপ্ত ছুটি (যে ছুটি গ্যাপ নয়)</label>
+          <input type="text" class="form-input en" id="bs_exempt" value="${escapeHtml(b.rule_exempt_leaves||'EL,CL')}">
         </div>
       </div>
-      <button class="btn btn-primary" onclick="saveBonusSettings(event)" style="width:auto;margin-top:12px"><i class="fa-solid fa-floppy-disk"></i> বোনাস সেভ করুন</button>
+      <h4 style="margin:20px 0 10px;color:var(--purple-700);font-weight:700"><i class="fa-solid fa-scale-balanced"></i> যোগ্যতার নিয়ম (Eligibility)</h4>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;background:var(--gray-50);padding:16px;border-radius:var(--r-md);margin-bottom:12px">
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>ন্যূনতম অ্যাক্টিভিটি (%)</label>
+          <input type="number" class="form-input num" id="bs_min_act" value="${b.rule_min_activity!=null?b.rule_min_activity:98}">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>সর্বোচ্চ লেট দিন</label>
+          <input type="number" class="form-input num" id="bs_max_ld" value="${b.rule_max_late_days!=null?b.rule_max_late_days:3}">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>সর্বোচ্চ লেট (ঘণ্টা)</label>
+          <input type="number" step="0.1" class="form-input num" id="bs_max_lh" value="${b.rule_max_late_hours!=null?b.rule_max_late_hours:3.0}">
+        </div>
+      </div>
+      <h4 style="margin:20px 0 10px;color:var(--emerald-600);font-weight:700"><i class="fa-solid fa-coins"></i> বোনাসের পরিমাণ (গ্যাপ অনুযায়ী)</h4>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;background:var(--emerald-50);padding:16px;border-radius:var(--r-md)">
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label>০ দিন গ্যাপে (৳)</label>
+          <input type="number" class="form-input num" id="bs_base" value="${b.rule_base_amount!=null?b.rule_base_amount:1500}">
+        </div>
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label>১ দিন গ্যাপে (৳)</label>
+          <input type="number" class="form-input num" id="bs_gap1" value="${b.rule_gap_1_amount!=null?b.rule_gap_1_amount:1000}">
+        </div>
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label>২ দিন গ্যাপে (৳)</label>
+          <input type="number" class="form-input num" id="bs_gap2" value="${b.rule_gap_2_amount!=null?b.rule_gap_2_amount:500}">
+        </div>
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label>৩+ দিন গ্যাপে (৳)</label>
+          <input type="number" class="form-input num" id="bs_gap3" value="${b.rule_gap_3_amount!=null?b.rule_gap_3_amount:0}">
+        </div>
+      </div>
+      <div style="margin-top:16px;color:var(--gray-500);font-size:13px"><i class="fa-solid fa-circle-info"></i> উপরের যোগ্যতার নিয়মগুলো পূরণ না হলে, গ্যাপ যাই হোক না কেন বোনাস ৳০ হবে।</div>
+      <button class="btn btn-primary" onclick="saveBonusSettings(event)" style="width:auto;margin-top:16px"><i class="fa-solid fa-floppy-disk"></i> রুলস সেভ করুন</button>
     `;
   } catch (e) {
     container.innerHTML = `<div style="color:var(--red-500)">${escapeHtml(e.message)}</div>`;
@@ -8123,10 +8150,15 @@ async function saveBonusSettings(e) {
   try {
     const data = {
       id: 1,
-      bonus_per_hour: parseFloat(document.getElementById('bs_hour').value)||0,
-      bonus_attendance_pct: parseFloat(document.getElementById('bs_pct').value)||100,
-      bonus_attendance_amount: parseFloat(document.getElementById('bs_amt').value)||0,
       monthly_working_days: parseInt(document.getElementById('bs_days').value)||26,
+      rule_exempt_leaves: document.getElementById('bs_exempt').value||'',
+      rule_min_activity: parseFloat(document.getElementById('bs_min_act').value)||0,
+      rule_max_late_days: parseInt(document.getElementById('bs_max_ld').value)||0,
+      rule_max_late_hours: parseFloat(document.getElementById('bs_max_lh').value)||0,
+      rule_base_amount: parseFloat(document.getElementById('bs_base').value)||0,
+      rule_gap_1_amount: parseFloat(document.getElementById('bs_gap1').value)||0,
+      rule_gap_2_amount: parseFloat(document.getElementById('bs_gap2').value)||0,
+      rule_gap_3_amount: parseFloat(document.getElementById('bs_gap3').value)||0,
       updated_at: new Date().toISOString()
     };
     const { error } = await sb.from('bonus_settings').upsert(data);
