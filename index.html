@@ -24,7 +24,7 @@
     /* Pink — primary accent matching অর্ধেকদীন #ED2880 */
     --pink-700:#be185d; --pink-600:#db2777; --pink-500:#ed2880; --pink-400:#f06fa8;
     --pink-300:#f9a8d4; --pink-200:#fce7f3; --pink-100:#fff0f8;
-    --emerald-500:#10b981; --emerald-100:#d1fae5;
+    --emerald-600:#059669; --emerald-500:#10b981; --emerald-100:#d1fae5;
     --amber-500:#f59e0b; --amber-100:#fef3c7;
     --red-500:#ef4444; --red-100:#fee2e2;
     --blue-500:#3b82f6; --blue-100:#dbeafe;
@@ -2378,10 +2378,19 @@ async function renderDashboard() {
     </div>
 
     <!-- ═══ EMPLOYEE QUICK ACTIONS ═══ -->
-    <div style="display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap">
-      <button class="btn" style="flex:1;background:var(--emerald-600);color:white;min-width:140px;box-shadow:0 4px 12px rgba(5,150,105,0.3)" onclick="navigate('attendance')"><i class="fa-solid fa-fingerprint"></i> চেক-ইন / আউট</button>
-      <button class="btn" style="flex:1;background:var(--pink-500);color:white;min-width:140px;box-shadow:0 4px 12px rgba(236,72,153,0.3)" onclick="navigate('leaves')"><i class="fa-solid fa-plus"></i> ছুটির আবেদন</button>
-      <button class="btn btn-outline" style="flex:1;min-width:140px;background:white" onclick="navigate('profile')"><i class="fa-solid fa-user-pen"></i> প্রোফাইল আপডেট</button>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:12px;margin-bottom:22px">
+      <div class="kpi-card clickable" onclick="navigate('attendance')" style="--accent:linear-gradient(135deg,#10b981,#059669);--accent-shadow:rgba(5,150,105,.4);align-items:center;text-align:center;padding:16px 10px">
+        <div class="kpi-icon" style="margin:0 0 8px 0;width:40px;height:40px;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-fingerprint"></i></div>
+        <div style="font-weight:800;font-size:14px;color:var(--gray-800)">চেক-ইন / আউট</div>
+      </div>
+      <div class="kpi-card clickable" onclick="navigate('leaves')" style="--accent:linear-gradient(135deg,#ec4899,#be185d);--accent-shadow:rgba(190,24,93,.4);align-items:center;text-align:center;padding:16px 10px">
+        <div class="kpi-icon" style="margin:0 0 8px 0;width:40px;height:40px;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-umbrella-beach"></i></div>
+        <div style="font-weight:800;font-size:14px;color:var(--gray-800)">ছুটির আবেদন</div>
+      </div>
+      <div class="kpi-card clickable" onclick="navigate('profile')" style="--accent:linear-gradient(135deg,#8b5cf6,#5b2d8a);--accent-shadow:rgba(91,45,138,.4);align-items:center;text-align:center;padding:16px 10px">
+        <div class="kpi-icon" style="margin:0 0 8px 0;width:40px;height:40px;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-user-pen"></i></div>
+        <div style="font-weight:800;font-size:14px;color:var(--gray-800)">প্রোফাইল আপডেট</div>
+      </div>
     </div>
 
     <!-- ═══ TODAY LIVE STATUS ═══ -->
@@ -3097,13 +3106,13 @@ async function loadDashHolidays() {
     { date: '2026-12-16', name: 'মহান বিজয় দিবস' },
     { date: '2026-12-25', name: 'শুভ বড়দিন' }
   ];
-  const upcoming = allHolidays.filter(h => new Date(h.date) >= new Date()).slice(0, 3);
+  const upcoming = allHolidays; // User requested full 2026 calendar
   
   if (!upcoming.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:20px"><i class="fa-solid fa-calendar-days"></i><p style="margin-top:8px">আগামী ১ মাসে কোনো সরকারি বা সাধারণ ছুটি নেই</p></div>`;
+    el.innerHTML = `<div class="empty-state" style="padding:20px"><i class="fa-solid fa-calendar-days"></i><p style="margin-top:8px">কোনো সরকারি বা সাধারণ ছুটি নেই</p></div>`;
     return;
   }
-  let html = `<div style="display:flex;flex-direction:column;gap:10px">`;
+  let html = `<div style="display:flex;flex-direction:column;gap:10px;max-height:280px;overflow-y:auto;padding-right:5px">`;
   upcoming.forEach(h => {
     html += `
       <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--gray-50);border-radius:10px;border:1px solid var(--border)">
