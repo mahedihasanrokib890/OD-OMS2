@@ -31,15 +31,15 @@
     --gray-900:#020617; --gray-800:#0f172a; --gray-700:#1e293b; --gray-600:#334155;
     --gray-500:#475569; --gray-400:#94a3b8; --gray-300:#cbd5e1; --gray-200:#e2e8f0;
     --gray-100:#f1f5f9; --gray-50:#f8fafc;
-    --bg-page:#f8fafc; --bg-card:#fff; --border:#e2e8f0;
+    --bg-page:#fff5fa; --bg-card:#fff; --border:#fce7f3;
     /* Brand gradient: purple → hot-pink matching the site */
     --gradient-brand: linear-gradient(135deg,#5b2d8a 0%,#a855f7 40%,#ed2880 100%);
-    --gradient-soft: linear-gradient(135deg,#f8fafc 0%,#f1f5f9 50%,#e2e8f0 100%);
+    --gradient-soft: linear-gradient(135deg,#fff0f8 0%,#fce7f3 50%,#f5f0ff 100%);
     --gradient-auth: linear-gradient(145deg,#2e0a45 0%,#5b1a7a 45%,#c2185b 100%);
-    --shadow-sm:0 2px 8px rgba(0,0,0,.04),0 1px 3px rgba(0,0,0,.02);
-    --shadow-md:0 8px 20px -4px rgba(0,0,0,.08),0 4px 8px -2px rgba(0,0,0,.04);
-    --shadow-lg:0 20px 44px -8px rgba(0,0,0,.12),0 8px 18px -4px rgba(0,0,0,.06);
-    --shadow-xl:0 32px 64px -12px rgba(0,0,0,.16);
+    --shadow-sm:0 2px 8px rgba(237,40,128,.06),0 1px 3px rgba(91,45,138,.05);
+    --shadow-md:0 8px 20px -4px rgba(237,40,128,.10),0 4px 8px -2px rgba(91,45,138,.06);
+    --shadow-lg:0 20px 44px -8px rgba(237,40,128,.14),0 8px 18px -4px rgba(91,45,138,.08);
+    --shadow-xl:0 32px 64px -12px rgba(237,40,128,.20);
     --r-md:12px; --r-lg:16px; --r-xl:24px; --r-2xl:32px;
     --font-bn:'SolaimanLipi','SolaimanLipi',system-ui,sans-serif;
     --font-en:'Inter',system-ui,sans-serif;
@@ -124,8 +124,15 @@
   /* ═══ APP LAYOUT ═══ */
   #appContainer{display:none;min-height:100vh}
   #appContainer.active{display:flex}
-  #appContainer::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 0% 0%,rgba(168,85,247,.08) 0%,transparent 40%),radial-gradient(circle at 100% 0%,rgba(236,72,153,.06) 0%,transparent 40%)}
-
+  /* OrdhekDeen Official Website inspired glowing soft background */
+  #appContainer::before{
+    content:'';position:fixed;inset:0;z-index:-1;
+    background:
+      radial-gradient(ellipse at 15% 10%, rgba(237,40,128, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 85% 20%, rgba(168,85,247, 0.08) 0%, transparent 45%),
+      radial-gradient(circle at 50% 80%, rgba(237,40,128, 0.05) 0%, transparent 50%),
+      linear-gradient(135deg, rgba(255,240,248, 0.6) 0%, rgba(245,240,255, 0.5) 100%);
+  }
   /* ═══ SIDEBAR ═══ */
   .sidebar{width:var(--sidebar-w);background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(253,250,255,.97) 100%);backdrop-filter:saturate(180%) blur(24px);border-right:1px solid rgba(243,232,255,.6);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;box-shadow:2px 0 32px rgba(91,45,138,.04);z-index:100;overflow-y:auto;transition:transform .35s cubic-bezier(.4,0,.2,1)}
   .sidebar-brand{padding:14px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(237,40,128,.04) 0%,rgba(168,85,247,.04) 100%)}
