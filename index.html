@@ -1043,17 +1043,13 @@
         <span class="nav-item-left"><i class="fa-solid fa-circle-user"></i> আমার প্রোফাইল</span>
       </div>
 
-      <div class="nav-item" data-route="messages" onclick="navigate('messages')">
-        <span class="nav-item-left"><i class="fa-solid fa-comment-dots"></i> মেসেজ</span>
-        <span class="nav-badge pink" id="msgBadge" style="display:none">০</span>
+      <div class="nav-item" data-route="inbox" onclick="navigate('inbox')">
+        <span class="nav-item-left"><i class="fa-solid fa-inbox"></i> ইনবক্স</span>
+        <span class="nav-badge pink" id="inboxBadge" style="display:none">০</span>
       </div>
 
       <div class="editor-or-admin">
         <div class="sidebar-section-title">ব্যবস্থাপনা</div>
-        <div class="nav-item" data-route="inbox" onclick="navigate('inbox')">
-          <span class="nav-item-left"><i class="fa-solid fa-inbox"></i> ইনবক্স</span>
-          <span class="nav-badge pink" id="inboxBadge" style="display:none">০</span>
-        </div>
         <div class="nav-item" data-route="employees" onclick="navigate('employees')">
           <span class="nav-item-left"><i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা</span>
         </div>
@@ -2066,8 +2062,7 @@ const routes = {
   leaves:     { title: 'ছুটির আবেদন',    subtitle: 'আপনার ছুটি ব্যবস্থাপনা',     renderFn: 'renderLeaves' },
   profile:    { title: 'আমার প্রোফাইল',  subtitle: 'ব্যক্তিগত ও কাজের তথ্য',     renderFn: 'renderProfile' },
   employees:  { title: 'এমপ্লয়ী ডিরেক্টরি', subtitle: 'সকল এমপ্লয়ীর তালিকা',           renderFn: 'renderEmployees', editorOrAdmin: true },
-  messages:   { title: 'মেসেজ',           subtitle: 'চ্যাট ও যোগাযোগ',              renderFn: 'renderMessages' },
-  inbox:      { title: 'ইনবক্স',          subtitle: 'অপেক্ষমাণ ছুটি ও অনুরোধ',     renderFn: 'renderInbox',     editorOrAdmin: true },
+  inbox:      { title: 'ইনবক্স',          subtitle: 'মেসেজ ও ছুটি',     renderFn: 'renderInbox' },
   reports:    { title: 'রিপোর্ট',        subtitle: 'বিশ্লেষণ ও সারাংশ',          renderFn: 'renderReports', admin: true },
   import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     renderFn: 'renderImport', admin: true },
   settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         renderFn: 'renderSettings', admin: true }
@@ -2112,9 +2107,11 @@ function navigate(route) {
     if (route === 'attendance') refreshAttendanceList();
     if (route === 'notices') refreshNoticesList();
     if (route === 'leaves') refreshLeavesList();
-    if (route === 'employees') refreshEmployeesList();
-    if (route === 'inbox')     refreshInboxList();
-    if (route === 'messages')  initChat();
+    if (route === 'inbox') {
+      if (!App.isAdmin && !App.isEditor) initChat();
+      else if (window._inboxActiveTab === 'leaves') refreshInboxList();
+      else initChat();
+    }
     if (route === 'settings') loadOfficeTimes();
     if (route === 'reports')  loadEmpReport();
     if (route === 'reports')  loadImportedActivity();
@@ -5632,44 +5629,75 @@ setTimeout(() => { if (App.user) updateMsgBadge(); }, 2000);
 // ═══════════════════════════════════════════════════════════
 let _inboxFilter = 'pending';
 
+let _inboxActiveTab = 'messages';
+let _inboxFilter = 'pending';
+
+function switchInboxTab(tab) {
+  _inboxActiveTab = tab;
+  navigate('inbox');
+}
+
 function renderInbox() {
-  return `
-    <!-- Inbox Hero -->
-    <div style="background:linear-gradient(135deg,#1a0a2e 0%,#4a1570 50%,#be185d 100%);color:white;padding:28px 32px;border-radius:22px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(91,45,138,.35)">
-      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);border-radius:50%"></div>
-      <div style="position:absolute;bottom:-50px;left:5%;width:160px;height:160px;background:radial-gradient(circle,rgba(233,30,99,.2),transparent 70%);border-radius:50%"></div>
-      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-        <div>
-          <div style="font-size:11px;font-weight:800;opacity:.65;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">📥 ব্যবস্থাপনা · ইনবক্স</div>
-          <h1 style="font-size:24px;font-weight:800;margin-bottom:6px">ছুটির আবেদন পর্যালোচনা</h1>
-          <p style="opacity:.8;font-size:13px">এমপ্লয়ীদের সব ছুটির আবেদন এখানে দেখুন ও সিদ্ধান্ত নিন।</p>
-        </div>
-        <button class="btn" style="background:white;color:#5b2d8a;font-weight:800;flex-shrink:0" onclick="navigate('employees')">
-          <i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা
-        </button>
-      </div>
-    </div>
+  const isAdminOrEditor = App.isAdmin || App.isEditor;
+  
+  if (!isAdminOrEditor) {
+    return renderMessages();
+  }
 
-    <!-- Filter Tabs -->
-    <div style="background:white;border-radius:16px;border:1px solid var(--border);padding:6px;display:flex;gap:4px;margin-bottom:18px;box-shadow:var(--shadow-sm)">
-      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='pending'?'background:linear-gradient(135deg,#5b2d8a,#e91e63);color:white;box-shadow:0 4px 12px rgba(91,45,138,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('pending')">
-        <i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ
+  let html = `
+    <div style="background:white;padding:6px;border-radius:16px;border:1px solid var(--border);display:flex;gap:6px;margin-bottom:20px;box-shadow:var(--shadow-sm)">
+      <button style="flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:800;font-size:15px;transition:all .25s;${_inboxActiveTab==='messages'?'background:var(--gradient-brand);color:white;box-shadow:0 4px 12px rgba(91,45,138,.3)':'background:transparent;color:var(--gray-600)'}" onclick="switchInboxTab('messages')">
+        <i class="fa-solid fa-comment-dots"></i> মেসেজ
       </button>
-      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='approved'?'background:linear-gradient(135deg,#059669,#10b981);color:white;box-shadow:0 4px 12px rgba(16,185,129,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('approved')">
-        <i class="fa-solid fa-circle-check"></i> অনুমোদিত
+      <button style="flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:800;font-size:15px;transition:all .25s;${_inboxActiveTab==='leaves'?'background:var(--gradient-brand);color:white;box-shadow:0 4px 12px rgba(91,45,138,.3)':'background:transparent;color:var(--gray-600)'}" onclick="switchInboxTab('leaves')">
+        <i class="fa-solid fa-calendar-check"></i> ছুটির আবেদন
       </button>
-      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='rejected'?'background:linear-gradient(135deg,#dc2626,#ef4444);color:white;box-shadow:0 4px 12px rgba(239,68,68,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('rejected')">
-        <i class="fa-solid fa-circle-xmark"></i> প্রত্যাখ্যাত
-      </button>
-      <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='all'?'background:var(--gray-800);color:white;box-shadow:0 4px 12px rgba(15,23,42,.2)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('all')">
-        <i class="fa-solid fa-list"></i> সব
-      </button>
-    </div>
-
-    <div id="inboxList">
-      <div style="padding:40px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px"></i><p style="margin-top:12px;font-weight:600">লোড হচ্ছে...</p></div>
     </div>
   `;
+
+  if (_inboxActiveTab === 'messages') {
+    html += renderMessages();
+  } else {
+    html += `
+      <!-- Inbox Hero -->
+      <div style="background:linear-gradient(135deg,#1a0a2e 0%,#4a1570 50%,#be185d 100%);color:white;padding:28px 32px;border-radius:22px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 20px 50px rgba(91,45,138,.35)">
+        <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-50px;left:5%;width:160px;height:160px;background:radial-gradient(circle,rgba(233,30,99,.2),transparent 70%);border-radius:50%"></div>
+        <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+          <div>
+            <div style="font-size:11px;font-weight:800;opacity:.65;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">📥 ব্যবস্থাপনা · ইনবক্স</div>
+            <h1 style="font-size:24px;font-weight:800;margin-bottom:6px">ছুটির আবেদন পর্যালোচনা</h1>
+            <p style="opacity:.8;font-size:13px">এমপ্লয়ীদের সব ছুটির আবেদন এখানে দেখুন ও সিদ্ধান্ত নিন।</p>
+          </div>
+          <button class="btn" style="background:white;color:#5b2d8a;font-weight:800;flex-shrink:0" onclick="navigate('employees')">
+            <i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div style="background:white;border-radius:16px;border:1px solid var(--border);padding:6px;display:flex;gap:4px;margin-bottom:18px;box-shadow:var(--shadow-sm)">
+        <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='pending'?'background:linear-gradient(135deg,#5b2d8a,#e91e63);color:white;box-shadow:0 4px 12px rgba(91,45,138,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('pending')">
+          <i class="fa-solid fa-hourglass-half"></i> অপেক্ষমাণ
+        </button>
+        <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='approved'?'background:linear-gradient(135deg,#059669,#10b981);color:white;box-shadow:0 4px 12px rgba(16,185,129,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('approved')">
+          <i class="fa-solid fa-circle-check"></i> অনুমোদিত
+        </button>
+        <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='rejected'?'background:linear-gradient(135deg,#dc2626,#ef4444);color:white;box-shadow:0 4px 12px rgba(239,68,68,.3)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('rejected')">
+          <i class="fa-solid fa-circle-xmark"></i> প্রত্যাখ্যাত
+        </button>
+        <button style="flex:1;padding:10px;border-radius:11px;border:none;cursor:pointer;font-family:var(--font-bn);font-weight:700;font-size:13px;transition:all .25s;${_inboxFilter==='all'?'background:var(--gray-800);color:white;box-shadow:0 4px 12px rgba(15,23,42,.2)':'background:transparent;color:var(--gray-600)'}" onclick="setInboxFilter('all')">
+          <i class="fa-solid fa-list"></i> সব
+        </button>
+      </div>
+
+      <div id="inboxList">
+        <div style="padding:40px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px"></i><p style="margin-top:12px;font-weight:600">লোড হচ্ছে...</p></div>
+      </div>
+    `;
+  }
+  
+  return html;
 }
 
 function setInboxFilter(f) {
