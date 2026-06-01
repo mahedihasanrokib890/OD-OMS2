@@ -8278,8 +8278,14 @@ async function saveBonusSettings(e) {
 async function loadDepartments(force=false) {
   if (!force && App.departments.length > 0) return;
   try {
-    const { data } = await sb.from('departments').select('*').eq('is_active', true).order('name_bn');
-    App.departments = data || [];
+    const { data: dbDepts } = await sb.from('departments').select('name_bn').eq('is_active', true);
+    const { data: pfDepts } = await sb.from('profiles').select('department').not('department', 'is', null);
+    
+    const set = new Set();
+    (dbDepts||[]).forEach(d => { if(d.name_bn) set.add(d.name_bn); });
+    (pfDepts||[]).forEach(p => { if(p.department) set.add(p.department); });
+    
+    App.departments = Array.from(set).sort().map(name => ({ name_bn: name }));
   } catch (e) { console.warn(e); }
 }
 
