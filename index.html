@@ -6008,151 +6008,206 @@ function renderEmpReportPctTable(cache) {
 // Switch between year-mode and month-mode
 function switchActMode(mode) {
   window._actMode = mode;
-  const yearTabsEl  = document.getElementById('actYearTabs');
-  const monthPickEl = document.getElementById('actMonthPicker');
-  const btnYear     = document.getElementById('actModeYear');
-  const btnMonth    = document.getElementById('actModeMonth');
+  var yearTabsEl  = document.getElementById('actYearTabs');
+  var monthPickEl = document.getElementById('actMonthPicker');
+  var btnYear     = document.getElementById('actModeYear');
+  var btnMonth    = document.getElementById('actModeMonth');
   if (!yearTabsEl || !monthPickEl) return;
   if (mode === 'month') {
     yearTabsEl.style.display  = 'none';
     monthPickEl.style.display = '';
     if (!monthPickEl.value) {
-      const now = new Date();
-      monthPickEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      var n = new Date();
+      monthPickEl.value = n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0');
     }
-    btnYear?.classList.remove('active');
-    btnMonth?.classList.add('active');
+    if (btnYear)  btnYear.classList.remove('active');
+    if (btnMonth) btnMonth.classList.add('active');
   } else {
     yearTabsEl.style.display  = 'flex';
     monthPickEl.style.display = 'none';
-    btnYear?.classList.add('active');
-    btnMonth?.classList.remove('active');
+    if (btnYear)  btnYear.classList.add('active');
+    if (btnMonth) btnMonth.classList.remove('active');
   }
   loadImportedActivity();
 }
 
 // Render imported monthly_activity cards — year mode OR month mode
 async function loadImportedActivity(forceYear) {
-  const box    = document.getElementById('importedActivityBox');
-  const tabsEl = document.getElementById('actYearTabs');
+  var box    = document.getElementById('importedActivityBox');
+  var tabsEl = document.getElementById('actYearTabs');
   if (!box) return;
-  const mode = window._actMode || 'year';
+  var mode = window._actMode || 'year';
+  var palette = [
+    'linear-gradient(135deg,#8b5cf6,#6d28d9)',
+    'linear-gradient(135deg,#ec4899,#be185d)',
+    'linear-gradient(135deg,#10b981,#059669)',
+    'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+    'linear-gradient(135deg,#f59e0b,#d97706)',
+    'linear-gradient(135deg,#ef4444,#b91c1c)',
+    'linear-gradient(135deg,#06b6d4,#0e7490)',
+    'linear-gradient(135deg,#84cc16,#4d7c0f)'
+  ];
+  var bnMN = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+
   try {
     if (!_actAllRows) {
-      const { data, error } = await sb.from('monthly_activity').select('*');
-      if (error) throw error;
-      _actAllRows = data || [];
+      var res = await sb.from('monthly_activity').select('*');
+      if (res.error) throw res.error;
+      _actAllRows = res.data || [];
     }
-    const palette = [
-      'linear-gradient(135deg,#8b5cf6,#6d28d9)','linear-gradient(135deg,#ec4899,#be185d)',
-      'linear-gradient(135deg,#10b981,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)',
-      'linear-gradient(135deg,#f59e0b,#d97706)','linear-gradient(135deg,#ef4444,#b91c1c)',
-      'linear-gradient(135deg,#06b6d4,#0e7490)','linear-gradient(135deg,#84cc16,#4d7c0f)'
-    ];
 
-    // ── MONTH MODE ───────────────────────────────────────────────
+    /* ── MONTH MODE ─────────────────────────────────────── */
     if (mode === 'month') {
       if (tabsEl) tabsEl.style.display = 'none';
-      const picker = document.getElementById('actMonthPicker');
-      const now = new Date();
-      const defaultM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-      const activeMonth = picker?.value || defaultM;
+      var picker = document.getElementById('actMonthPicker');
+      var n2 = new Date();
+      var defM = n2.getFullYear() + '-' + String(n2.getMonth()+1).padStart(2,'0');
+      var activeMonth = (picker && picker.value) ? picker.value : defM;
+
       if (_actAllRows.length === 0) {
-        box.innerHTML = '<div class="empty-state" style="padding:30px"><i class="fa-solid fa-cloud-arrow-up"></i><h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3><p style="margin-bottom:14px">ডাটা ইম্পোর্ট করুন।</p><button class="btn btn-primary" style="width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>';
+        box.innerHTML = '<div class="empty-state" style="padding:30px">' +
+          '<i class="fa-solid fa-cloud-arrow-up"></i>' +
+          '<h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3>' +
+          '<p style="margin-bottom:14px">ডাটা ইম্পোর্ট করুন।</p>' +
+          '<button class="btn btn-primary" style="width:auto" onclick="navigate('import')">' +
+          '<i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>';
         return;
       }
-      const monthRows = _actAllRows.filter(r => (r.month||'') === activeMonth);
-      const [mY, mM] = activeMonth.split('-');
-      const bnMN = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
-      const monthLabel = bnMN[parseInt(mM,10)-1] + ' ' + bnDigits(mY);
+
+      var monthRows = _actAllRows.filter(function(r){ return (r.month||'') === activeMonth; });
+      var mParts = activeMonth.split('-');
+      var mY = mParts[0], mM = mParts[1];
+      var monthLabel = bnMN[parseInt(mM,10)-1] + ' ' + bnDigits(mY);
+
       if (monthRows.length === 0) {
-        box.innerHTML = '<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>' + monthLabel + ' — কোনো ডাটা নেই</h3></div>';
+        box.innerHTML = '<div class="empty-state" style="padding:24px">' +
+          '<i class="fa-solid fa-inbox"></i><h3>' + monthLabel + ' — কোনো ডাটা নেই</h3></div>';
         return;
       }
-      const sorted = [...monthRows].sort((a,b)=>((a.sort_order??999)-(b.sort_order??999))||(a.employee_name||'').localeCompare(b.employee_name||''));
-      let mHtml = '<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="background:linear-gradient(135deg,#5b2d8a,#e91e63);color:#fff;padding:5px 14px;border-radius:99px;font-size:13px;font-weight:800"><i class=\"fa-solid fa-calendar-week\"></i> ' + monthLabel + '</span><span style="font-size:12px;color:var(--gray-500);font-weight:600">' + bnDigits(sorted.length) + ' জন এমপ্লয়ী</span></div><div class="act-grid">';
-      sorted.forEach((r,i) => {
-        const grad  = palette[i % palette.length];
-        const pct   = Number(r.activity_pct)||0;
-        const init  = (r.employee_name||'এ').charAt(0).toUpperCase();
-        const worked= Number(r.worked_hours||0).toFixed(0);
-        const leave = Number(r.total_leave||0);
-        const late  = Number(r.late_count||0);
-        const nm    = escapeHtml(r.employee_name||'').replace(/'/g,"&#39;");
-        mHtml += '<div class="act-emp-card" onclick="openActivityEmpModal('' + nm + "','" + mY + '')">';
-        mHtml += '<div class="act-emp-head" style="background:' + grad + '">';
-        mHtml += '<div class="ae-avatar">' + init + '</div>';
-        mHtml += '<div style="min-width:0;flex:1"><div class="ae-name">' + escapeHtml(r.employee_name||'') + '</div>';
-        mHtml += '<div class="ae-tags">' + escapeHtml(r.designation||'') + ' · ' + monthLabel + '</div></div>';
-        mHtml += '<div class="ae-pct"><b>' + bnDigits(Math.round(pct)) + '%</b><span>Activity</span></div></div>';
-        mHtml += '<div class="act-emp-body"><div class="act-stat-row">';
-        mHtml += '<div class="act-stat"><div class="v" style="color:#059669">' + bnDigits(worked) + '</div><div class="l">কাজ (ঘ.)</div></div>';
-        mHtml += '<div class="act-stat"><div class="v" style="color:#be185d">' + bnDigits(leave) + '</div><div class="l">মোট ছুটি</div></div>';
-        mHtml += '<div class="act-stat"><div class="v" style="color:#dc2626">' + bnDigits(late) + '</div><div class="l">লেট</div></div>';
-        mHtml += '</div><div class="act-emp-foot">';
-        mHtml += '<span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ' + monthLabel + '</span>';
-        mHtml += '<a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a></div></div></div>';
+
+      var sorted = monthRows.slice().sort(function(a,b){
+        return ((a.sort_order==null?999:a.sort_order)-(b.sort_order==null?999:b.sort_order)) ||
+               (a.employee_name||'').localeCompare(b.employee_name||'');
       });
-      mHtml += '</div><div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">' + bnDigits(sorted.length) + ' জন · ' + monthLabel + '</div>';
+
+      var mHtml = '<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">' +
+        '<span style="background:linear-gradient(135deg,#5b2d8a,#e91e63);color:#fff;padding:5px 14px;border-radius:99px;font-size:13px;font-weight:800">' +
+        '<i class="fa-solid fa-calendar-week"></i> ' + monthLabel + '</span>' +
+        '<span style="font-size:12px;color:var(--gray-500);font-weight:600">' + bnDigits(sorted.length) + ' জন এমপ্লয়ী</span></div>' +
+        '<div class="act-grid">';
+      sorted.forEach(function(r, i) {
+        var grad  = palette[i % palette.length];
+        var pct   = Number(r.activity_pct)||0;
+        var init  = (r.employee_name||'এ').charAt(0).toUpperCase();
+        var worked= Number(r.worked_hours||0).toFixed(0);
+        var leave = Number(r.total_leave||0);
+        var late  = Number(r.late_count||0);
+        var nm    = escapeHtml(r.employee_name||'').replace(/'/g,"&#39;");
+        mHtml += '<div class="act-emp-card" onclick="openActivityEmpModal('' + nm + '','' + mY + '')">' +
+          '<div class="act-emp-head" style="background:' + grad + '">' +
+          '<div class="ae-avatar">' + init + '</div>' +
+          '<div style="min-width:0;flex:1">' +
+          '<div class="ae-name">' + escapeHtml(r.employee_name||'') + '</div>' +
+          '<div class="ae-tags">' + escapeHtml(r.designation||'') + ' · ' + monthLabel + '</div></div>' +
+          '<div class="ae-pct"><b>' + bnDigits(Math.round(pct)) + '%</b><span>Activity</span></div></div>' +
+          '<div class="act-emp-body"><div class="act-stat-row">' +
+          '<div class="act-stat"><div class="v" style="color:#059669">' + bnDigits(worked) + '</div><div class="l">কাজ (ঘ.)</div></div>' +
+          '<div class="act-stat"><div class="v" style="color:#be185d">' + bnDigits(leave) + '</div><div class="l">মোট ছুটি</div></div>' +
+          '<div class="act-stat"><div class="v" style="color:#dc2626">' + bnDigits(late) + '</div><div class="l">লেট</div></div>' +
+          '</div><div class="act-emp-foot">' +
+          '<span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ' + monthLabel + '</span>' +
+          '<a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a>' +
+          '</div></div></div>';
+      });
+      mHtml += '</div><div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">' +
+        bnDigits(sorted.length) + ' জন · ' + monthLabel + '</div>';
       box.innerHTML = mHtml;
       return;
     }
 
-    // ── YEAR MODE (default) ──────────────────────────────────────
-    const curY = new Date().getFullYear();
-    const fixedYears = [];
-    for (let y = curY; y >= 2023; y--) fixedYears.push(String(y));
-    const dataYears = [...new Set(_actAllRows.map(r => (r.month||'').slice(0,4)).filter(Boolean))];
-    const years = [...new Set([...fixedYears, ...dataYears])].sort((a,b) => b - a);
-    const activeYear = forceYear || window._actActiveYear || years[0];
+    /* ── YEAR MODE (default) ────────────────────────────── */
+    var curY = new Date().getFullYear();
+    var fixedYears = [];
+    for (var y = curY; y >= 2023; y--) fixedYears.push(String(y));
+    var dataYears = Array.from(new Set(_actAllRows.map(function(r){ return (r.month||'').slice(0,4); }).filter(Boolean)));
+    var years = Array.from(new Set(fixedYears.concat(dataYears))).sort(function(a,b){ return b-a; });
+    var activeYear = forceYear || window._actActiveYear || years[0];
     window._actActiveYear = activeYear;
+
     if (tabsEl) {
       tabsEl.style.display = 'flex';
-      tabsEl.innerHTML = years.map(y => '<button class="act-year-tab ' + (y===activeYear?'active':'') + '" onclick="loadImportedActivity(\'' + y + '\')">' + bnDigits(y) + '</button>').join('');
+      tabsEl.innerHTML = years.map(function(y) {
+        return '<button class="act-year-tab ' + (y===activeYear?'active':'') +
+               '" onclick="loadImportedActivity('' + y + '')">' + bnDigits(y) + '</button>';
+      }).join('');
     }
+
     if (_actAllRows.length === 0) {
-      box.innerHTML = '<div class="empty-state" style="padding:30px"><i class="fa-solid fa-cloud-arrow-up"></i><h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3><p style="margin-bottom:14px">Google Sheet থেকে একবার ইম্পোর্ট করলে সব এমপ্লয়ীর বছরভিত্তিক ডাটা এখানে কার্ডে দেখা যাবে — এরপর আর শিট লাগবে না।</p><button class="btn btn-primary" style="width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট পেজে যান</button></div>';
+      box.innerHTML = '<div class="empty-state" style="padding:30px">' +
+        '<i class="fa-solid fa-cloud-arrow-up"></i>' +
+        '<h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3>' +
+        '<p style="margin-bottom:14px">Google Sheet থেকে একবার ইম্পোর্ট করলে সব এমপ্লয়ীর বছরভিত্তিক ডাটা এখানে কার্ডে দেখা যাবে — এরপর আর শিট লাগবে না।</p>' +
+        '<button class="btn btn-primary" style="width:auto" onclick="navigate('import')">' +
+        '<i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট পেজে যান</button></div>';
       return;
     }
-    const yearRows = _actAllRows.filter(r => (r.month||'').startsWith(activeYear));
-    const byEmp = {};
-    yearRows.forEach(r => {
-      const key = r.employee_name;
-      if (!byEmp[key]) byEmp[key] = { name:key, code:r.emp_code, designation:r.designation, user_id:r.user_id, order:(r.sort_order!=null?r.sort_order:999), months:0, worked:0, present:0, late:0, cl:0, sl:0, el:0, leave:0, actSum:0, actCount:0 };
-      const u = byEmp[key];
-      u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0); u.late += (r.late_count||0);
-      u.cl += Number(r.cl_days||0); u.sl += Number(r.sl_days||0); u.el += Number(r.el_days||0); u.leave += Number(r.total_leave||0);
+
+    var yearRows = _actAllRows.filter(function(r){ return (r.month||'').indexOf(activeYear) === 0; });
+    var byEmp = {};
+    yearRows.forEach(function(r) {
+      var key = r.employee_name;
+      if (!byEmp[key]) byEmp[key] = {
+        name:key, code:r.emp_code, designation:r.designation,
+        order:(r.sort_order!=null?r.sort_order:999),
+        months:0, worked:0, present:0, late:0, leave:0, actSum:0, actCount:0
+      };
+      var u = byEmp[key];
+      u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0);
+      u.late += (r.late_count||0); u.leave += Number(r.total_leave||0);
       if (r.sort_order != null) u.order = r.sort_order;
       if (Number(r.activity_pct) > 0) { u.actSum += Number(r.activity_pct); u.actCount++; }
     });
-    const list = Object.values(byEmp)
-      .map(u => ({ ...u, avgAct: u.actCount ? Math.round(u.actSum/u.actCount) : 0 }))
-      .sort((a,b) => (a.order-b.order) || a.name.localeCompare(b.name));
-    if (list.length === 0) { box.innerHTML = '<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>' + bnDigits(activeYear) + ' সালে কোনো ডাটা নেই</h3></div>'; return; }
-    let yHtml = '<div class="act-grid">';
-    list.forEach((u,i) => {
-      const grad = palette[i % palette.length];
-      const pct  = u.avgAct;
-      const init = (u.name||'এ').charAt(0).toUpperCase();
-      const nm   = escapeHtml(u.name).replace(/'/g,"&#39;");
-      yHtml += '<div class="act-emp-card" onclick="openActivityEmpModal('' + nm + "','" + activeYear + '')">';
-      yHtml += '<div class="act-emp-head" style="background:' + grad + '">';
-      yHtml += '<div class="ae-avatar">' + init + '</div>';
-      yHtml += '<div style="min-width:0;flex:1"><div class="ae-name">' + escapeHtml(u.name) + '</div>';
-      yHtml += '<div class="ae-tags">' + bnDigits(u.months) + ' মাস · কাজ · ছুটি · Activity%</div></div>';
-      yHtml += '<div class="ae-pct"><b>' + bnDigits(pct) + '%</b><span>Activity</span></div></div>';
-      yHtml += '<div class="act-emp-body"><div class="act-stat-row">';
-      yHtml += '<div class="act-stat"><div class="v" style="color:#059669">' + bnDigits(u.worked.toFixed(0)) + '</div><div class="l">কাজ (ঘ.)</div></div>';
-      yHtml += '<div class="act-stat"><div class="v" style="color:#be185d">' + bnDigits(u.leave) + '</div><div class="l">মোট ছুটি</div></div>';
-      yHtml += '<div class="act-stat"><div class="v" style="color:#dc2626">' + bnDigits(u.late) + '</div><div class="l">লেট</div></div>';
-      yHtml += '</div><div class="act-emp-foot">';
-      yHtml += '<span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ' + bnDigits(activeYear) + ' সাল</span>';
-      yHtml += '<a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a></div></div></div>';
+    var list = Object.values(byEmp).map(function(u){
+      return Object.assign({}, u, { avgAct: u.actCount ? Math.round(u.actSum/u.actCount) : 0 });
+    }).sort(function(a,b){ return (a.order-b.order) || a.name.localeCompare(b.name); });
+
+    if (list.length === 0) {
+      box.innerHTML = '<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i>' +
+        '<h3>' + bnDigits(activeYear) + ' সালে কোনো ডাটা নেই</h3></div>';
+      return;
+    }
+
+    var yHtml = '<div class="act-grid">';
+    list.forEach(function(u, i) {
+      var grad = palette[i % palette.length];
+      var pct  = u.avgAct;
+      var init = (u.name||'এ').charAt(0).toUpperCase();
+      var nm   = escapeHtml(u.name).replace(/'/g,"&#39;");
+      yHtml += '<div class="act-emp-card" onclick="openActivityEmpModal('' + nm + '','' + activeYear + '')">' +
+        '<div class="act-emp-head" style="background:' + grad + '">' +
+        '<div class="ae-avatar">' + init + '</div>' +
+        '<div style="min-width:0;flex:1">' +
+        '<div class="ae-name">' + escapeHtml(u.name) + '</div>' +
+        '<div class="ae-tags">' + bnDigits(u.months) + ' মাস · কাজ · ছুটি · Activity%</div></div>' +
+        '<div class="ae-pct"><b>' + bnDigits(pct) + '%</b><span>Activity</span></div></div>' +
+        '<div class="act-emp-body"><div class="act-stat-row">' +
+        '<div class="act-stat"><div class="v" style="color:#059669">' + bnDigits(u.worked.toFixed(0)) + '</div><div class="l">কাজ (ঘ.)</div></div>' +
+        '<div class="act-stat"><div class="v" style="color:#be185d">' + bnDigits(u.leave) + '</div><div class="l">মোট ছুটি</div></div>' +
+        '<div class="act-stat"><div class="v" style="color:#dc2626">' + bnDigits(u.late) + '</div><div class="l">লেট</div></div>' +
+        '</div><div class="act-emp-foot">' +
+        '<span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ' + bnDigits(activeYear) + ' সাল</span>' +
+        '<a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a>' +
+        '</div></div></div>';
     });
-    yHtml += '</div><div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">' + bnDigits(list.length) + ' জন · ' + bnDigits(activeYear) + ' সাল</div>';
+    yHtml += '</div><div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">' +
+      bnDigits(list.length) + ' জন · ' + bnDigits(activeYear) + ' সাল</div>';
     box.innerHTML = yHtml;
-  } catch (e) {
-    box.innerHTML = '<div class="empty-state" style="padding:24px;color:var(--red-500)"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড ব্যর্থ</h3><p>' + escapeHtml(e.message||'') + ' — supabase_v10 SQL চালানো হয়েছে কিনা দেখুন</p></div>';
+
+  } catch(e) {
+    box.innerHTML = '<div class="empty-state" style="padding:24px;color:var(--red-500)">' +
+      '<i class="fa-solid fa-triangle-exclamation"></i>' +
+      '<h3>লোড ব্যর্থ</h3>' +
+      '<p>' + escapeHtml(e.message||'') + ' — supabase_v10 SQL চালানো হয়েছে কিনা দেখুন</p></div>';
   }
 }
 
