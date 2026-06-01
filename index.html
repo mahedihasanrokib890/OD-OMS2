@@ -2569,7 +2569,7 @@ async function loadDashboardLists() {
           <div class="notice-item" onclick="navigate('notices')">
             <span class="priority-badge ${n.priority||'general'}">${priorityLabel(n.priority)}</span>
             <h4>${escapeHtml(n.title)}</h4>
-            <p>${escapeHtml((n.content||'').slice(0,120))}${(n.content||'').length>120?'...':''}</p>
+            <p>${parseNoticeLinks((n.content||'').slice(0,120))}${(n.content||'').length>120?'...':''}</p>
             <div class="notice-meta"><span><i class="fa-regular fa-clock"></i> ${formatBnDate(n.created_at)}</span></div>
           </div>
         `).join('');
@@ -3114,6 +3114,10 @@ async function loadMyStreakPill() {
 }
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function parseNoticeLinks(text) {
+  if (!text) return '';
+  return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--purple-600);text-decoration:underline;font-weight:600">$1</a>');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4279,7 +4283,7 @@ async function refreshNoticesList() {
         <span class="priority-badge ${n.priority||'general'}">${priorityLabel(n.priority)}</span>
         <div style="float:right;display:flex;gap:6px">${adminTools}</div>
         <h4>${escapeHtml(n.title)}</h4>
-        <p style="white-space:pre-wrap">${escapeHtml((n.content||'').slice(0,200))}${(n.content||'').length>200?'...':''}</p>
+        <p style="white-space:pre-wrap">${parseNoticeLinks((n.content||'').slice(0,200))}${(n.content||'').length>200?'...':''}</p>
         <div class="notice-meta">
           <span><i class="fa-regular fa-user"></i> ${escapeHtml(n.profiles?.full_name || 'অ্যাডমিন')}</span>
           <span><i class="fa-regular fa-clock"></i> ${formatBnDate(n.created_at)} · ${formatBnTime(n.created_at)}</span>
@@ -4307,7 +4311,7 @@ async function openNoticeView(id) {
   showModal(
     `<span class="priority-badge ${n.priority||'general'}">${priorityLabel(n.priority)}</span> ${escapeHtml(n.title)}`,
     `
-    <div style="white-space:pre-wrap;line-height:1.7;font-size:14.5px;color:var(--gray-700);margin-bottom:16px">${escapeHtml(n.content)}</div>
+    <div style="white-space:pre-wrap;line-height:1.7;font-size:14.5px;color:var(--gray-700);margin-bottom:16px">${parseNoticeLinks(n.content)}</div>
     <div style="padding-top:12px;border-top:1px solid var(--gray-100);font-size:12px;color:var(--gray-500);font-weight:600">
       <i class="fa-regular fa-user"></i> ${escapeHtml(n.profiles?.full_name||'অ্যাডমিন')} · <i class="fa-regular fa-clock"></i> ${formatBnDate(n.created_at)} · ${formatBnTime(n.created_at)}
     </div>`,
