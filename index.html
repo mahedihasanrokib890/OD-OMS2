@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bn" dir="ltr">
 <head>
 <meta charset="UTF-8">
@@ -498,11 +498,6 @@
   .act-year-tab{padding:7px 16px;border-radius:99px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:var(--font-en);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s}
   .act-year-tab:hover{background:rgba(255,255,255,.22)}
   .act-year-tab.active{background:#fff;color:var(--purple-700)}
-  .act-mode-toggle{display:flex;background:rgba(0,0,0,.25);border-radius:99px;padding:3px;gap:2px}
-  .act-mode-btn{padding:6px 16px;border-radius:99px;border:none;background:transparent;color:rgba(255,255,255,.7);font-family:var(--font-bn);font-weight:700;font-size:13px;cursor:pointer;transition:all .25s;white-space:nowrap}
-  .act-mode-btn.active{background:#fff;color:var(--purple-700);box-shadow:0 2px 8px rgba(0,0,0,.2)}
-  .act-month-input{padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-family:var(--font-en);font-weight:700;font-size:13px;cursor:pointer;outline:none;transition:all .2s;color-scheme:dark}
-  .act-month-input:focus{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.7)}
   .act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
   .act-emp-card{background:#fff;border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow-sm);transition:all .3s;cursor:pointer}
   body.theme-dark .act-emp-card{background:#1a1230;border-color:#2d1b4d}
@@ -5543,6 +5538,123 @@ async function loadEmpQuickStats(userId) {
     // Aggregate
     const approved = leaves.filter(l => l.status === 'approved');
     const pending  = leaves.filter(l => l.status === 'pending');
+    const leaveByCode = {};
+    approved.forEach(l => {
+      const code = l.leave_code || 'CL';
+      leaveByCode[code] = (leaveByCode[code]||0) + (l.total_days||0);
+    });
+    const totalLeaveUsed = approved.reduce((s,l) => s + (l.total_days||0), 0);
+    const totalAllowed   = policies.reduce((s,p) => s + (p.yearly_limit||0), 0);
+    const remaining      = Math.max(0, totalAllowed - totalLeaveUsed);
+
+    let present = 0, late = 0, lateMins = 0, hours = 0, breakMins = 0, monthPresent = 0, monthLate = 0;
+    atts.forEach(a => {
+      if (a.status === 'present' || a.status === 'late') present++;
+      if ((a.late_minutes||0) > 0) { late++; lateMins += a.late_minutes; }
+      hours += Number(a.total_hours||0);
+      // Lunch break minutes if both timestamps exist
+      if (a.lunch_out && a.lunch_in) {
+        try {
+          const out = new Date(a.lunch_out).getTime();
+          const inn = new Date(a.lunch_in).getTime();
+          if (inn > out) breakMins += Math.round((inn - out) / 60000);
+        } catch {}
+      }
+      if (a.date >= monthStart) {
+        if (a.status === 'present' || a.status === 'late') monthPresent++;
+        if ((a.late_minutes||0) > 0) monthLate++;
+      }
+    });
+
+    // Render quick stats grid
+    const tile = (color, value, label, subtitle = '') => `
+      <div style="padding:12px;background:${color}1a;border-left:3px solid ${color};border-radius:10px;text-align:left">
+        <div class="num" style="font-size:20px;font-weight:800;color:${color};line-height:1">${bnDigits(value)}</div>
+        <div style="font-size:11px;color:var(--gray-700);font-weight:700;margin-top:3px">${label}</div>
+        ${subtitle ? `<div style="font-size:10px;color:var(--gray-500);font-weight:600;margin-top:1px">${subtitle}</div>` : ''}
+      </div>
+    `;
+
+    const statsEl = document.getElementById('empQuickStats');
+    if (statsEl) {
+      statsEl.innerHTML = [
+        tile('#10b981', present,        'উপস্থিত (এ বছর)',  `এ মাস: ${bnDigits(monthPresent)}`),
+        tile('#f59e0b', late,           'লেট (এ বছর)',     `এ মাস: ${bnDigits(monthLate)}`),
+        tile('#ef4444', lateMins,       'লেট মিনিট',       'মোট জমা'),
+        tile('#ec4899', totalLeaveUsed, 'ছুটি নেওয়া (দিন)', `অপেক্ষমাণ: ${bnDigits(pending.length)}`),
+        tile('#8b5cf6', remaining,      'ছুটি বাকি (দিন)',  `সীমা: ${bnDigits(totalAllowed)}`),
+        tile('#3b82f6', Math.round(hours), 'কাজের ঘন্টা',    `${bnDigits(year)}`),
+        tile('#06b6d4', breakMins,      'ব্রেক (মিনিট)',    'লাঞ্চ ব্রেকের যোগফল')
+      ].join('');
+    }
+
+    // Leave balance bars
+    const lbEl = document.getElementById('empQuickLeaveBalance');
+    if (lbEl && policies.length > 0) {
+      lbEl.innerHTML = `
+        <div class="card-title" style="margin-bottom:8px"><span><i class="fa-solid fa-scale-balanced"></i> ছুটির ব্যালেন্স (${bnDigits(year)})</span></div>
+        ${policies.map(po => {
+          const used = leaveByCode[po.code] || 0;
+          const remain = Math.max(0, (po.yearly_limit||0) - used);
+          const pct = po.yearly_limit ? Math.min(100, (used/po.yearly_limit)*100) : 0;
+          const barColor = pct < 50 ? 'linear-gradient(90deg,#10b981,#059669)' : pct < 80 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)';
+          return `
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px">
+                <span style="font-weight:700;color:var(--gray-800)">${escapeHtml(po.name_bn)} <small style="color:var(--gray-400);font-weight:500">(${escapeHtml(po.code)})</small></span>
+                <span class="num" style="font-weight:800">${bnDigits(remain)}<span style="color:var(--gray-400)">/${bnDigits(po.yearly_limit||0)}</span> দিন</span>
+              </div>
+              <div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .6s"></div></div>
+            </div>
+          `;
+        }).join('')}
+      `;
+    }
+  } catch (e) {
+    const statsEl = document.getElementById('empQuickStats');
+    if (statsEl) statsEl.innerHTML = `<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--red-500);font-size:13px"><i class="fa-solid fa-triangle-exclamation"></i> পরিসংখ্যান লোড ব্যর্থ: ${escapeHtml(e.message||'')}</div>`;
+  }
+}
+
+// Admin: change role for any employee (admin / editor / employee)
+function openRoleChangeModal(userId, fullName, currentRole) {
+  if (!App.isAdmin) return showToast('শুধু এডমিন রোল পরিবর্তন করতে পারে', 'error');
+  if (userId === App.user.id) {
+    if (!confirm('⚠️ আপনি নিজের রোল পরিবর্তন করছেন। এটা করলে আপনি অ্যাডমিন এক্সেস হারাতে পারেন। চালিয়ে যাবেন?')) return;
+  }
+  const role = currentRole || 'employee';
+  showModal(
+    `<i class="fa-solid fa-user-shield" style="color:var(--purple-600)"></i> রোল পরিবর্তন — ${fullName}`,
+    `
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px">এই এমপ্লয়ীকে কী রোল দিতে চান? বর্তমান: <b style="color:var(--purple-700)">${role==='admin'?'অ্যাডমিন':role==='editor'?'এডিটর':'এমপ্লয়ী'}</b></p>
+
+    <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid ${role==='admin'?'var(--purple-500)':'var(--gray-200)'};border-radius:14px;cursor:pointer;margin-bottom:10px;transition:all .25s" onclick="document.getElementById('rcRole').value='admin';this.style.borderColor='var(--purple-500)';this.parentElement.querySelectorAll('label').forEach(l=>l!==this&&(l.style.borderColor='var(--gray-200)'))">
+      <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#5b2d8a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="fa-solid fa-shield-halved"></i></div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900)">👑 অ্যাডমিন</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">পূর্ণ সিস্টেম এক্সেস — সেটিংস, সকল ছুটি, এমপ্লয়ী, রিপোর্ট, ডিলিট</div>
+      </div>
+      <input type="radio" name="rcChoice" value="admin" ${role==='admin'?'checked':''} style="accent-color:var(--purple-600);width:18px;height:18px">
+    </label>
+
+    <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid ${role==='editor'?'var(--blue-500)':'var(--gray-200)'};border-radius:14px;cursor:pointer;margin-bottom:10px;transition:all .25s" onclick="document.getElementById('rcRole').value='editor';this.style.borderColor='var(--blue-500)';this.parentElement.querySelectorAll('label').forEach(l=>l!==this&&(l.style.borderColor='var(--gray-200)'))">
+      <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="fa-solid fa-pen"></i></div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900)">✍️ এডিটর</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">নোটিশ পোস্ট, ছুটি অনুমোদন, এমপ্লয়ী এডিট — সেটিংস ছাড়া</div>
+      </div>
+      <input type="radio" name="rcChoice" value="editor" ${role==='editor'?'checked':''} style="accent-color:var(--blue-500);width:18px;height:18px">
+    </label>
+
+    <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid ${role==='employee'?'var(--emerald-500)':'var(--gray-200)'};border-radius:14px;cursor:pointer;margin-bottom:10px;transition:all .25s" onclick="document.getElementById('rcRole').value='employee';this.style.borderColor='var(--emerald-500)';this.parentElement.querySelectorAll('label').forEach(l=>l!==this&&(l.style.borderColor='var(--gray-200)'))">
+      <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="fa-solid fa-user"></i></div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900)">👤 সাধারণ এমপ্লয়ী</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">নিজের প্রোফাইল, এটেন্ডেন্স, ছুটির আবেদন — কোনো ম্যানেজমেন্ট এক্সেস নেই</div>
+      </div>
+      <input type="radio" name="rcChoice" value="employee" ${role==='employee'?'checked':''} style="accent-color:var(--emerald-500);width:18px;height:18px">
+    </label>
+
     <input type="hidden" id="rcRole" value="${role}">
     `,
     `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
@@ -5783,20 +5895,19 @@ async function renderReports() {
       <div style="background:linear-gradient(135deg,#2d1b69 0%,#5b2d8a 45%,#c2185b 100%);color:#fff;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
         <div>
           <h2 style="font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-chart-line"></i> সামগ্রিক উপস্থিতি রিপোর্ট</h2>
-          <p style="opacity:.8;font-size:13px;margin-top:4px">অ্যাপে সংরক্ষিত — প্রতি এমপ্লয়ীর তথ্য (শিটের আর প্রয়োজন নেই)</p>
+          <p style="opacity:.8;font-size:13px;margin-top:4px">অ্যাপে সংরক্ষিত — প্রতি এমপ্লয়ীর বার্ষিক তথ্য (শিটের আর প্রয়োজন নেই)</p>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <!-- Mode toggle -->
-          <div class="act-mode-toggle">
-            <button class="act-mode-btn active" id="actModeYear" onclick="switchActMode('year')"><i class="fa-solid fa-calendar-days"></i> বছর</button>
-            <button class="act-mode-btn" id="actModeMonth" onclick="switchActMode('month')"><i class="fa-solid fa-calendar-week"></i> মাস</button>
+          <div style="display:flex;background:rgba(0,0,0,.25);border-radius:99px;padding:3px;gap:2px">
+            <button id="actModeYear" onclick="switchActMode('year')" style="padding:6px 14px;border-radius:99px;border:none;background:#fff;color:var(--purple-700);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-days"></i> বছর</button>
+            <button id="actModeMonth" onclick="switchActMode('month')" style="padding:6px 14px;border-radius:99px;border:none;background:transparent;color:rgba(255,255,255,.75);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-week"></i> মাস</button>
           </div>
-          <!-- Year tabs (visible in year mode) -->
+          <!-- Year tabs (year mode) -->
           <div id="actYearTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          <!-- Month picker (visible in month mode, hidden by default) -->
-          <input type="month" id="actMonthPicker" class="act-month-input" style="display:none" onchange="loadImportedActivity()">
-          <!-- Refresh -->
-          <button class="act-year-tab" onclick="_actAllRows=null;loadImportedActivity()" title="রিফ্রেশ"><i class="fa-solid fa-arrows-rotate"></i> রিফ্রেশ</button>
+          <!-- Month picker (month mode, hidden by default) -->
+          <input type="month" id="actMonthPicker" value="" onchange="loadImportedActivity()" style="display:none;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-family:var(--font-en);font-weight:700;font-size:13px;cursor:pointer;outline:none;color-scheme:dark">
+          <button class="act-year-tab" onclick="_actAllRows=null;loadImportedActivity()" title="রিফ্রেশ"><i class="fa-solid fa-arrows-rotate"></i></button>
         </div>
       </div>
       <div style="padding:20px">
@@ -6005,209 +6116,175 @@ function renderEmpReportPctTable(cache) {
   }).join('');
 }
 
-// Switch between year-mode and month-mode
+// Mode toggle: year vs month
+let _actMode = 'year';
 function switchActMode(mode) {
+  _actMode = mode;
   window._actMode = mode;
-  var yearTabsEl  = document.getElementById('actYearTabs');
-  var monthPickEl = document.getElementById('actMonthPicker');
-  var btnYear     = document.getElementById('actModeYear');
-  var btnMonth    = document.getElementById('actModeMonth');
-  if (!yearTabsEl || !monthPickEl) return;
-  if (mode === 'month') {
-    yearTabsEl.style.display  = 'none';
-    monthPickEl.style.display = '';
-    if (!monthPickEl.value) {
-      var n = new Date();
-      monthPickEl.value = n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0');
-    }
-    if (btnYear)  btnYear.classList.remove('active');
-    if (btnMonth) btnMonth.classList.add('active');
-  } else {
-    yearTabsEl.style.display  = 'flex';
-    monthPickEl.style.display = 'none';
-    if (btnYear)  btnYear.classList.add('active');
-    if (btnMonth) btnMonth.classList.remove('active');
+  // Update button styles
+  const yBtn = document.getElementById('actModeYear');
+  const mBtn = document.getElementById('actModeMonth');
+  if (yBtn) { yBtn.style.background = mode==='year'?'#fff':'transparent'; yBtn.style.color = mode==='year'?'var(--purple-700)':'rgba(255,255,255,.75)'; }
+  if (mBtn) { mBtn.style.background = mode==='month'?'#fff':'transparent'; mBtn.style.color = mode==='month'?'var(--purple-700)':'rgba(255,255,255,.75)'; }
+  // Show/hide year tabs vs month picker
+  const tabsEl = document.getElementById('actYearTabs');
+  const mp = document.getElementById('actMonthPicker');
+  if (tabsEl) tabsEl.style.display = mode==='year' ? 'flex' : 'none';
+  if (mp) {
+    mp.style.display = mode==='month' ? '' : 'none';
+    if (mode==='month' && !mp.value) mp.value = today().slice(0,7);
   }
-  loadImportedActivity();
+  loadImportedActivity(window._actActiveYear);
 }
 
-// Render imported monthly_activity cards — year mode OR month mode
+// Render imported monthly_activity as YEAR-based employee cards (screenshot style)
 async function loadImportedActivity(forceYear) {
-  var box    = document.getElementById('importedActivityBox');
-  var tabsEl = document.getElementById('actYearTabs');
+  const box = document.getElementById('importedActivityBox');
+  const tabsEl = document.getElementById('actYearTabs');
   if (!box) return;
-  var mode = window._actMode || 'year';
-  var palette = [
-    'linear-gradient(135deg,#8b5cf6,#6d28d9)',
-    'linear-gradient(135deg,#ec4899,#be185d)',
-    'linear-gradient(135deg,#10b981,#059669)',
-    'linear-gradient(135deg,#3b82f6,#1d4ed8)',
-    'linear-gradient(135deg,#f59e0b,#d97706)',
-    'linear-gradient(135deg,#ef4444,#b91c1c)',
-    'linear-gradient(135deg,#06b6d4,#0e7490)',
-    'linear-gradient(135deg,#84cc16,#4d7c0f)'
-  ];
-  var bnMN = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
-
   try {
+    // Load all rows once
     if (!_actAllRows) {
-      var res = await sb.from('monthly_activity').select('*');
-      if (res.error) throw res.error;
-      _actAllRows = res.data || [];
+      const { data, error } = await sb.from('monthly_activity').select('*');
+      if (error) throw error;
+      _actAllRows = data || [];
     }
 
-    /* ── MONTH MODE ─────────────────────────────────────── */
-    if (mode === 'month') {
-      if (tabsEl) tabsEl.style.display = 'none';
-      var picker = document.getElementById('actMonthPicker');
-      var n2 = new Date();
-      var defM = n2.getFullYear() + '-' + String(n2.getMonth()+1).padStart(2,'0');
-      var activeMonth = (picker && picker.value) ? picker.value : defM;
+    // Build the list of selectable years: always show a fixed range
+    // (current year back to 2023) PLUS any years present in the data.
+    const curY = new Date().getFullYear();
+    const fixedYears = [];
+    for (let y = curY; y >= 2023; y--) fixedYears.push(String(y));
+    const dataYears = [...new Set(_actAllRows.map(r => (r.month||'').slice(0,4)).filter(Boolean))];
+    const years = [...new Set([...fixedYears, ...dataYears])].sort((a,b) => b - a);
 
-      if (_actAllRows.length === 0) {
-        box.innerHTML = '<div class="empty-state" style="padding:30px">' +
-          '<i class="fa-solid fa-cloud-arrow-up"></i>' +
-          '<h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3>' +
-          '<p style="margin-bottom:14px">ডাটা ইম্পোর্ট করুন।</p>' +
-          '<button class="btn btn-primary" style="width:auto" onclick="navigate('import')">' +
-          '<i class="fa-solid fa-file-import"></i> ইম্পোর্ট পেজে যান</button></div>';
-        return;
-      }
-
-      var monthRows = _actAllRows.filter(function(r){ return (r.month||'') === activeMonth; });
-      var mParts = activeMonth.split('-');
-      var mY = mParts[0], mM = mParts[1];
-      var monthLabel = bnMN[parseInt(mM,10)-1] + ' ' + bnDigits(mY);
-
-      if (monthRows.length === 0) {
-        box.innerHTML = '<div class="empty-state" style="padding:24px">' +
-          '<i class="fa-solid fa-inbox"></i><h3>' + monthLabel + ' — কোনো ডাটা নেই</h3></div>';
-        return;
-      }
-
-      var sorted = monthRows.slice().sort(function(a,b){
-        return ((a.sort_order==null?999:a.sort_order)-(b.sort_order==null?999:b.sort_order)) ||
-               (a.employee_name||'').localeCompare(b.employee_name||'');
-      });
-
-      var mHtml = '<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">' +
-        '<span style="background:linear-gradient(135deg,#5b2d8a,#e91e63);color:#fff;padding:5px 14px;border-radius:99px;font-size:13px;font-weight:800">' +
-        '<i class="fa-solid fa-calendar-week"></i> ' + monthLabel + '</span>' +
-        '<span style="font-size:12px;color:var(--gray-500);font-weight:600">' + bnDigits(sorted.length) + ' জন এমপ্লয়ী</span></div>' +
-        '<div class="act-grid">';
-      sorted.forEach(function(r, i) {
-        var grad  = palette[i % palette.length];
-        var pct   = Number(r.activity_pct)||0;
-        var init  = (r.employee_name||'এ').charAt(0).toUpperCase();
-        var worked= Number(r.worked_hours||0).toFixed(0);
-        var leave = Number(r.total_leave||0);
-        var late  = Number(r.late_count||0);
-        var nm    = escapeHtml(r.employee_name||'').replace(/'/g,"&#39;");
-        mHtml += '<div class="act-emp-card" onclick="openActivityEmpModal('' + nm + '','' + mY + '')">' +
-          '<div class="act-emp-head" style="background:' + grad + '">' +
-          '<div class="ae-avatar">' + init + '</div>' +
-          '<div style="min-width:0;flex:1">' +
-          '<div class="ae-name">' + escapeHtml(r.employee_name||'') + '</div>' +
-          '<div class="ae-tags">' + escapeHtml(r.designation||'') + ' · ' + monthLabel + '</div></div>' +
-          '<div class="ae-pct"><b>' + bnDigits(Math.round(pct)) + '%</b><span>Activity</span></div></div>' +
-          '<div class="act-emp-body"><div class="act-stat-row">' +
-          '<div class="act-stat"><div class="v" style="color:#059669">' + bnDigits(worked) + '</div><div class="l">কাজ (ঘ.)</div></div>' +
-          '<div class="act-stat"><div class="v" style="color:#be185d">' + bnDigits(leave) + '</div><div class="l">মোট ছুটি</div></div>' +
-          '<div class="act-stat"><div class="v" style="color:#dc2626">' + bnDigits(late) + '</div><div class="l">লেট</div></div>' +
-          '</div><div class="act-emp-foot">' +
-          '<span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ' + monthLabel + '</span>' +
-          '<a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a>' +
-          '</div></div></div>';
-      });
-      mHtml += '</div><div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">' +
-        bnDigits(sorted.length) + ' জন · ' + monthLabel + '</div>';
-      box.innerHTML = mHtml;
-      return;
-    }
-
-    /* ── YEAR MODE (default) ────────────────────────────── */
-    var curY = new Date().getFullYear();
-    var fixedYears = [];
-    for (var y = curY; y >= 2023; y--) fixedYears.push(String(y));
-    var dataYears = Array.from(new Set(_actAllRows.map(function(r){ return (r.month||'').slice(0,4); }).filter(Boolean)));
-    var years = Array.from(new Set(fixedYears.concat(dataYears))).sort(function(a,b){ return b-a; });
-    var activeYear = forceYear || window._actActiveYear || years[0];
+    const activeYear = forceYear || window._actActiveYear || years[0];
     window._actActiveYear = activeYear;
 
+    // Always render the year tabs
     if (tabsEl) {
-      tabsEl.style.display = 'flex';
-      tabsEl.innerHTML = years.map(function(y) {
-        return '<button class="act-year-tab ' + (y===activeYear?'active':'') +
-               '" onclick="loadImportedActivity('' + y + '')">' + bnDigits(y) + '</button>';
-      }).join('');
+      tabsEl.innerHTML = years.map(y => `<button class="act-year-tab ${y===activeYear?'active':''}" onclick="loadImportedActivity('${y}')">${bnDigits(y)}</button>`).join('');
+      // Show/hide based on mode
+      const mode = window._actMode || 'year';
+      tabsEl.style.display = mode === 'year' ? 'flex' : 'none';
+      const mp = document.getElementById('actMonthPicker');
+      if (mp) {
+        mp.style.display = mode === 'month' ? '' : 'none';
+        if (mode === 'month' && !mp.value) mp.value = today().slice(0,7);
+      }
     }
 
+    // No data at all → show import prompt (but keep year tabs visible)
     if (_actAllRows.length === 0) {
-      box.innerHTML = '<div class="empty-state" style="padding:30px">' +
-        '<i class="fa-solid fa-cloud-arrow-up"></i>' +
-        '<h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3>' +
-        '<p style="margin-bottom:14px">Google Sheet থেকে একবার ইম্পোর্ট করলে সব এমপ্লয়ীর বছরভিত্তিক ডাটা এখানে কার্ডে দেখা যাবে — এরপর আর শিট লাগবে না।</p>' +
-        '<button class="btn btn-primary" style="width:auto" onclick="navigate('import')">' +
-        '<i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট পেজে যান</button></div>';
+      box.innerHTML = `
+        <div class="empty-state" style="padding:30px">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <h3>এখনো কোনো অ্যাক্টিভিটি সেভ করা হয়নি</h3>
+          <p style="margin-bottom:14px">Google Sheet থেকে একবার ইম্পোর্ট করলে সব এমপ্লয়ীর বছরভিত্তিক ডাটা এখানে কার্ডে দেখা যাবে — এরপর আর শিট লাগবে না।</p>
+          <button class="btn btn-primary" style="width:auto" onclick="navigate('import')"><i class="fa-solid fa-file-import"></i> ডাটা ইম্পোর্ট পেজে যান</button>
+        </div>`;
       return;
     }
 
-    var yearRows = _actAllRows.filter(function(r){ return (r.month||'').indexOf(activeYear) === 0; });
-    var byEmp = {};
-    yearRows.forEach(function(r) {
-      var key = r.employee_name;
-      if (!byEmp[key]) byEmp[key] = {
-        name:key, code:r.emp_code, designation:r.designation,
-        order:(r.sort_order!=null?r.sort_order:999),
-        months:0, worked:0, present:0, late:0, leave:0, actSum:0, actCount:0
-      };
-      var u = byEmp[key];
-      u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0);
-      u.late += (r.late_count||0); u.leave += Number(r.total_leave||0);
+    // ═══ MONTH MODE ═══
+    if ((window._actMode || 'year') === 'month') {
+      const selMonth = document.getElementById('actMonthPicker')?.value || today().slice(0,7);
+      const monthRows = [..._actAllRows].filter(r => r.month === selMonth).sort((a,b)=>(a.sort_order||999)-(b.sort_order||999)||(a.employee_name||'').localeCompare(b.employee_name||''));
+      if (monthRows.length === 0) {
+        box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>${escapeHtml(selMonth)} মাসে কোনো ডাটা নেই</h3></div>`;
+        return;
+      }
+      const palette = ['linear-gradient(135deg,#8b5cf6,#6d28d9)','linear-gradient(135deg,#ec4899,#be185d)','linear-gradient(135deg,#10b981,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)','linear-gradient(135deg,#f59e0b,#d97706)','linear-gradient(135deg,#ef4444,#b91c1c)','linear-gradient(135deg,#06b6d4,#0e7490)','linear-gradient(135deg,#84cc16,#4d7c0f)'];
+      box.innerHTML = `
+        <div class="act-grid">
+          ${monthRows.map((r,i) => {
+            const grad = palette[i % palette.length];
+            const pct = Math.round(Number(r.activity_pct)||0);
+            const init = (r.employee_name||'এ').charAt(0).toUpperCase();
+            return `
+            <div class="act-emp-card" onclick="openActivityEmpModal('${escapeHtml(r.employee_name).replace(/'/g,'&#39;')}','${selMonth.slice(0,4)}')">
+              <div class="act-emp-head" style="background:${grad}">
+                <div class="ae-avatar">${init}</div>
+                <div style="min-width:0;flex:1">
+                  <div class="ae-name">${escapeHtml(r.employee_name)}</div>
+                  <div class="ae-tags">${escapeHtml(r.month_label||selMonth)} · কাজ · ছুটি · Activity%</div>
+                </div>
+                <div class="ae-pct"><b>${bnDigits(pct)}%</b><span>Activity</span></div>
+              </div>
+              <div class="act-emp-body">
+                <div class="act-stat-row">
+                  <div class="act-stat"><div class="v" style="color:#059669">${bnDigits(Number(r.worked_hours||0).toFixed(0))}</div><div class="l">কাজ (ঘ.)</div></div>
+                  <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(r.total_leave||0)}</div><div class="l">মোট ছুটি</div></div>
+                  <div class="act-stat"><div class="v" style="color:#dc2626">${bnDigits(Number(r.late_hours||0).toFixed(1))}</div><div class="l">লেট (ঘ.)</div></div>
+                </div>
+                <div class="act-emp-foot">
+                  <span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ${escapeHtml(r.month_label||selMonth)}</span>
+                  <a>বিস্তারিত <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">${bnDigits(monthRows.length)} জন · ${escapeHtml(monthRows[0]?.month_label||selMonth)}</div>
+      `;
+      return;
+    }
+    // Aggregate per employee for that year
+    const yearRows = _actAllRows.filter(r => (r.month||'').startsWith(activeYear));
+    const byEmp = {};
+    yearRows.forEach(r => {
+      const key = r.employee_name;
+      if (!byEmp[key]) byEmp[key] = { name:key, code:r.emp_code, designation:r.designation, user_id:r.user_id, order:(r.sort_order!=null?r.sort_order:999), months:0, worked:0, present:0, late:0, cl:0, sl:0, el:0, leave:0, actSum:0, actCount:0 };
+      const u = byEmp[key];
+      u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0); u.late += (r.late_count||0);
+      u.cl += Number(r.cl_days||0); u.sl += Number(r.sl_days||0); u.el += Number(r.el_days||0); u.leave += Number(r.total_leave||0);
       if (r.sort_order != null) u.order = r.sort_order;
       if (Number(r.activity_pct) > 0) { u.actSum += Number(r.activity_pct); u.actCount++; }
     });
-    var list = Object.values(byEmp).map(function(u){
-      return Object.assign({}, u, { avgAct: u.actCount ? Math.round(u.actSum/u.actCount) : 0 });
-    }).sort(function(a,b){ return (a.order-b.order) || a.name.localeCompare(b.name); });
+    // Preserve sheet/tab order (sort_order); fall back to name
+    const list = Object.values(byEmp).map(u => ({ ...u, avgAct: u.actCount ? Math.round(u.actSum/u.actCount) : 0 })).sort((a,b)=> (a.order-b.order) || a.name.localeCompare(b.name));
+    if (list.length === 0) { box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>${bnDigits(activeYear)} সালে কোনো ডাটা নেই</h3></div>`; return; }
 
-    if (list.length === 0) {
-      box.innerHTML = '<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i>' +
-        '<h3>' + bnDigits(activeYear) + ' সালে কোনো ডাটা নেই</h3></div>';
-      return;
-    }
-
-    var yHtml = '<div class="act-grid">';
-    list.forEach(function(u, i) {
-      var grad = palette[i % palette.length];
-      var pct  = u.avgAct;
-      var init = (u.name||'এ').charAt(0).toUpperCase();
-      var nm   = escapeHtml(u.name).replace(/'/g,"&#39;");
-      yHtml += '<div class="act-emp-card" onclick="openActivityEmpModal('' + nm + '','' + activeYear + '')">' +
-        '<div class="act-emp-head" style="background:' + grad + '">' +
-        '<div class="ae-avatar">' + init + '</div>' +
-        '<div style="min-width:0;flex:1">' +
-        '<div class="ae-name">' + escapeHtml(u.name) + '</div>' +
-        '<div class="ae-tags">' + bnDigits(u.months) + ' মাস · কাজ · ছুটি · Activity%</div></div>' +
-        '<div class="ae-pct"><b>' + bnDigits(pct) + '%</b><span>Activity</span></div></div>' +
-        '<div class="act-emp-body"><div class="act-stat-row">' +
-        '<div class="act-stat"><div class="v" style="color:#059669">' + bnDigits(u.worked.toFixed(0)) + '</div><div class="l">কাজ (ঘ.)</div></div>' +
-        '<div class="act-stat"><div class="v" style="color:#be185d">' + bnDigits(u.leave) + '</div><div class="l">মোট ছুটি</div></div>' +
-        '<div class="act-stat"><div class="v" style="color:#dc2626">' + bnDigits(u.late) + '</div><div class="l">লেট</div></div>' +
-        '</div><div class="act-emp-foot">' +
-        '<span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ' + bnDigits(activeYear) + ' সাল</span>' +
-        '<a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a>' +
-        '</div></div></div>';
-    });
-    yHtml += '</div><div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">' +
-      bnDigits(list.length) + ' জন · ' + bnDigits(activeYear) + ' সাল</div>';
-    box.innerHTML = yHtml;
-
-  } catch(e) {
-    box.innerHTML = '<div class="empty-state" style="padding:24px;color:var(--red-500)">' +
-      '<i class="fa-solid fa-triangle-exclamation"></i>' +
-      '<h3>লোড ব্যর্থ</h3>' +
-      '<p>' + escapeHtml(e.message||'') + ' — supabase_v10 SQL চালানো হয়েছে কিনা দেখুন</p></div>';
+    const palette = [
+      'linear-gradient(135deg,#8b5cf6,#6d28d9)','linear-gradient(135deg,#ec4899,#be185d)',
+      'linear-gradient(135deg,#10b981,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)',
+      'linear-gradient(135deg,#f59e0b,#d97706)','linear-gradient(135deg,#ef4444,#b91c1c)',
+      'linear-gradient(135deg,#06b6d4,#0e7490)','linear-gradient(135deg,#84cc16,#4d7c0f)'
+    ];
+    box.innerHTML = `
+      <div class="act-grid">
+        ${list.map((u,i) => {
+          const grad = palette[i % palette.length];
+          const pct = u.avgAct;
+          const init = (u.name||'এ').charAt(0).toUpperCase();
+          return `
+          <div class="act-emp-card" onclick="openActivityEmpModal('${escapeHtml(u.name).replace(/'/g,'&#39;')}','${activeYear}')">
+            <div class="act-emp-head" style="background:${grad}">
+              <div class="ae-avatar">${init}</div>
+              <div style="min-width:0;flex:1">
+                <div class="ae-name">${escapeHtml(u.name)}</div>
+                <div class="ae-tags">${bnDigits(u.months)} মাস · কাজ · ছুটি · Activity%</div>
+              </div>
+              <div class="ae-pct"><b>${bnDigits(pct)}%</b><span>Activity</span></div>
+            </div>
+            <div class="act-emp-body">
+              <div class="act-stat-row">
+                <div class="act-stat"><div class="v" style="color:#059669">${bnDigits(u.worked.toFixed(0))}</div><div class="l">কাজ (ঘ.)</div></div>
+                <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(u.leave)}</div><div class="l">মোট ছুটি</div></div>
+                <div class="act-stat"><div class="v" style="color:#dc2626">${bnDigits(u.late)}</div><div class="l">লেট</div></div>
+              </div>
+              <div class="act-emp-foot">
+                <span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ${bnDigits(activeYear)} সাল</span>
+                <a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--gray-500);text-align:right">${bnDigits(list.length)} জন · ${bnDigits(activeYear)} সাল</div>
+    `;
+  } catch (e) {
+    box.innerHTML = `<div class="empty-state" style="padding:24px;color:var(--red-500)"><i class="fa-solid fa-triangle-exclamation"></i><h3>লোড ব্যর্থ</h3><p>${escapeHtml(e.message||'')} — supabase_v10 SQL চালানো হয়েছে কিনা দেখুন</p></div>`;
   }
 }
 
