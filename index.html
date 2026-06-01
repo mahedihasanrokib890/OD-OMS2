@@ -2112,7 +2112,7 @@ function navigate(route) {
       else if (window._inboxActiveTab === 'leaves') refreshInboxList();
       else initChat();
     }
-    if (route === 'settings') loadOfficeTimes();
+    if (route === 'settings') { loadOfficeTimes(); if(typeof renderBonusSettings === 'function') renderBonusSettings(); }
     if (route === 'reports')  loadEmpReport();
     if (route === 'reports')  loadImportedActivity();
 
@@ -6848,7 +6848,41 @@ async function loadImportedActivity(forceYear) {
       const { data, error } = await sb.from('monthly_activity').select('*');
       if (error) throw error;
       _actAllRows = data || [];
+
+      // Auto-link newly registered users by name
+      const unlinked = _actAllRows.filter(r => !r.user_id && r.employee_name);
+      if (unlinked.length > 0) {
+        const { data: profs } = await sb.from('profiles').select('id, full_name').eq('is_active', true);
+        if (profs && profs.length > 0) {
+          const norm = s => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+          const updates = [];
+          for (const u of unlinked) {
+            const n = norm(u.employee_name);
+            let match = profs.find(p => norm(p.full_name) === n);
+            if (!match) match = profs.find(p => norm(p.full_name).split(' ')[0] === n.split(' ')[0]);
+            if (match) {
+              u.user_id = match.id;
+              updates.push({ id: u.id, user_id: match.id, employee_name: u.employee_name, month: u.month });
+            }
+          }
+          if (updates.length > 0) {
+            sb.from('monthly_activity').upsert(updates, { onConflict: 'employee_name,month' }).then(res => {
+              if(res.error) console.warn('Auto-link error', res.error);
+            });
+          }
+        }
+      }
     }
+
+    let bonusSet = { per_hour: 0, att_pct: 100, att_amt: 0 };
+    try {
+      const { data } = await sb.from('bonus_settings').select('*').eq('id', 1).maybeSingle();
+      if (data) {
+        bonusSet.per_hour = parseFloat(data.bonus_per_hour)||0;
+        bonusSet.att_pct = parseFloat(data.bonus_attendance_pct)||100;
+        bonusSet.att_amt = parseFloat(data.bonus_attendance_amount)||0;
+      }
+    } catch(e){}
 
     // Build the list of selectable years: always show a fixed range
     // (current year back to 2023) PLUS any years present in the data.
@@ -6901,6 +6935,10 @@ async function loadImportedActivity(forceYear) {
             const grad = palette[i % palette.length];
             const pct = Math.round(Number(r.activity_pct)||0);
             const init = (r.employee_name||'এ').charAt(0).toUpperCase();
+            const w = Number(r.worked_hours)||0;
+            const bns = (w * bonusSet.per_hour) + (pct >= bonusSet.att_pct ? bonusSet.att_amt : 0);
+            const bnsHtml = (bns > 0 && App.isAdmin) ? `<div style="font-size:12px;color:var(--emerald-600);font-weight:700;margin-top:10px;text-align:center"><i class="fa-solid fa-gift"></i> অর্জন: ৳ ${bnDigits(Math.round(bns))}</div>` : (bns > 0 ? `<div style="font-size:12px;color:var(--emerald-600);font-weight:700;margin-top:10px;text-align:center"><i class="fa-solid fa-gift"></i> বোনাস: ৳ ${bnDigits(Math.round(bns))}</div>` : '');
+            
             return `
             <div class="act-emp-card" onclick="openActivityEmpModal('${escapeHtml(r.employee_name).replace(/'/g,'&#39;')}','${selMonth.slice(0,4)}')">
               <div class="act-emp-head" style="background:${grad}">
@@ -6917,6 +6955,7 @@ async function loadImportedActivity(forceYear) {
                   <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(r.total_leave||0)}</div><div class="l">মোট ছুটি</div></div>
                   <div class="act-stat"><div class="v" style="color:#dc2626">${bnDigits(Number(r.late_hours||0).toFixed(1))}</div><div class="l">লেট (ঘ.)</div></div>
                 </div>
+                ${bnsHtml}
                 <div class="act-emp-foot">
                   <span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ${escapeHtml(r.month_label||selMonth)}</span>
                   <a>বিস্তারিত <i class="fa-solid fa-arrow-right"></i></a>
@@ -6934,12 +6973,14 @@ async function loadImportedActivity(forceYear) {
     const byEmp = {};
     yearRows.forEach(r => {
       const key = r.employee_name;
-      if (!byEmp[key]) byEmp[key] = { name:key, code:r.emp_code, designation:r.designation, user_id:r.user_id, order:(r.sort_order!=null?r.sort_order:999), months:0, worked:0, present:0, late:0, cl:0, sl:0, el:0, leave:0, actSum:0, actCount:0 };
+      if (!byEmp[key]) byEmp[key] = { name:key, code:r.emp_code, designation:r.designation, user_id:r.user_id, order:(r.sort_order!=null?r.sort_order:999), months:0, worked:0, present:0, late:0, cl:0, sl:0, el:0, leave:0, actSum:0, actCount:0, bonus:0 };
       const u = byEmp[key];
       u.months++; u.worked += Number(r.worked_hours||0); u.present += (r.present_days||0); u.late += (r.late_count||0);
       u.cl += Number(r.cl_days||0); u.sl += Number(r.sl_days||0); u.el += Number(r.el_days||0); u.leave += Number(r.total_leave||0);
       if (r.sort_order != null) u.order = r.sort_order;
-      if (Number(r.activity_pct) > 0) { u.actSum += Number(r.activity_pct); u.actCount++; }
+      const pct = Number(r.activity_pct)||0;
+      if (pct > 0) { u.actSum += pct; u.actCount++; }
+      u.bonus += (Number(r.worked_hours||0) * bonusSet.per_hour) + (pct >= bonusSet.att_pct ? bonusSet.att_amt : 0);
     });
     // Preserve sheet/tab order (sort_order); fall back to name
     const list = Object.values(byEmp).map(u => ({ ...u, avgAct: u.actCount ? Math.round(u.actSum/u.actCount) : 0 })).sort((a,b)=> (a.order-b.order) || a.name.localeCompare(b.name));
@@ -6973,6 +7014,7 @@ async function loadImportedActivity(forceYear) {
                 <div class="act-stat"><div class="v" style="color:#be185d">${bnDigits(u.leave)}</div><div class="l">মোট ছুটি</div></div>
                 <div class="act-stat"><div class="v" style="color:#dc2626">${bnDigits(u.late)}</div><div class="l">লেট</div></div>
               </div>
+              ${u.bonus > 0 ? `<div style="font-size:12px;color:var(--emerald-600);font-weight:700;margin-top:10px;text-align:center"><i class="fa-solid fa-gift"></i> অর্জন: ৳ ${bnDigits(Math.round(u.bonus))}</div>` : ''}
               <div class="act-emp-foot">
                 <span style="color:var(--gray-500);font-weight:600"><i class="fa-regular fa-calendar"></i> ${bnDigits(activeYear)} সাল</span>
                 <a>বিস্তারিত দেখুন <i class="fa-solid fa-arrow-right"></i></a>
@@ -7759,7 +7801,7 @@ async function importOverall() {
     if (monthRows.length === 0) throw new Error('Overall ট্যাবে কোনো মাস পাওয়া যায়নি');
 
     // 3. Block helper: extract a block's metrics for a given month row
-    const ov_num = (v) => { v = ov_clean(v); return /^-?\d+(\.\d+)?$/.test(v) ? parseFloat(v) : null; };
+    const ov_num = (v) => { v = ov_clean(v); return /^-?\d+(\.\d+)?%?$/.test(v) ? parseFloat(v) : null; };
     function blockData(r, bi) {
       const a = anchors[bi];
       const leaveStart = bi === 0 ? 3 : (anchors[bi-1] + 3); // after prev block's activity col
@@ -7767,8 +7809,14 @@ async function importOverall() {
       let totalLeave = 0; const leaveCells = [];
       for (let c = leaveStart; c < a; c++) { const n = ov_num(r[c]); if (n !== null) { totalLeave += n; leaveCells.push(n); } }
       const worked = ov_hms(r[a]);
-      const late = ov_num(r[a+1]) || 0;       // late hrs
-      const act = ov_num(r[a+2]);             // activity %
+      let lateCol = a + 1, actCol = a + 2;
+      for (let c = a + 1; c < Math.min(a + 5, r.length); c++) {
+        const h = (rows[whRowIdx][c]||'').toLowerCase();
+        if (h.includes('late') && !h.includes('count')) lateCol = c;
+        if (h.includes('activity') || h.includes('act')) actCol = c;
+      }
+      const late = ov_num(r[lateCol]) || 0;       // late hrs
+      const act = ov_num(r[actCol]);             // activity %
       return { worked, late, act, totalLeave, leaveCells };
     }
 
@@ -7973,8 +8021,64 @@ async function renderSettings() {
       <div class="card-title"><span><i class="fa-solid fa-clock"></i> অফিস টাইম সেটিংস (প্রতিটি এমপ্লয়ী ধরনের জন্য)</span></div>
       <div id="officeTimesContainer"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
     </div>
+
+    <div class="card">
+      <div class="card-title"><span><i class="fa-solid fa-gift"></i> বোনাস সেটিংস</span></div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> কাজের ঘন্টা এবং অ্যাক্টিভিটি পার্সেন্টেজের উপর ভিত্তি করে বোনাস সেট করুন।</div>
+      <div id="bonusSettingsContainer"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
+    </div>
   `;
 }
+
+async function renderBonusSettings() {
+  const container = document.getElementById('bonusSettingsContainer');
+  if (!container) return;
+  try {
+    const { data, error } = await sb.from('bonus_settings').select('*').eq('id', 1).maybeSingle();
+    const b = data || { bonus_per_hour: 0, bonus_attendance_pct: 100, bonus_attendance_amount: 0 };
+    container.innerHTML = `
+      <div class="form-group" style="max-width:300px">
+        <label>প্রতি কাজের ঘন্টায় বোনাস (৳)</label>
+        <input type="number" class="form-input num" id="bs_hour" value="${b.bonus_per_hour||0}">
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>অ্যাক্টিভিটি লক্ষমাত্রা (%)</label>
+          <input type="number" class="form-input num" id="bs_pct" value="${b.bonus_attendance_pct||100}">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>লক্ষমাত্রা অর্জনে ফিক্সড বোনাস (৳)</label>
+          <input type="number" class="form-input num" id="bs_amt" value="${b.bonus_attendance_amount||0}">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveBonusSettings(event)" style="width:auto;margin-top:12px"><i class="fa-solid fa-floppy-disk"></i> বোনাস সেভ করুন</button>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--red-500)">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function saveBonusSettings(e) {
+  const btn = e.currentTarget;
+  setBtnLoading(btn, true);
+  try {
+    const data = {
+      id: 1,
+      bonus_per_hour: parseFloat(document.getElementById('bs_hour').value)||0,
+      bonus_attendance_pct: parseFloat(document.getElementById('bs_pct').value)||100,
+      bonus_attendance_amount: parseFloat(document.getElementById('bs_amt').value)||0,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await sb.from('bonus_settings').upsert(data);
+    if (error) throw error;
+    showToast('✅ বোনাস সেভ হয়েছে', 'success');
+  } catch(e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
 
 async function loadDepartments(force=false) {
   if (!force && App.departments.length > 0) return;
