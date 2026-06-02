@@ -194,9 +194,108 @@ window.generateMonthlyPayroll = async function() {
 }
 
 window.refreshSalaryStructure = async function() {
-   const container = document.getElementById('payrollTabContent');
-   if (!container) return;
-   container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-screwdriver-wrench"></i><p>স্যালারি স্ট্রাকচার সেটআপ ফিচারটি পরবর্তী আপডেটে আসবে।</p></div>`;
+  const container = document.getElementById('payrollTabContent');
+  if (!container) return;
+  try {
+    const { data: profiles, error: pErr } = await sb.from('profiles').select('id, full_name, designation').eq('is_active', true);
+    const { data: structs, error: sErr } = await sb.from('salary_structures').select('*');
+    if (pErr || sErr) throw (pErr || sErr);
+
+    const sMap = {};
+    (structs || []).forEach(s => sMap[s.user_id] = s);
+
+    let html = `
+      <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0"><i class="fa-solid fa-money-bill-wave"></i> স্যালারি স্ট্রাকচার তালিকা</h3>
+      </div>
+      <table class="data-table">
+        <tr><th>এমপ্লয়ী</th><th>বেসিক স্যালারি</th><th>ভাতা (Total)</th><th>ডিডাকশন (Total)</th><th>নেট স্যালারি</th><th>অ্যাকশন</th></tr>
+    `;
+
+    (profiles || []).forEach(p => {
+      const s = sMap[p.id];
+      if (s) {
+        const net = parseFloat(s.basic_salary) + parseFloat(s.house_rent) + parseFloat(s.medical_allowance) + parseFloat(s.transport_allowance) - parseFloat(s.provident_fund) - parseFloat(s.tax_deduction);
+        const allowance = parseFloat(s.house_rent) + parseFloat(s.medical_allowance) + parseFloat(s.transport_allowance);
+        const ded = parseFloat(s.provident_fund) + parseFloat(s.tax_deduction);
+        html += `<tr>
+          <td><b>${p.full_name}</b><br><small style="color:var(--gray-500)">${p.designation||'-'}</small></td>
+          <td>৳${s.basic_salary}</td>
+          <td>৳${allowance}</td>
+          <td>৳${ded}</td>
+          <td><b>৳${net}</b></td>
+          <td><button class="btn btn-sm btn-outline" onclick="editSalaryStructure('${p.id}')"><i class="fa-solid fa-pen"></i> আপডেট</button></td>
+        </tr>`;
+      } else {
+        html += `<tr>
+          <td><b>${p.full_name}</b><br><small style="color:var(--gray-500)">${p.designation||'-'}</small></td>
+          <td colspan="4" style="color:var(--gray-400); text-align:center;">কোনো স্ট্রাকচার সেট করা নেই</td>
+          <td><button class="btn btn-sm btn-primary" onclick="editSalaryStructure('${p.id}')"><i class="fa-solid fa-plus"></i> সেট করুন</button></td>
+        </tr>`;
+      }
+    });
+    html += `</table>`;
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<p style="color:red">Error loading structures: ${e.message}</p>`;
+  }
+}
+
+window.editSalaryStructure = async function(userId) {
+  const { data: p } = await sb.from('profiles').select('full_name').eq('id', userId).single();
+  const { data: s } = await sb.from('salary_structures').select('*').eq('user_id', userId).maybeSingle();
+  
+  const bs = s ? s.basic_salary : 0;
+  const hr = s ? s.house_rent : 0;
+  const ma = s ? s.medical_allowance : 0;
+  const ta = s ? s.transport_allowance : 0;
+  const pf = s ? s.provident_fund : 0;
+  const td = s ? s.tax_deduction : 0;
+
+  showModal(
+    `<i class="fa-solid fa-money-check-dollar" style="color:var(--brand-color)"></i> স্যালারি স্ট্রাকচার: ${p.full_name}`,
+    `
+    <input type="hidden" id="salUserId" value="${userId}">
+    <div class="form-grid">
+      <div class="form-group"><label>বেসিক স্যালারি (Basic)</label><input class="form-input num" type="number" id="salBasic" value="${bs}"></div>
+      <div class="form-group"><label>বাড়ি ভাড়া (House Rent)</label><input class="form-input num" type="number" id="salHR" value="${hr}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>মেডিকেল ভাতা</label><input class="form-input num" type="number" id="salMA" value="${ma}"></div>
+      <div class="form-group"><label>যাতায়াত ভাতা</label><input class="form-input num" type="number" id="salTA" value="${ta}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>প্রভিডেন্ট ফান্ড (PF)</label><input class="form-input num" type="number" id="salPF" value="${pf}"></div>
+      <div class="form-group"><label>ট্যাক্স (Tax)</label><input class="form-input num" type="number" id="salTax" value="${td}"></div>
+    </div>
+    `,
+    `
+      <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveSalaryStructure()"><i class="fa-solid fa-floppy-disk"></i> সেভ করুন</button>
+    `
+  );
+}
+
+window.saveSalaryStructure = async function() {
+  const userId = document.getElementById('salUserId').value;
+  const payload = {
+    user_id: userId,
+    basic_salary: parseFloat(document.getElementById('salBasic').value || 0),
+    house_rent: parseFloat(document.getElementById('salHR').value || 0),
+    medical_allowance: parseFloat(document.getElementById('salMA').value || 0),
+    transport_allowance: parseFloat(document.getElementById('salTA').value || 0),
+    provident_fund: parseFloat(document.getElementById('salPF').value || 0),
+    tax_deduction: parseFloat(document.getElementById('salTax').value || 0)
+  };
+  try {
+    const { error } = await sb.from('salary_structures').upsert(payload, { onConflict: 'user_id' });
+    if (error) throw error;
+    showToast('স্যালারি স্ট্রাকচার সেভ হয়েছে', 'success');
+    closeModal();
+    refreshSalaryStructure();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
 }
 
 window.viewPayslip = function(id) {

@@ -2484,7 +2484,8 @@ async function refreshAttendanceList() {
         const lateM = Math.ceil(sLateSec / 60);
         const tt = isStrictLate ? `অফিস টাইমের ${bnDigits(lateM)} মিনিট পরে` : 'অন-টাইম';
         const locIcon = r.check_in_loc && !r.check_in_loc.startsWith('Not') && !r.check_in_loc.startsWith('Fail') && !r.check_in_loc.startsWith('Error') 
-            ? ` <a href="https://maps.google.com/?q=${r.check_in_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` : '';
+            ? ` <a href="https://maps.google.com/?q=${r.check_in_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` 
+            : ` <span title="লোকেশন পাওয়া যায়নি" style="color:var(--gray-400); margin-left:4px; cursor:not-allowed;"><i class="fa-solid fa-location-dot"></i></span>`;
         return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isStrictLate?` <small>+${bnDigits(lateM)}মি</small>`:''}${locIcon}</span>`;
       })();
       // Admin: small percentage pill near employee name
@@ -2523,7 +2524,8 @@ async function refreshAttendanceList() {
       const checkOutCell = (() => {
         if (!r.check_out) return '<span style="color:var(--gray-300)">—</span>';
         const locIcon = r.check_out_loc && !r.check_out_loc.startsWith('Not') && !r.check_out_loc.startsWith('Fail') && !r.check_out_loc.startsWith('Error') 
-            ? ` <a href="https://maps.google.com/?q=${r.check_out_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` : '';
+            ? ` <a href="https://maps.google.com/?q=${r.check_out_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` 
+            : ` <span title="লোকেশন পাওয়া যায়নি" style="color:var(--gray-400); margin-left:4px; cursor:not-allowed;"><i class="fa-solid fa-location-dot"></i></span>`;
         return `${formatBnTimeSec(r.check_out)}${locIcon}`;
       })();
 
