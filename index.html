@@ -3359,19 +3359,29 @@ setInterval(() => {
 async function markAttendance(type) {
   if (!App.user) return showToast('লগইন করুন', 'error');
   
-  let locString = null;
+    let locString = null;
   try {
     showToast('📍 লোকেশন চেক করা হচ্ছে...', 'warning');
-    locString = await new Promise((resolve) => {
-      if (!navigator.geolocation) resolve('Not Supported');
+    locString = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) reject('Not Supported');
       else navigator.geolocation.getCurrentPosition(
         pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
-        err => resolve(`Error: ${err.message}`),
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
+        err => reject(err),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
       );
     });
   } catch(e) {
-    locString = 'Failed';
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      if (data.latitude && data.longitude) {
+        locString = `${data.latitude},${data.longitude}`;
+      } else {
+        locString = 'Failed';
+      }
+    } catch(ipErr) {
+      locString = 'Failed';
+    }
   }
 
   const labels = {
