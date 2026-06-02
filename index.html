@@ -925,6 +925,9 @@
   body.theme-dark .chat-search{background:#1a1230;border-color:#2d1b4d}
   body.theme-dark .chat-search input{color:#ede5f7}
 </style>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 
 <body>
@@ -1077,6 +1080,10 @@
         <div class="nav-item admin-only" data-route="payroll" onclick="navigate('payroll')">
           <span class="nav-item-left"><i class="fa-solid fa-money-check-dollar"></i> পেরোল</span>
         </div>
+        
+      <div class="nav-item admin-only" data-route="live_location" onclick="navigate('live_location')">
+        <span class="nav-item-left"><i class="fa-solid fa-map-location-dot"></i> লাইভ লোকেশন</span>
+      </div>
         <div class="nav-item admin-only" data-route="recruitment" onclick="navigate('recruitment')">
           <span class="nav-item-left"><i class="fa-solid fa-briefcase"></i> রিক্রুটমেন্ট</span>
         </div>
@@ -2167,6 +2174,7 @@ function navigate(route) {
     if (route === 'recruitment') refreshJobPostings();
     if (route === 'performance') refreshPerformance();
     if (route === 'expenses') refreshExpense();
+  if (route === 'live_location') refreshLiveLocation();
     if (route === 'reports')  loadImportedActivity();
 
     // Premium polish: counters + reveal animations on every page
@@ -3352,20 +3360,18 @@ async function markAttendance(type) {
   if (!App.user) return showToast('লগইন করুন', 'error');
   
   let locString = null;
-  if (type === 'check_in' || type === 'check_out') {
-    try {
-      showToast('📍 লোকেশন চেক করা হচ্ছে...', 'warning');
-      locString = await new Promise((resolve) => {
-        if (!navigator.geolocation) resolve('Not Supported');
-        else navigator.geolocation.getCurrentPosition(
-          pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
-          err => resolve(`Error: ${err.message}`),
-          { enableHighAccuracy: true, timeout: 8000 }
-        );
-      });
-    } catch(e) {
-      locString = 'Failed';
-    }
+  try {
+    showToast('📍 লোকেশন চেক করা হচ্ছে...', 'warning');
+    locString = await new Promise((resolve) => {
+      if (!navigator.geolocation) resolve('Not Supported');
+      else navigator.geolocation.getCurrentPosition(
+        pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
+        err => resolve(`Error: ${err.message}`),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    });
+  } catch(e) {
+    locString = 'Failed';
   }
 
   const labels = {
@@ -3401,17 +3407,23 @@ async function markAttendance(type) {
 
     if (existing) {
       payload = { ...existing, [fields[type]]: now, updated_at: now };
+      if (locString) payload[type + '_loc'] = locString; // Map whatever type it is
+      
       if (type === 'check_in') { 
           payload.late_minutes = lateMinutes; 
           payload.status = status; 
-          if (locString) payload.check_in_loc = locString;
       }
       // Calc total hours when check_out
       if (type === 'check_out' && existing.check_in) {
-        if (locString) payload.check_out_loc = locString;
         let ms = new Date(now) - new Date(existing.check_in);
-        if (existing.lunch_out && existing.lunch_in) ms -= (new Date(existing.lunch_in) - new Date(existing.lunch_out));
-        if (existing.personal_out && existing.personal_in) ms -= (new Date(existing.personal_in) - new Date(existing.personal_out));
+        if (existing.lunch_out && (existing.lunch_in || type === 'lunch_in')) {
+          const lIn = payload.lunch_in || existing.lunch_in;
+          ms -= (new Date(lIn) - new Date(existing.lunch_out));
+        }
+        if (existing.personal_out && (existing.personal_in || type === 'personal_in')) {
+          const pIn = payload.personal_in || existing.personal_in;
+          ms -= (new Date(pIn) - new Date(existing.personal_out));
+        }
         payload.total_hours = Math.round((ms / 3600000) * 100) / 100;
       }
       // Calc personal_minutes when personal_in is marked
@@ -3427,176 +3439,19 @@ async function markAttendance(type) {
         status: type === 'check_in' ? status : 'present',
         late_minutes: type === 'check_in' ? lateMinutes : 0
       };
-      if (type === 'check_in' && locString) payload.check_in_loc = locString;
-      if (type === 'check_out' && locString) payload.check_out_loc = locString;
+      if (locString) payload[type + '_loc'] = locString;
+      
       const { error } = await sb.from('attendance').insert(payload);
       if (error) throw error;
     }
 
-    let extra = '';
-    if (type === 'check_in' && lateMinutes > 0) extra = ` (${bnDigits(lateMinutes)} মিনিট লেট)`;
-    showToast(`✅ ${labels[type]} সফল! · ${formatBnTimeSec(now)}${extra}`);
-    refreshTodayClockStatus();
-    if (App.currentPage === 'attendance') refreshAttendanceList();
-    if (App.currentPage === 'dashboard') loadDashboardLists();
-  } catch (e) {
-    showToast('❌ ' + (e.message || 'সেভ ব্যর্থ'), 'error');
-    console.error(e);
+    showToast('✅ ' + labels[type] + ' সফল হয়েছে!');
+    checkTodayAttendance();
+    refreshAttendanceList(); // Refresh admin list if open
+  } catch (err) {
+    showToast('❌ সমস্যা হয়েছে: ' + err.message, 'error');
   }
 }
-
-async function getMyOfficeTime() {
-  if (App.myOfficeTime) return App.myOfficeTime;
-  try {
-    // 1. Try the user's own employee type
-    if (App.profile?.employee_type_id) {
-      const { data } = await sb.from('office_times').select('*').eq('employee_type_id', App.profile.employee_type_id).maybeSingle();
-      if (data) { App.myOfficeTime = data; return data; }
-    }
-    // 2. Fallback — admins / users without a type: use the earliest configured office_time
-    const { data: any } = await sb.from('office_times').select('*').order('id').limit(1).maybeSingle();
-    if (any) { App.myOfficeTime = any; return any; }
-  } catch (e) { console.warn('office time load failed', e); }
-  return null;
-}
-
-// Seconds late vs a target HH:MM (with optional grace minutes). 0 if on-time/early.
-function secondsLate(actualIso, hhmm, graceMin = 0) {
-  if (!actualIso || !hhmm) return 0;
-  const [h, m] = hhmm.split(':').map(Number);
-  const d = new Date(actualIso);
-  const target = new Date(d);
-  target.setHours(h, (m || 0) + (graceMin || 0), 0, 0);
-  const diff = d - target;
-  return diff > 0 ? Math.floor(diff / 1000) : 0;
-}
-
-// Compute late minutes for a given check-in timestamp against office time.
-// STRICT: any lateness ≥ 1 second counts (rounds up), so 1 sec late => marked late (red).
-function computeLateMinutes(checkInIso, officeTime) {
-  if (!checkInIso || !officeTime || !officeTime.check_in_time) return 0;
-  const secs = secondsLate(checkInIso, officeTime.check_in_time, officeTime.grace_minutes || 0);
-  return secs > 0 ? Math.ceil(secs / 60) : 0;
-}
-
-// Lunch-in lateness in seconds vs lunch_end_time (no grace) — for table coloring.
-function lunchLateSeconds(lunchInIso, officeTime) {
-  if (!lunchInIso || !officeTime || !officeTime.lunch_end_time) return 0;
-  return secondsLate(lunchInIso, officeTime.lunch_end_time, 0);
-}
-
-// Admin: recompute & persist late_minutes for every attendance record using office times
-async function resyncLateMinutes() {
-  if (!App.isAdmin) return showToast('শুধু এডমিন এটি করতে পারবে', 'error');
-  try {
-    showToast('🔄 লেট রি-সিঙ্ক চলছে...', 'success');
-    // Load office times keyed by type
-    const { data: ots } = await sb.from('office_times').select('*');
-    if (!ots || ots.length === 0) {
-      return showToast('⚠️ কোনো অফিস টাইম সেট করা নেই — Settings এ গিয়ে সেট করুন', 'error');
-    }
-    const otMap = {};
-    ots.forEach(o => { otMap[o.employee_type_id] = o; });
-    const otDefault = ots[0];
-
-    // Load all attendance rows that have a check-in
-    const { data: rows, error } = await sb.from('attendance').select('id, user_id, check_in, status, late_minutes, profiles!user_id(employee_type_id)').not('check_in', 'is', null);
-    if (error) throw error;
-    if (!rows || rows.length === 0) return showToast('কোনো রেকর্ড নেই', 'warning');
-
-    let updated = 0, lateNow = 0;
-    for (const r of rows) {
-      if (r.status === 'leave' || r.status === 'absent' || r.status === 'holiday') continue;
-      const ot = otMap[r.profiles?.employee_type_id] || otDefault;
-      const lm = computeLateMinutes(r.check_in, ot);
-      const newStatus = lm > 0 ? 'late' : 'present';
-      if (lm > 0) lateNow++;
-      if ((r.late_minutes||0) !== lm || (lm > 0 && r.status !== 'late')) {
-        const { error: uErr } = await sb.from('attendance').update({ late_minutes: lm, status: newStatus }).eq('id', r.id);
-        if (!uErr) updated++;
-      }
-    }
-    showToast(`✅ রি-সিঙ্ক সম্পন্ন — ${bnDigits(updated)} টি রেকর্ড আপডেট, ${bnDigits(lateNow)} টি এখন লেট`, 'success');
-    App.myOfficeTime = null;
-    if (App.currentPage === 'attendance') refreshAttendanceList();
-  } catch (e) {
-    showToast('❌ রি-সিঙ্ক ব্যর্থ: ' + (e.message||''), 'error');
-    console.error(e);
-  }
-}
-
-async function refreshTodayClockStatus() {
-  const el = document.getElementById('todayStatus');
-  const big = document.getElementById('todayStatusBig');
-  if (!App.user) return;
-  try {
-    const { data } = await sb.from('attendance').select('*').eq('user_id', App.user.id).eq('date', today()).maybeSingle();
-
-    // Mark done state for completed actions
-    const setDone = (key, ok) => {
-      document.querySelectorAll(`.action-tile[onclick*="${key}"]`).forEach(btn => btn.classList.toggle('done', !!ok));
-      // Backward compat for any old .att-btn left around
-      document.querySelectorAll(`.att-btn[onclick*="${key}"]`).forEach(btn => btn.classList.toggle('done', !!ok));
-    };
-    setDone('check_in',     data && data.check_in);
-    setDone('lunch_out',    data && data.lunch_out);
-    setDone('lunch_in',     data && data.lunch_in);
-    setDone('personal_out', data && data.personal_out);
-    setDone('personal_in',  data && data.personal_in);
-    setDone('check_out',    data && data.check_out);
-
-    // Update top-right tag in action card
-    const tag = document.getElementById('achTag');
-    if (tag) {
-      if (!data || !data.check_in) tag.innerHTML = '<i class="fa-regular fa-clock"></i> এখনও শুরু হয়নি';
-      else if (data.check_out)     tag.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> দিন শেষ';
-      else                          tag.innerHTML = '<i class="fa-solid fa-circle-play" style="color:#10b981"></i> চলমান';
-    }
-
-    // Hero status big card
-    if (big) {
-      if (!data || !data.check_in) {
-        big.innerHTML = `
-          <div style="text-align:center;font-weight:800;font-size:14px;opacity:.95">⏳ আজকে এখনো চেক-ইন হয়নি</div>
-          <div style="text-align:center;font-size:12px;opacity:.7;font-weight:600">"অফিস ইন" বাটনে ক্লিক করে কাজ শুরু করুন</div>
-        `;
-      } else {
-        const isLate = (data.late_minutes||0) > 0;
-        const status = data.check_out ? '✅ দিন শেষ' : isLate ? '⏰ লেট চেক-ইন' : '✓ অন-টাইম';
-        const statusColor = data.check_out ? '#34d399' : isLate ? '#fbbf24' : '#34d399';
-        big.innerHTML = `
-          <div class="ahs-row"><span style="font-size:11px;opacity:.7;font-weight:800;text-transform:uppercase;letter-spacing:1px">আজকের অবস্থা</span> <span style="color:${statusColor};font-weight:800;font-size:13px">${status}</span></div>
-          <div class="ahs-row"><span><i class="fa-solid fa-right-to-bracket" style="opacity:.6"></i> চেক-ইন</span> <b>${data.check_in ? formatBnTime(data.check_in) : '—'}</b></div>
-          ${data.lunch_out ? `<div class="ahs-row"><span><i class="fa-solid fa-utensils" style="opacity:.6"></i> লাঞ্চ</span> <b>${formatBnTime(data.lunch_out)}${data.lunch_in?` → ${formatBnTime(data.lunch_in)}`:''}</b></div>` : ''}
-          <div class="ahs-row"><span><i class="fa-solid fa-right-from-bracket" style="opacity:.6"></i> চেক-আউট</span> <b>${data.check_out ? formatBnTime(data.check_out) : '—'}</b></div>
-          ${isLate ? `<div class="ahs-row" style="background:rgba(251,191,36,.18);padding:6px 10px;border-radius:8px;margin-top:4px"><span>⚠️ লেট</span> <b style="color:#fbbf24">${bnDigits(data.late_minutes)} মিনিট</b></div>` : ''}
-          ${data.total_hours ? `<div class="ahs-row"><span><i class="fa-solid fa-stopwatch" style="opacity:.6"></i> কাজের সময়</span> <b>${bnDigits(Number(data.total_hours).toFixed(1))} ঘ.</b></div>` : ''}
-        `;
-      }
-    }
-
-    // Old text status (kept for backward compat / hidden by default)
-    if (el) {
-      if (!data) { el.style.display = 'none'; }
-      else {
-        let parts = [];
-        if (data.check_in)  parts.push(`চেক-ইন ${formatBnTime(data.check_in)}`);
-        if (data.lunch_out) parts.push(`লাঞ্চ আউট ${formatBnTime(data.lunch_out)}`);
-        if (data.lunch_in)  parts.push(`লাঞ্চ ইন ${formatBnTime(data.lunch_in)}`);
-        if (data.check_out) parts.push(`চেক-আউট ${formatBnTime(data.check_out)}`);
-        el.style.display = 'none';
-        el.className = 'clock-status ' + ((data.late_minutes||0) > 0 ? 'late' : 'ok');
-        el.innerHTML = parts.join(' · ');
-      }
-    }
-
-    // Bind --c CSS variable on quick leave chips
-    document.querySelectorAll('.qlp-chip[data-c]').forEach(chip => {
-      chip.style.setProperty('--c', chip.dataset.c);
-    });
-  } catch (e) { /* ignore */ }
-}
-
 async function refreshAttendanceList() {
   const tbody = document.querySelector('#attendanceTable tbody');
   if (!tbody || !App.user) return;
@@ -8577,6 +8432,134 @@ window.showLocationMap = function(coords, empName) {
     '<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>'
   );
 }
+
+let globalLiveMap = null;
+let globalMarkers = [];
+
+async function refreshLiveLocation() {
+  const dateStr = document.getElementById('liveLocDate').value || today();
+  document.getElementById('liveLocDate').value = dateStr;
+  const empId = document.getElementById('liveLocEmp').value;
+  
+  // Populate employees dropdown if empty
+  if (document.getElementById('liveLocEmp').options.length <= 1) {
+    const { data: emps } = await sb.from('profiles').select('id, full_name, employee_type_id').order('full_name');
+    if (emps) {
+      let opts = '<option value="all">সব এমপ্লয়ী</option>';
+      emps.forEach(e => {
+        opts += `<option value="${e.id}">${e.full_name} (${e.employee_type_id||''})</option>`;
+      });
+      document.getElementById('liveLocEmp').innerHTML = opts;
+      document.getElementById('liveLocEmp').value = empId;
+    }
+  }
+
+  // Fetch Attendance Data
+  let query = sb.from('attendance').select('*, profiles!user_id(full_name)').eq('date', dateStr);
+  if (empId !== 'all') query = query.eq('user_id', empId);
+  const { data: atts } = await query;
+  
+  if (!atts) return;
+
+  initLiveMap();
+  
+  // Clear existing markers & lines
+  globalMarkers.forEach(m => globalLiveMap.removeLayer(m));
+  globalMarkers = [];
+  
+  const tlEl = document.getElementById('routeTimeline');
+  tlEl.innerHTML = '';
+  
+  if (atts.length === 0) {
+    tlEl.innerHTML = '<div style="color:var(--gray-500); padding:10px;">কোনো ডাটা নেই</div>';
+    return;
+  }
+
+  const events = [];
+  const eventTypes = [
+    { key: 'check_in', label: 'চেক-ইন', color: '#8b5cf6' },
+    { key: 'personal_out', label: 'পার্সোনাল আউট', color: '#f59e0b' },
+    { key: 'personal_in', label: 'পার্সোনাল ইন', color: '#10b981' },
+    { key: 'lunch_out', label: 'লাঞ্চ বিরতি', color: '#f59e0b' },
+    { key: 'lunch_in', label: 'ফিরে এসেছেন (লাঞ্চ)', color: '#10b981' },
+    { key: 'check_out', label: 'চেক-আউট', color: '#ef4444' }
+  ];
+
+  atts.forEach(r => {
+    eventTypes.forEach(type => {
+      const timeVal = r[type.key];
+      const locVal = r[type.key + '_loc'];
+      if (timeVal) {
+        events.push({
+          emp: r.profiles?.full_name || 'Unknown',
+          time: new Date(timeVal).getTime(),
+          timeStr: timeVal,
+          label: type.label,
+          color: type.color,
+          loc: locVal
+        });
+      }
+    });
+  });
+
+  events.sort((a,b) => a.time - b.time);
+
+  let tlHTML = '';
+  const latLngs = [];
+
+  events.forEach(ev => {
+    let locText = 'লোকেশন পাওয়া যায়নি';
+    let hasLoc = false;
+    if (ev.loc && !ev.loc.startsWith('Not') && !ev.loc.startsWith('Fail') && !ev.loc.startsWith('Error')) {
+      const [lat, lng] = ev.loc.split(',');
+      hasLoc = true;
+      locText = `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
+      
+      const pt = [parseFloat(lat), parseFloat(lng)];
+      latLngs.push(pt);
+      
+      // Add Marker
+      const circleMarker = L.circleMarker(pt, {
+        color: ev.color,
+        fillColor: ev.color,
+        fillOpacity: 1,
+        radius: 6
+      }).bindTooltip(`<b>${ev.emp}</b><br>${ev.label} - ${formatBnTimeSec(ev.timeStr)}`).addTo(globalLiveMap);
+      globalMarkers.push(circleMarker);
+    }
+    
+    tlHTML += `
+      <div style="position:relative; margin-bottom:20px;">
+        <div style="position:absolute; left:-25px; top:4px; width:10px; height:10px; border-radius:50%; background:${ev.color};"></div>
+        <div style="font-size:12px; color:var(--gray-500); margin-bottom:2px;">${formatBnTimeSec(ev.timeStr)} — <b>${ev.emp}</b></div>
+        <div style="font-size:14px; font-weight:600; color:var(--gray-800);">${ev.label}</div>
+        <div style="font-size:12px; color:var(--gray-400); margin-top:2px;">
+          <i class="fa-solid fa-location-dot"></i> ${locText}
+        </div>
+      </div>
+    `;
+  });
+
+  tlEl.innerHTML = tlHTML || '<div style="color:var(--gray-500); padding:10px;">কোনো ইভেন্ট নেই</div>';
+
+  if (latLngs.length > 0) {
+    if (latLngs.length > 1 && empId !== 'all') {
+      const polyline = L.polyline(latLngs, {color: '#8b5cf6', weight: 3, opacity: 0.6}).addTo(globalLiveMap);
+      globalMarkers.push(polyline);
+    }
+    globalLiveMap.fitBounds(L.latLngBounds(latLngs), {padding: [50, 50]});
+  }
+}
+
+function initLiveMap() {
+  if (globalLiveMap) return;
+  // Initialize Leaflet Map
+  globalLiveMap = L.map('liveMap').setView([23.8103, 90.4125], 11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  }).addTo(globalLiveMap);
+}
+
 </script>
 <script src="payroll_onboarding.js"></script>
 <script src="phase2_features.js">
