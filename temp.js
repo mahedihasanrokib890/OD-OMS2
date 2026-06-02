@@ -1398,6 +1398,19 @@ function startDashHeroClock() {
     el.textContent = bnDigits(`${h}:${m}:${s}`) + ampm;
   };
   tick();
+  window.formatDateForInput = formatDateForInput;
+
+window.showLocationMap = function(coords, empName) {
+  const [lat, lng] = coords.split(',');
+  const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  showModal(
+    `<i class="fa-solid fa-map-location-dot" style="color:#ef4444"></i> ${escapeHtml(empName||'এমপ্লয়ি')}-এর লাইভ লোকেশন`,
+    `<div style="width:100%; height:400px; border-radius:8px; overflow:hidden;">
+       <iframe src="${mapUrl}" width="100%" height="100%" frameborder="0" style="border:0;"></iframe>
+     </div>`,
+    `<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>`
+  );
+}
   window._dashHeroTimer = setInterval(tick, 1000);
 }
 
@@ -2484,7 +2497,7 @@ async function refreshAttendanceList() {
         const lateM = Math.ceil(sLateSec / 60);
         const tt = isStrictLate ? `অফিস টাইমের ${bnDigits(lateM)} মিনিট পরে` : 'অন-টাইম';
         const locIcon = r.check_in_loc && !r.check_in_loc.startsWith('Not') && !r.check_in_loc.startsWith('Fail') && !r.check_in_loc.startsWith('Error') 
-            ? ` <a href="https://maps.google.com/?q=${r.check_in_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` 
+            ? ` <span onclick="showLocationMap('${r.check_in_loc}', '${r.profiles?.full_name}')" title="ম্যাপে দেখুন" style="cursor:pointer;"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></span>` 
             : ` <span title="লোকেশন পাওয়া যায়নি" style="color:var(--gray-400); margin-left:4px; cursor:not-allowed;"><i class="fa-solid fa-location-dot"></i></span>`;
         return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isStrictLate?` <small>+${bnDigits(lateM)}মি</small>`:''}${locIcon}</span>`;
       })();
@@ -2524,7 +2537,7 @@ async function refreshAttendanceList() {
       const checkOutCell = (() => {
         if (!r.check_out) return '<span style="color:var(--gray-300)">—</span>';
         const locIcon = r.check_out_loc && !r.check_out_loc.startsWith('Not') && !r.check_out_loc.startsWith('Fail') && !r.check_out_loc.startsWith('Error') 
-            ? ` <a href="https://maps.google.com/?q=${r.check_out_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` 
+            ? ` <span onclick="showLocationMap('${r.check_out_loc}', '${r.profiles?.full_name}')" title="ম্যাপে দেখুন" style="cursor:pointer;"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></span>` 
             : ` <span title="লোকেশন পাওয়া যায়নি" style="color:var(--gray-400); margin-left:4px; cursor:not-allowed;"><i class="fa-solid fa-location-dot"></i></span>`;
         return `${formatBnTimeSec(r.check_out)}${locIcon}`;
       })();
