@@ -3456,8 +3456,9 @@ async function markAttendance(type) {
     }
 
     showToast('✅ ' + labels[type] + ' সফল হয়েছে!');
-    checkTodayAttendance();
-    refreshAttendanceList(); // Refresh admin list if open
+    refreshTodayClockStatus();
+    if (App.currentPage === 'attendance') refreshAttendanceList();
+    if (App.currentPage === 'dashboard') loadDashboardLists();
   } catch (err) {
     showToast('❌ সমস্যা হয়েছে: ' + err.message, 'error');
   }
