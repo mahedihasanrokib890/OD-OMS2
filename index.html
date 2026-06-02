@@ -3367,7 +3367,7 @@ async function markAttendance(type) {
       else navigator.geolocation.getCurrentPosition(
         pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
         err => resolve(`Error: ${err.message}`),
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
       );
     });
   } catch(e) {
