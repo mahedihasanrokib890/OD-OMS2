@@ -2136,6 +2136,24 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════
 async function markAttendance(type) {
   if (!App.user) return showToast('লগইন করুন', 'error');
+  
+  let locString = null;
+  if (type === 'check_in' || type === 'check_out') {
+    try {
+      showToast('📍 লোকেশন চেক করা হচ্ছে...', 'warning');
+      locString = await new Promise((resolve) => {
+        if (!navigator.geolocation) resolve('Not Supported');
+        else navigator.geolocation.getCurrentPosition(
+          pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
+          err => resolve(`Error: ${err.message}`),
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      });
+    } catch(e) {
+      locString = 'Failed';
+    }
+  }
+
   const labels = {
     check_in:    'অফিস ইন',
     check_out:   'অফিস আউট',
@@ -2169,9 +2187,14 @@ async function markAttendance(type) {
 
     if (existing) {
       payload = { ...existing, [fields[type]]: now, updated_at: now };
-      if (type === 'check_in') { payload.late_minutes = lateMinutes; payload.status = status; }
+      if (type === 'check_in') { 
+          payload.late_minutes = lateMinutes; 
+          payload.status = status; 
+          if (locString) payload.check_in_loc = locString;
+      }
       // Calc total hours when check_out
       if (type === 'check_out' && existing.check_in) {
+        if (locString) payload.check_out_loc = locString;
         let ms = new Date(now) - new Date(existing.check_in);
         if (existing.lunch_out && existing.lunch_in) ms -= (new Date(existing.lunch_in) - new Date(existing.lunch_out));
         if (existing.personal_out && existing.personal_in) ms -= (new Date(existing.personal_in) - new Date(existing.personal_out));
@@ -2190,6 +2213,8 @@ async function markAttendance(type) {
         status: type === 'check_in' ? status : 'present',
         late_minutes: type === 'check_in' ? lateMinutes : 0
       };
+      if (type === 'check_in' && locString) payload.check_in_loc = locString;
+      if (type === 'check_out' && locString) payload.check_out_loc = locString;
       const { error } = await sb.from('attendance').insert(payload);
       if (error) throw error;
     }
@@ -2458,7 +2483,9 @@ async function refreshAttendanceList() {
         const cls = isStrictLate ? 'ci-late' : 'ci-ontime';
         const lateM = Math.ceil(sLateSec / 60);
         const tt = isStrictLate ? `অফিস টাইমের ${bnDigits(lateM)} মিনিট পরে` : 'অন-টাইম';
-        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isStrictLate?` <small>+${bnDigits(lateM)}মি</small>`:''}</span>`;
+        const locIcon = r.check_in_loc && !r.check_in_loc.startsWith('Not') && !r.check_in_loc.startsWith('Fail') && !r.check_in_loc.startsWith('Error') 
+            ? ` <a href="https://maps.google.com/?q=${r.check_in_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` : '';
+        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isStrictLate?` <small>+${bnDigits(lateM)}মি</small>`:''}${locIcon}</span>`;
       })();
       // Admin: small percentage pill near employee name
       const pct = App.isAdmin ? (empPct[r.user_id] ?? 0) : 0;
@@ -2493,6 +2520,13 @@ async function refreshAttendanceList() {
       } else {
         statusCell = `<span class="leave-status approved">✓ নিয়মিত</span>`;
       }
+      const checkOutCell = (() => {
+        if (!r.check_out) return '<span style="color:var(--gray-300)">—</span>';
+        const locIcon = r.check_out_loc && !r.check_out_loc.startsWith('Not') && !r.check_out_loc.startsWith('Fail') && !r.check_out_loc.startsWith('Error') 
+            ? ` <a href="https://maps.google.com/?q=${r.check_out_loc}" target="_blank" title="ম্যাপে দেখুন" style="text-decoration:none"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></a>` : '';
+        return `${formatBnTimeSec(r.check_out)}${locIcon}`;
+      })();
+
       return `
         <tr class="${rowClass}">
           ${empCell}
@@ -2502,7 +2536,7 @@ async function refreshAttendanceList() {
           <td class="num" style="font-size:12px">${lunchInCell}</td>
           <td class="num" style="font-size:12px">${fmtT(r.personal_out)}</td>
           <td class="num" style="font-size:12px">${fmtT(r.personal_in)}</td>
-          <td class="num" style="font-size:12px">${fmtT(r.check_out)}</td>
+          <td class="num" style="font-size:12px">${checkOutCell}</td>
           <td class="num" style="font-weight:800">${r.total_hours ? bnDigits(r.total_hours) + ' ঘ' : '—'}</td>
           <td>${statusCell}</td>
           ${actionCell}

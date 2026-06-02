@@ -1077,6 +1077,15 @@
         <div class="nav-item admin-only" data-route="payroll" onclick="navigate('payroll')">
           <span class="nav-item-left"><i class="fa-solid fa-money-check-dollar"></i> পেরোল</span>
         </div>
+        <div class="nav-item admin-only" data-route="recruitment" onclick="navigate('recruitment')">
+          <span class="nav-item-left"><i class="fa-solid fa-briefcase"></i> রিক্রুটমেন্ট</span>
+        </div>
+        <div class="nav-item" data-route="performance" onclick="navigate('performance')">
+          <span class="nav-item-left"><i class="fa-solid fa-bullseye"></i> পারফরম্যান্স</span>
+        </div>
+        <div class="nav-item" data-route="expenses" onclick="navigate('expenses')">
+          <span class="nav-item-left"><i class="fa-solid fa-file-invoice"></i> খরচ/ভাউচার</span>
+        </div>
       </div>
       <div class="admin-only">
         <div class="nav-item" data-route="reports" onclick="navigate('reports')">
@@ -2100,7 +2109,10 @@ const routes = {
   import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     renderFn: 'renderImport', admin: true },
   settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         renderFn: 'renderSettings', admin: true },
   onboarding: { title: 'অনবোর্ডিং', subtitle: 'নতুন এমপ্লয়ী যোগদান প্রক্রিয়া', renderFn: 'renderOnboarding', admin: true },
-  payroll:    { title: 'পেরোল', subtitle: 'মাসিক স্যালারি এবং বিল', renderFn: 'renderPayroll', admin: true }
+  payroll:    { title: 'পেরোল', subtitle: 'মাসিক স্যালারি এবং বিল', renderFn: 'renderPayroll', admin: true },
+  recruitment:{ title: 'রিক্রুটমেন্ট', subtitle: 'ATS এবং সিভি ম্যানেজমেন্ট', renderFn: 'renderRecruitment', admin: true },
+  performance:{ title: 'পারফরম্যান্স', subtitle: 'এমপ্লয়ি রেটিং ও গোলস', renderFn: 'renderPerformance' },
+  expenses:   { title: 'অফিসিয়াল খরচ', subtitle: 'ভাতা ও বিল সাবমিশন', renderFn: 'renderExpense' }
 };
 
 function navigate(route) {
@@ -2152,6 +2164,9 @@ function navigate(route) {
     if (route === 'reports')  loadEmpReport();
     if (route === 'onboarding') refreshOnboardingList();
     if (route === 'payroll') refreshPayrollList();
+    if (route === 'recruitment') refreshJobPostings();
+    if (route === 'performance') refreshPerformance();
+    if (route === 'expenses') refreshExpense();
     if (route === 'reports')  loadImportedActivity();
 
     // Premium polish: counters + reveal animations on every page
@@ -8518,5 +8533,6 @@ async function uploadHandbook(e) {
 }
 </script>
 <script src="payroll_onboarding.js"></script>
+<script src="phase2_features.js"></script>
 </body>
 </html>
