@@ -1071,6 +1071,12 @@
         <div class="nav-item" data-route="employees" onclick="navigate('employees')">
           <span class="nav-item-left"><i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা</span>
         </div>
+        <div class="nav-item admin-only" data-route="onboarding" onclick="navigate('onboarding')">
+          <span class="nav-item-left"><i class="fa-solid fa-user-plus"></i> অনবোর্ডিং</span>
+        </div>
+        <div class="nav-item admin-only" data-route="payroll" onclick="navigate('payroll')">
+          <span class="nav-item-left"><i class="fa-solid fa-money-check-dollar"></i> পেরোল</span>
+        </div>
       </div>
       <div class="admin-only">
         <div class="nav-item" data-route="reports" onclick="navigate('reports')">
@@ -2092,7 +2098,9 @@ const routes = {
   inbox:      { title: 'ইনবক্স',          subtitle: 'মেসেজ ও ছুটি',     renderFn: 'renderInbox' },
   reports:    { title: 'রিপোর্ট',        subtitle: 'বিশ্লেষণ ও সারাংশ',          renderFn: 'renderReports', admin: true },
   import:     { title: 'ডাটা ইম্পোর্ট',  subtitle: 'গুগল শীট / CSV ইম্পোর্ট',     renderFn: 'renderImport', admin: true },
-  settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         renderFn: 'renderSettings', admin: true }
+  settings:   { title: 'সেটিংস',        subtitle: 'সিস্টেম কনফিগারেশন',         renderFn: 'renderSettings', admin: true },
+  onboarding: { title: 'অনবোর্ডিং', subtitle: 'নতুন এমপ্লয়ী যোগদান প্রক্রিয়া', renderFn: 'renderOnboarding', admin: true },
+  payroll:    { title: 'পেরোল', subtitle: 'মাসিক স্যালারি এবং বিল', renderFn: 'renderPayroll', admin: true }
 };
 
 function navigate(route) {
@@ -2137,11 +2145,13 @@ function navigate(route) {
     if (route === 'employees') refreshEmployeesList();
     if (route === 'inbox') {
       if (!App.isAdmin && !App.isEditor) initChat();
-      else if (window._inboxActiveTab === 'leaves') refreshInboxList();
+      else if (_inboxActiveTab === 'leaves') refreshInboxList();
       else initChat();
     }
     if (route === 'settings') { loadOfficeTimes(); if(typeof renderBonusSettings === 'function') renderBonusSettings(); }
     if (route === 'reports')  loadEmpReport();
+    if (route === 'onboarding') refreshOnboardingList();
+    if (route === 'payroll') refreshPayrollList();
     if (route === 'reports')  loadImportedActivity();
 
     // Premium polish: counters + reveal animations on every page
@@ -8507,5 +8517,6 @@ async function uploadHandbook(e) {
   e.target.value = '';
 }
 </script>
+<script src="payroll_onboarding.js"></script>
 </body>
 </html>
