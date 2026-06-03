@@ -8,23 +8,34 @@ async function renderOnboarding() {
   return `
     <div class="welcome-banner" style="background: linear-gradient(135deg, #1e0a30 0%, #5b2d8a 100%); color: white;">
       <div>
-        <h1 style="color:white">এমপ্লয়ী অনবোর্ডিং</h1>
-        <p style="color:#d8b4fe">নতুন এমপ্লয়ী যুক্ত করুন এবং তাদের যোগদান প্রক্রিয়া ট্র্যাক করুন</p>
+        <h1 style="color:white">এমপ্লয়ী অনবোর্ডিং ও ডকুমেন্টস</h1>
+        <p style="color:#d8b4fe">নতুন এমপ্লয়ী যুক্ত করুন এবং তাদের ডকুমেন্ট সংরক্ষণ করুন</p>
       </div>
+      <button class="btn btn-primary" onclick="openUploadDocModal()">
+        <i class="fa-solid fa-upload"></i> ডকুমেন্ট আপলোড
+      </button>
     </div>
-    <div class="card">
-      <div class="card-title">
-        <span><i class="fa-solid fa-list-check"></i> অনবোর্ডিং টাস্কসমূহ</span>
-      </div>
-      <div id="onboardingList">
-        <div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto"></div></div>
-      </div>
+    
+    <div class="tabs" id="onboardingTabs">
+      <div class="tab active" onclick="switchOnboardingTab('tasks', this)">অনবোর্ডিং টাস্ক</div>
+      <div class="tab" onclick="switchOnboardingTab('docs', this)">এমপ্লয়ী ডকুমেন্টস</div>
+    </div>
+    
+    <div id="onboardingTabContent">
+      <div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto"></div></div>
     </div>
   `;
 }
 
+window.switchOnboardingTab = function(tab, el) {
+  document.querySelectorAll('#onboardingTabs .tab').forEach(t => t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if (tab === 'tasks') refreshOnboardingList();
+  else if (tab === 'docs') refreshEmployeeDocuments();
+};
+
 async function refreshOnboardingList() {
-  const container = document.getElementById('onboardingList');
+  const container = document.getElementById('onboardingTabContent');
   if (!container) return;
   
   try {
@@ -69,6 +80,103 @@ async function markTaskComplete(id) {
     refreshOnboardingList();
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
+  }
+}
+
+window.refreshEmployeeDocuments = async function() {
+  const container = document.getElementById('onboardingTabContent');
+  if (!container) return;
+  
+  try {
+    const { data, error } = await sb.from('employee_documents').select('*, profiles(full_name)').order('created_at', { ascending: false });
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      container.innerHTML = `<div class="empty-state"><p>কোনো ডকুমেন্ট নেই।</p></div>`;
+      return;
+    }
+    
+    let html = `<table class="data-table">
+      <tr><th>এমপ্লয়ী</th><th>ডকুমেন্ট টাইপ</th><th>আপলোড তারিখ</th><th>অ্যাকশন</th></tr>`;
+      
+    data.forEach(doc => {
+      const empName = doc.profiles ? doc.profiles.full_name : 'অজ্ঞাত';
+      const dateStr = new Date(doc.created_at).toLocaleDateString('en-GB');
+        
+      html += `<tr>
+        <td><b>${empName}</b></td>
+        <td>${doc.document_type}</td>
+        <td>${dateStr}</td>
+        <td>
+          <a href="${doc.document_url}" target="_blank" class="btn btn-sm btn-primary"><i class="fa-solid fa-eye"></i> দেখুন</a>
+        </td>
+      </tr>`;
+    });
+    html += `</table>`;
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<p style="color:red">Error loading documents: ${err.message}</p>`;
+  }
+}
+
+window.openUploadDocModal = async function() {
+  const { data: emps } = await sb.from('profiles').select('id, full_name').eq('is_active', true);
+  const opts = (emps||[]).map(e => `<option value="${e.id}">${e.full_name}</option>`).join('');
+  showModal(
+    `<i class="fa-solid fa-file-upload"></i> ডকুমেন্ট আপলোড করুন`,
+    `
+    <div class="form-group"><label>এমপ্লয়ী</label><select id="docUserId" class="form-input">${opts}</select></div>
+    <div class="form-group"><label>ডকুমেন্ট টাইপ</label>
+      <select id="docType" class="form-input">
+        <option value="NID / ID Card">NID / ID Card</option>
+        <option value="CV / Resume">CV / Resume</option>
+        <option value="Certificate">শিক্ষাগত সনদ (Certificate)</option>
+        <option value="Other">অন্যান্য</option>
+      </select>
+    </div>
+    <div class="form-group"><label>ফাইল নির্বাচন করুন (PDF/Image)</label>
+      <input type="file" id="docFile" class="form-input" accept=".pdf,image/*">
+    </div>
+    `,
+    `
+    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+    <button class="btn btn-primary" onclick="uploadEmployeeDoc()"><i class="fa-solid fa-upload"></i> আপলোড</button>
+    `
+  );
+}
+
+window.uploadEmployeeDoc = async function() {
+  const userId = document.getElementById('docUserId').value;
+  const docType = document.getElementById('docType').value;
+  const fileInput = document.getElementById('docFile');
+  if(!fileInput.files || fileInput.files.length === 0) return showToast('ফাইল নির্বাচন করুন', 'error');
+  
+  const file = fileInput.files[0];
+  const ext = file.name.split('.').pop();
+  const fileName = \`\${userId}_\${Date.now()}.\${ext}\`;
+  
+  try {
+    showToast('আপলোড হচ্ছে...', 'warning');
+    const { error: upErr } = await sb.storage.from('hr_documents').upload(fileName, file);
+    if (upErr) throw upErr;
+    
+    const { data: urlData } = sb.storage.from('hr_documents').getPublicUrl(fileName);
+    const url = urlData.publicUrl;
+    
+    const { error: saveErr } = await sb.from('employee_documents').insert({
+      user_id: userId,
+      document_type: docType,
+      document_url: url
+    });
+    if (saveErr) throw saveErr;
+    
+    showToast('ডকুমেন্ট সফলভাবে আপলোড হয়েছে!', 'success');
+    closeModal();
+    if (document.querySelector('#onboardingTabs .tab:nth-child(2)').classList.contains('active')) {
+       refreshEmployeeDocuments();
+    }
+  } catch(e) {
+    showToast('আপলোড ব্যর্থ: ' + e.message, 'error');
   }
 }
 

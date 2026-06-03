@@ -17,6 +17,9 @@ async function renderRecruitment() {
       <button class="btn btn-primary" onclick="openNewJobModal()">
         <i class="fa-solid fa-briefcase"></i> নতুন জব পোস্ট
       </button>
+      <button class="btn btn-secondary" style="margin-left:10px" onclick="openNewAppModal()">
+        <i class="fa-solid fa-file-pdf"></i> সিভি আপলোড
+      </button>
     </div>
     
     <div class="tabs" id="atsTabs">
@@ -84,7 +87,7 @@ window.refreshApplications = async function() {
       html += `<tr>
         <td><b>${app.applicant_name}</b></td>
         <td>${app.job_postings ? app.job_postings.title : '-'}</td>
-        <td>${app.email}</td>
+        <td>${app.email}<br>${app.cv_url ? `<a href="${app.cv_url}" target="_blank" style="font-size:12px; color:var(--brand-color);"><i class="fa-solid fa-file-pdf"></i> CV দেখুন</a>` : '<span style="font-size:12px;color:gray">CV নেই</span>'}</td>
         <td><span class="leave-status ${statusClr}">${app.status}</span></td>
         <td>
            <select class="form-select form-select-sm" style="width:100px; display:inline-block" onchange="updateAppStatus(${app.id}, this.value)">
@@ -109,6 +112,56 @@ window.updateAppStatus = async function(id, status) {
     showToast('স্ট্যাটাস আপডেট হয়েছে', 'success');
   } catch(e) {
     showToast('Error', 'error');
+  }
+}
+
+window.openNewAppModal = async function() {
+  const { data: jobs } = await sb.from('job_postings').select('id, title').eq('is_active', true);
+  const opts = (jobs||[]).map(j => `<option value="${j.id}">${j.title}</option>`).join('');
+  
+  showModal(
+    `<i class="fa-solid fa-file-pdf"></i> নতুন অ্যাপ্লিকেশন (CV) যোগ করুন`,
+    `
+    <div class="form-group"><label>জব পোস্ট</label><select id="appJobId" class="form-input">${opts}</select></div>
+    <div class="form-group"><label>প্রার্থীর নাম</label><input type="text" id="appName" class="form-input"></div>
+    <div class="form-group"><label>ইমেইল</label><input type="email" id="appEmail" class="form-input"></div>
+    <div class="form-group"><label>CV (PDF/DOCX)</label><input type="file" id="appCV" class="form-input" accept=".pdf,.doc,.docx"></div>
+    `,
+    `
+    <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+    <button class="btn btn-primary" onclick="saveApp()"><i class="fa-solid fa-upload"></i> সেভ করুন</button>
+    `
+  );
+}
+
+window.saveApp = async function() {
+  const jobId = document.getElementById('appJobId').value;
+  const name = document.getElementById('appName').value;
+  const email = document.getElementById('appEmail').value;
+  const fileInput = document.getElementById('appCV');
+  
+  if(!name || !email) return showToast('নাম ও ইমেইল দিন', 'error');
+  
+  let cvUrl = null;
+  if(fileInput.files && fileInput.files.length > 0) {
+     const file = fileInput.files[0];
+     const ext = file.name.split('.').pop();
+     const fileName = \`cv_\${Date.now()}.\${ext}\`;
+     showToast('CV আপলোড হচ্ছে...', 'warning');
+     const { error: upErr } = await sb.storage.from('hr_documents').upload(fileName, file);
+     if(!upErr) {
+        const { data: urlData } = sb.storage.from('hr_documents').getPublicUrl(fileName);
+        cvUrl = urlData.publicUrl;
+     }
+  }
+  
+  try {
+    await sb.from('job_applications').insert({ job_id: jobId, applicant_name: name, email: email, status: 'Pending', cv_url: cvUrl });
+    showToast('অ্যাপ্লিকেশন সেভ হয়েছে', 'success');
+    closeModal();
+    refreshApplications();
+  } catch(e) {
+    showToast('Error: '+e.message, 'error');
   }
 }
 
@@ -400,5 +453,41 @@ window.saveExpense = async function() {
 }
 
 window.renderRecruitment = renderRecruitment;
+window.renderRecruitment = renderRecruitment;
 window.renderPerformance = renderPerformance;
 window.renderExpense = renderExpense;
+
+// =========================================================
+// LIVE LOCATION MODULE (Admin Dashboard)
+// =========================================================
+window.renderLiveLocation = async function() {
+  if (!App.isAdmin) return `<div class="empty-state"><i class="fa-solid fa-lock"></i><h3>Access Denied</h3></div>`;
+  
+  return `
+    <div class="welcome-banner" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white;">
+      <div>
+        <h1 style="color:white">লাইভ লোকেশন ট্র্যাকিং</h1>
+        <p style="color:#bfdbfe">এমপ্লয়ীদের লোকেশন এবং রুট চেক করুন</p>
+      </div>
+    </div>
+    
+    <div class="card" style="padding:15px; margin-bottom:20px; display:flex; gap:10px; align-items:center;">
+      <input type="date" id="liveLocDate" class="input-field" value="" onchange="refreshLiveLocation()" style="width:150px">
+      <select id="liveLocEmp" class="input-field" style="width:200px" onchange="refreshLiveLocation()">
+        <option value="all">সব এমপ্লয়ী</option>
+      </select>
+      <button class="btn btn-primary" onclick="refreshLiveLocation()"><i class="fa-solid fa-rotate-right"></i> রিফ্রেশ</button>
+    </div>
+    
+    <div class="card" style="padding:0; overflow:hidden; margin-bottom:20px;">
+      <div id="liveMap" style="width:100%; height:450px; z-index:1;"></div>
+    </div>
+    
+    <div class="card">
+      <h3 style="margin-bottom:15px; font-size:16px; color:var(--gray-700);"><i class="fa-solid fa-route"></i> লোকেশন হিস্টোরি — আজকের রুট</h3>
+      <div id="routeTimeline" style="position:relative; margin-left:10px; border-left:2px solid var(--purple-200); padding-left:20px;">
+        <!-- Timeline items -->
+      </div>
+    </div>
+  `;
+}
