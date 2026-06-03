@@ -146,7 +146,7 @@ window.saveApp = async function() {
   if(fileInput.files && fileInput.files.length > 0) {
      const file = fileInput.files[0];
      const ext = file.name.split('.').pop();
-     const fileName = \`cv_\${Date.now()}.\${ext}\`;
+     const fileName = `cv_${Date.now()}.${ext}`;
      showToast('CV আপলোড হচ্ছে...', 'warning');
      const { error: upErr } = await sb.storage.from('hr_documents').upload(fileName, file);
      if(!upErr) {

@@ -153,7 +153,7 @@ window.uploadEmployeeDoc = async function() {
   
   const file = fileInput.files[0];
   const ext = file.name.split('.').pop();
-  const fileName = \`\${userId}_\${Date.now()}.\${ext}\`;
+  const fileName = `${userId}_${Date.now()}.${ext}`;
   
   try {
     showToast('আপলোড হচ্ছে...', 'warning');
