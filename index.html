@@ -1074,25 +1074,7 @@
         <div class="nav-item" data-route="employees" onclick="navigate('employees')">
           <span class="nav-item-left"><i class="fa-solid fa-users"></i> এমপ্লয়ী তালিকা</span>
         </div>
-        <div class="nav-item admin-only" data-route="onboarding" onclick="navigate('onboarding')">
-          <span class="nav-item-left"><i class="fa-solid fa-user-plus"></i> অনবোর্ডিং</span>
-        </div>
-        <div class="nav-item admin-only" data-route="payroll" onclick="navigate('payroll')">
-          <span class="nav-item-left"><i class="fa-solid fa-money-check-dollar"></i> পেরোল</span>
-        </div>
-        
-      <div class="nav-item admin-only" data-route="live_location" onclick="navigate('live_location')">
-        <span class="nav-item-left"><i class="fa-solid fa-map-location-dot"></i> লাইভ লোকেশন</span>
-      </div>
-        <div class="nav-item admin-only" data-route="recruitment" onclick="navigate('recruitment')">
-          <span class="nav-item-left"><i class="fa-solid fa-briefcase"></i> রিক্রুটমেন্ট</span>
-        </div>
-        <div class="nav-item" data-route="performance" onclick="navigate('performance')">
-          <span class="nav-item-left"><i class="fa-solid fa-bullseye"></i> পারফরম্যান্স</span>
-        </div>
-        <div class="nav-item" data-route="expenses" onclick="navigate('expenses')">
-          <span class="nav-item-left"><i class="fa-solid fa-file-invoice"></i> খরচ/ভাউচার</span>
-        </div>
+
       </div>
       <div class="admin-only">
         <div class="nav-item" data-route="reports" onclick="navigate('reports')">
@@ -2169,12 +2151,7 @@ function navigate(route) {
     }
     if (route === 'settings') { loadOfficeTimes(); if(typeof renderBonusSettings === 'function') renderBonusSettings(); }
     if (route === 'reports')  loadEmpReport();
-    if (route === 'onboarding') refreshOnboardingList();
-    if (route === 'payroll') refreshPayrollList();
-    if (route === 'recruitment') refreshJobPostings();
-    if (route === 'performance') refreshPerformance();
-    if (route === 'expenses') refreshExpense();
-  if (route === 'live_location') refreshLiveLocation();
+
     if (route === 'reports')  loadImportedActivity();
 
     // Premium polish: counters + reveal animations on every page
