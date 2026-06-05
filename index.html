@@ -8582,7 +8582,8 @@ async function uploadHandbook(e) {
 
 window.showLocationMap = function(coords, empName) {
   const [lat, lng] = coords.split(',');
-  const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=m&z=18&ie=UTF8&iwloc=&output=embed`;
+  const safeName = encodeURIComponent(empName || 'এমপ্লয়ি');
+  const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}(${safeName})&t=k&z=18&ie=UTF8&iwloc=&output=embed`;
   
   showModal(
     '<i class="fa-solid fa-map-location-dot" style="color:#ef4444"></i> ' + escapeHtml(empName||'এমপ্লয়ি') + '-এর এটেন্ডেন্স লোকেশন',
