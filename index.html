@@ -2335,6 +2335,18 @@ async function renderDashboard() {
         </div>
         <div id="dashPendingLeaves"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
+
+      <!-- ═══ EMPLOYEE HANDBOOK (ADMIN) ═══ -->
+      <div class="card" style="margin-bottom:18px;border-top:3px solid var(--blue-500)">
+        <div class="card-title">
+          <span><i class="fa-solid fa-book" style="color:var(--blue-600)"></i> এমপ্লয়ী হ্যান্ডবুক (PDF)</span>
+          <div>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('handbookUploadInput').click()">আপলোড / পরিবর্তন</button>
+            <input type="file" id="handbookUploadInput" accept="application/pdf" style="display:none" onchange="uploadHandbook(event)">
+          </div>
+        </div>
+        <div id="dashHandbookAdmin"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+      </div>
     `;
   }
 
