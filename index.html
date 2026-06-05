@@ -3344,25 +3344,26 @@ async function markAttendance(type) {
   
     let locString = null;
   try {
-    showToast('📍 লোকেশন চেক করা হচ্ছে...', 'warning');
+    showToast('📍 আপনার সঠিক লোকেশন (GPS) চেক করা হচ্ছে...', 'warning');
     locString = await new Promise((resolve, reject) => {
       if (!navigator.geolocation) reject('Not Supported');
       else navigator.geolocation.getCurrentPosition(
         pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
         err => reject(err),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
   } catch(e) {
+    // If High Accuracy fails (timeout indoors etc), try Low Accuracy
     try {
-      const res = await fetch('https://ipapi.co/json/');
-      const data = await res.json();
-      if (data.latitude && data.longitude) {
-        locString = `${data.latitude},${data.longitude}`;
-      } else {
-        locString = 'Failed';
-      }
-    } catch(ipErr) {
+      locString = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
+          err => reject(err),
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        );
+      });
+    } catch(err2) {
       locString = 'Failed';
     }
   }
