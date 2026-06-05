@@ -3350,7 +3350,7 @@ async function markAttendance(type) {
       else navigator.geolocation.getCurrentPosition(
         pos => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
         err => reject(err),
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     });
   } catch(e) {
@@ -8587,18 +8587,31 @@ window.showLocationMap = function(coords, empName) {
     '<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>'
   );
   
-  setTimeout(() => {
+  setTimeout(async () => {
     if (window.attMapInstance) {
       window.attMapInstance.remove();
     }
-    const map = L.map('attMap').setView([lat, lng], 15);
+    const map = L.map('attMap').setView([lat, lng], 18);
     window.attMapInstance = map;
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-    L.marker([lat, lng]).addTo(map)
-      .bindPopup('<b>' + escapeHtml(empName||'এমপ্লয়ি') + '</b><br>এটেন্ডেন্স লোকেশন')
+    
+    const marker = L.marker([lat, lng]).addTo(map)
+      .bindPopup('<b>' + escapeHtml(empName||'এমপ্লয়ি') + '</b><br><small>ঠিকানা খোঁজা হচ্ছে...</small>')
       .openPopup();
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      const data = await res.json();
+      if (data && data.display_name) {
+        marker.setPopupContent('<b>' + escapeHtml(empName||'এমপ্লয়ি') + '</b><div style="font-size:12px; margin-top:4px; line-height:1.4; color:var(--gray-600)">' + escapeHtml(data.display_name) + '</div>');
+      } else {
+        marker.setPopupContent('<b>' + escapeHtml(empName||'এমপ্লয়ি') + '</b><br>এটেন্ডেন্স লোকেশন');
+      }
+    } catch(e) {
+      marker.setPopupContent('<b>' + escapeHtml(empName||'এমপ্লয়ি') + '</b><br>এটেন্ডেন্স লোকেশন');
+    }
   }, 100);
 }
 
