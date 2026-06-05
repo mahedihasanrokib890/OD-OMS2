@@ -3688,23 +3688,31 @@ async function refreshAttendanceList() {
     tbody.innerHTML = data.map(r => {
       const lateMin = effLate(r);
       const sLateSec = strictLateSec(r);
-      const isStrictLate = sLateSec > 0;            // 1 sec past office time (ignores grace) → red
-      const isLate = lateMin > 0;                    // past grace → counted as official late
+      const isStrictLate = sLateSec > 0;            
+      const isLate = lateMin > 0;                    
       const isLeave = r.status === 'leave' || r.status === 'absent' || r.status === 'holiday';
       const rowClass = isLeave ? '' : (isStrictLate ? 'row-late' : 'row-ok');
-      const fmtT = (t) => t ? formatBnTimeSec(t) : '<span style="color:var(--gray-300)">—</span>';
-      // Check-in cell: RED bold if even 1 second past office time, GREEN bold if on-time/early
+      
+      const getLocIcon = (locStr, empName) => {
+        if (!locStr) return '';
+        if (locStr.startsWith('Not') || locStr.startsWith('Fail') || locStr.startsWith('Error')) {
+          return ` <span title="ব্রাউজার থেকে লোকেশন অ্যাক্সেস পাওয়া যায়নি" style="color:var(--gray-400); margin-left:4px; cursor:help;"><i class="fa-solid fa-location-crosshairs"></i></span>`;
+        }
+        const safeName = (empName || '').replace(/'/g, "\\'");
+        return ` <span onclick="showLocationMap('${locStr}', '${safeName}')" title="ম্যাপে দেখুন" style="cursor:pointer;"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></span>`;
+      };
+
+      const fmtT = (t, locStr) => t ? formatBnTimeSec(t) + getLocIcon(locStr, r.profiles?.full_name) : '<span style="color:var(--gray-300)">—</span>';
+      
       const checkInCell = (() => {
         if (!r.check_in) return '<span style="color:var(--gray-300)">—</span>';
         const cls = isStrictLate ? 'ci-late' : 'ci-ontime';
         const lateM = Math.ceil(sLateSec / 60);
         const tt = isStrictLate ? `অফিস টাইমের ${bnDigits(lateM)} মিনিট পরে` : 'অন-টাইম';
-        const locIcon = r.check_in_loc && !r.check_in_loc.startsWith('Not') && !r.check_in_loc.startsWith('Fail') && !r.check_in_loc.startsWith('Error') 
-            ? ` <span onclick="showLocationMap('${r.check_in_loc}', '${(r.profiles?.full_name||'').replace(/'/g, "\\'")}')" title="ম্যাপে দেখুন" style="cursor:pointer;"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></span>` 
-            : ``;
+        const locIcon = getLocIcon(r.check_in_loc, r.profiles?.full_name);
         return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.check_in)}${isStrictLate?` <small>+${bnDigits(lateM)}মি</small>`:''}${locIcon}</span>`;
       })();
-      // Admin: small percentage pill near employee name
+
       const pct = App.isAdmin ? (empPct[r.user_id] ?? 0) : 0;
       const pctClr = pct >= 85 ? '#059669' : pct >= 60 ? '#d97706' : '#dc2626';
       const pctBg  = pct >= 85 ? '#d1fae5' : pct >= 60 ? '#fef3c7' : '#fee2e2';
@@ -3717,15 +3725,17 @@ async function refreshAttendanceList() {
           </div>
         </div></td>` : '';
       const actionCell = App.isAdmin ? `<td><button class="icon-btn" onclick="editAttendance(${r.id})" title="এডিট"><i class="fa-solid fa-pen"></i></button></td>` : '';
-      // Lunch-in cell: red bold if returned late from lunch, green bold if on-time
+      
       const llSec = lunchLate(r);
       const lunchInCell = (() => {
         if (!r.lunch_in) return '<span style="color:var(--gray-300)">—</span>';
         const cls = llSec > 0 ? 'ci-late' : 'ci-ontime';
         const lateM = Math.ceil(llSec / 60);
         const tt = llSec > 0 ? `লাঞ্চ থেকে ${bnDigits(lateM)} মিনিট দেরিতে ফিরেছেন` : 'সময়মতো ফিরেছেন';
-        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.lunch_in)}${llSec>0?` <small>+${bnDigits(lateM)}মি</small>`:''}</span>`;
+        const locIcon = getLocIcon(r.lunch_in_loc, r.profiles?.full_name);
+        return `<span class="${cls}" title="${tt}">${formatBnTimeSec(r.lunch_in)}${llSec>0?` <small>+${bnDigits(lateM)}মি</small>`:''}${locIcon}</span>`;
       })();
+
       let statusCell;
       if (isLeave) {
         const codeColors = { CL:'#3b82f6', SL:'#ef4444', EL:'#10b981', CoL:'#a78bfa', ML:'#ec4899', PH:'#f59e0b', UL:'#94a3b8', IL:'#dc2626' };
@@ -3737,11 +3747,10 @@ async function refreshAttendanceList() {
       } else {
         statusCell = `<span class="leave-status approved">✓ নিয়মিত</span>`;
       }
+
       const checkOutCell = (() => {
         if (!r.check_out) return '<span style="color:var(--gray-300)">—</span>';
-        const locIcon = r.check_out_loc && !r.check_out_loc.startsWith('Not') && !r.check_out_loc.startsWith('Fail') && !r.check_out_loc.startsWith('Error') 
-            ? ` <span onclick="showLocationMap('${r.check_out_loc}', '${(r.profiles?.full_name||'').replace(/'/g, "\\'")}')" title="ম্যাপে দেখুন" style="cursor:pointer;"><i class="fa-solid fa-location-dot" style="color:#ef4444; margin-left:4px;"></i></span>` 
-            : ``;
+        const locIcon = getLocIcon(r.check_out_loc, r.profiles?.full_name);
         return `${formatBnTimeSec(r.check_out)}${locIcon}`;
       })();
 
@@ -3750,10 +3759,10 @@ async function refreshAttendanceList() {
           ${empCell}
           <td>${formatBnDate(r.date)}</td>
           <td class="num" style="font-size:12px">${checkInCell}</td>
-          <td class="num" style="font-size:12px">${fmtT(r.lunch_out)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.lunch_out, r.lunch_out_loc)}</td>
           <td class="num" style="font-size:12px">${lunchInCell}</td>
-          <td class="num" style="font-size:12px">${fmtT(r.personal_out)}</td>
-          <td class="num" style="font-size:12px">${fmtT(r.personal_in)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.personal_out, r.personal_out_loc)}</td>
+          <td class="num" style="font-size:12px">${fmtT(r.personal_in, r.personal_in_loc)}</td>
           <td class="num" style="font-size:12px">${checkOutCell}</td>
           <td class="num" style="font-weight:800">${r.total_hours ? bnDigits(r.total_hours) + ' ঘ' : '—'}</td>
           <td>${statusCell}</td>
