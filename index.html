@@ -109,6 +109,8 @@
   .btn-success:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(5,150,105,.55)}
   .btn-danger{background:linear-gradient(135deg,#f87171,#dc2626);color:white;box-shadow:0 8px 16px -6px rgba(220,38,38,.5)}
   .btn-danger:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(220,38,38,.55)}
+  .btn-warning{background:linear-gradient(135deg,#fbbf24,#d97706);color:white;box-shadow:0 8px 16px -6px rgba(217,119,6,.5)}
+  .btn-warning:hover{transform:translateY(-2px);box-shadow:0 12px 24px -6px rgba(217,119,6,.55)}
   .btn-outline{background:white;color:var(--purple-700);border:2px solid var(--purple-300)}
   .btn-outline:hover{background:var(--purple-50);border-color:var(--purple-500)}
   .btn-sm{padding:8px 14px;font-size:13px;min-height:36px;border-radius:10px}
@@ -142,7 +144,7 @@
   .sidebar-brand h2 span{color:#ed2880;-webkit-text-fill-color:#ed2880}
   .sidebar-brand .brand-bn{font-size:12px;color:var(--gray-600);font-weight:800;line-height:1.2}
   .sidebar-brand p{font-size:9px;color:var(--pink-500);font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
-  .sidebar-nav{flex:1;padding:14px 12px}
+  .sidebar-nav{flex:1;padding:14px 12px;overflow-y:auto;overflow-x:hidden}
   .sidebar-section-title{font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:1.5px;padding:16px 16px 10px}
   .nav-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin:3px 0;border-radius:14px;cursor:pointer;color:var(--gray-700);font-weight:700;font-size:15px;transition:all .3s;position:relative;border:1px solid transparent;user-select:none}
   .nav-item::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%) scaleY(0);width:4px;height:60%;background:linear-gradient(180deg,var(--purple-500),var(--pink-500));border-radius:0 4px 4px 0;transition:transform .3s}
@@ -913,7 +915,7 @@
   }
   body.theme-dark .chat-container{background:var(--bg-card);border-color:var(--border)}
   body.theme-dark .chat-sidebar{background:#0f0820}
-  body.theme-dark .chat-sidebar-header,.chat-main-header{background:var(--bg-card)}
+  body.theme-dark .chat-sidebar-header, body.theme-dark .chat-main-header{background:var(--bg-card)}
   body.theme-dark .chat-main{background:#0a0618}
   body.theme-dark .chat-msg.received .chat-bubble{background:#1a1230;color:#ede5f7;border-color:#2d1b4d}
   body.theme-dark .chat-input-wrap{background:#1a1230;border-color:#2d1b4d}
@@ -1072,6 +1074,26 @@
         </div>
       </div>
 
+      <div class="admin-only"><div class="sidebar-section-title">এইচআর টুলস</div></div>
+      <div class="nav-item admin-only" data-route="payroll" onclick="navigate('payroll')">
+        <span class="nav-item-left"><i class="fa-solid fa-money-bill-wave"></i> পেরোল</span>
+      </div>
+      <div class="nav-item admin-only" data-route="onboarding" onclick="navigate('onboarding')">
+        <span class="nav-item-left"><i class="fa-solid fa-user-plus"></i> অনবোর্ডিং</span>
+      </div>
+      <div class="nav-item admin-only" data-route="recruitment" onclick="navigate('recruitment')">
+        <span class="nav-item-left"><i class="fa-solid fa-briefcase"></i> রিক্রুটমেন্ট</span>
+      </div>
+      <div class="nav-item" data-route="performance" onclick="navigate('performance')">
+        <span class="nav-item-left"><i class="fa-solid fa-star"></i> পারফরম্যান্স</span>
+      </div>
+      <div class="nav-item" data-route="expenses" onclick="navigate('expenses')">
+        <span class="nav-item-left"><i class="fa-solid fa-receipt"></i> অফিসিয়াল খরচ</span>
+      </div>
+      <div class="nav-item admin-only" data-route="live_location" onclick="navigate('live_location')">
+        <span class="nav-item-left"><i class="fa-solid fa-location-dot"></i> লাইভ লোকেশন</span>
+      </div>
+
       <div class="admin-only"><div class="sidebar-section-title">সিস্টেম</div></div>
       <div class="nav-item admin-only" data-route="settings" onclick="navigate('settings')">
         <span class="nav-item-left"><i class="fa-solid fa-gear"></i> সেটিংস</span>
@@ -1200,7 +1222,15 @@ const enDigits = (str) => String(str).replace(/[০-৯]/g, d => '০১২৩�
 const today    = () => new Date().toISOString().slice(0,10);
 const formatBnDate = (d) => {
   const months = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
-  const dt = new Date(d);
+  // If date-only string (YYYY-MM-DD), parse directly to avoid UTC timezone shift
+  let dt;
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const [y, mo, day] = d.split('-').map(Number);
+    dt = new Date(y, mo - 1, day);
+  } else {
+    dt = new Date(d);
+  }
+  if (isNaN(dt.getTime())) return String(d || '—');
   return `${bnDigits(dt.getDate())} ${months[dt.getMonth()]} ${bnDigits(dt.getFullYear())}`;
 };
 const formatBnTime = (d) => {
@@ -1220,7 +1250,7 @@ const formatBnTimeSec = (d) => {
 };
 const dayName = (d) => ['রবিবার','সোমবার','মঙ্গলবার','বুধবার','বৃহস্পতিবার','শুক্রবার','শনিবার'][new Date(d).getDay()];
 
-const initial = (name) => (name||'').trim().charAt(0).toUpperCase() || 'আ';
+const initial = (name) => ([...(name||'').trim()][0] || 'আ').toUpperCase();
 
 function greeting() {
   const h = new Date().getHours();
@@ -1399,14 +1429,23 @@ async function doRegister() {
 }
 
 async function doLogout() {
-  if (!confirm('আপনি কি নিশ্চিতভাবে লগআউট করতে চান?')) return;
+  showModal(
+    '<i class="fa-solid fa-right-from-bracket" style="color:var(--pink-500)"></i> লগআউট',
+    `<p style="color:var(--gray-700);line-height:1.7">আপনি কি নিশ্চিতভাবে লগআউট করতে চান?</p>`,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-danger" onclick="closeModal();window._doLogoutNow()">
+       <i class="fa-solid fa-right-from-bracket"></i> হ্যাঁ, লগআউট
+     </button>`
+  );
+}
+window._doLogoutNow = async function() {
   await sb.auth.signOut();
   App.user = null; App.profile = null; App.isAdmin = false;
   document.getElementById('appContainer').classList.remove('active');
   document.body.classList.remove('is-admin');
   document.getElementById('authScreen').style.display = 'flex';
   showToast('লগআউট হয়েছে');
-}
+};
 
 // ═══════════════════════════════════════════════════════════
 // FORGOT PASSWORD
@@ -2366,7 +2405,7 @@ async function renderDashboard() {
     <div class="dash-hero employee">
       <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
         <div style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#a78bfa,#f472b6);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;font-family:var(--font-en);border:3px solid rgba(255,255,255,.25);flex-shrink:0;overflow:hidden;text-transform:uppercase;box-shadow:0 12px 30px rgba(0,0,0,.25)">
-          ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;height:100%;object-fit:cover">` : (p.full_name||'আ').charAt(0)}
+          ${p.photo_url ? `<img src="${p.photo_url}" style="width:100%;height:100%;object-fit:cover">` : ([...(p.full_name||'আ')][0] || 'আ')}
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-size:11px;opacity:.75;font-weight:800;letter-spacing:2px;text-transform:uppercase">👤 এমপ্লয়ী পোর্টাল</div>
@@ -2449,7 +2488,7 @@ async function renderDashboard() {
         <div class="card-title">
           <span><i class="fa-solid fa-calendar-days" style="color:var(--sky-600)"></i> আসন্ন ছুটির দিনপঞ্জিকা</span>
         </div>
-        <div id="dashHolidays"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+        <div id="dashHolidaysEmp"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       </div>
       <div class="card" style="border-top:3px solid var(--amber-500)">
         <div class="card-title"><span><i class="fa-solid fa-bullhorn" style="color:var(--amber-500)"></i> সাম্প্রতিক নোটিশ</span>
@@ -3004,7 +3043,7 @@ window.addEventListener('keydown', (ev) => {
   }
   if (inField) return;
   // ? → shortcuts
-  if (ev.key === '?' && !ev.shiftKey === false) { openShortcutsPanel(); return; }
+  if (ev.key === '?') { openShortcutsPanel(); return; }
   // d → theme
   if (ev.key === 'd' || ev.key === 'D') { toggleTheme(); return; }
   // s → sidebar
@@ -3083,8 +3122,13 @@ async function getMyStreak() {
 
 // 8. UPCOMING HOLIDAYS
 async function loadDashHolidays() {
-  const el = document.getElementById('dashHolidays');
-  if (!el) return;
+  // Update both admin & employee holiday widgets (avoid duplicate ID issue)
+  const els = [
+    document.getElementById('dashHolidays'),
+    document.getElementById('dashHolidaysEmp')
+  ].filter(Boolean);
+  if (els.length === 0) return;
+  const el = els[0]; // Primary for building HTML — then we clone to all
   // Static upcoming holidays for demonstration
   const allHolidays = [
     { date: '2026-06-26', name: 'পবিত্র আশুরা' },
@@ -3114,7 +3158,8 @@ async function loadDashHolidays() {
     `;
   });
   html += `</div>`;
-  el.innerHTML = html;
+  // Apply to all matched holiday elements (admin + employee)
+  els.forEach(e => { e.innerHTML = html; });
 }
 
 // 9. DEPARTMENT STATS (ADMIN)
@@ -3177,7 +3222,12 @@ function escapeHtml(s) {
 }
 function parseNoticeLinks(text) {
   if (!text) return '';
-  return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--purple-600);text-decoration:underline;font-weight:600">$1</a>');
+  // XSS: block javascript: protocol in URLs
+  return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+    if (/^javascript:/i.test(url.trim())) return label; // Block dangerous protocol
+    const safeUrl = /^https?:\/\//i.test(url) || url.startsWith('/') ? url : 'https://' + url;
+    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--purple-600);text-decoration:underline;font-weight:600">${label}</a>`;
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -4283,6 +4333,9 @@ function renderAttendance() {
             <option value="">সব স্ট্যাটাস</option>
             <option value="present">নিয়মিত</option>
             <option value="late">লেট</option>
+            <option value="absent">অনুপস্থিত</option>
+            <option value="leave">ছুটিতে</option>
+            <option value="holiday">সরকারি ছুটি</option>
           </select>
           <button class="btn btn-outline btn-sm" onclick="exportAttendance()" title="CSV Download"><i class="fa-solid fa-file-csv"></i> এক্সপোর্ট</button>
         </div>
@@ -4486,7 +4539,7 @@ async function saveNotice(id) {
             body: JSON.stringify({
               type: 'new_notice',
               to: emails,
-              data: { title, priority, postedBy: App.user.full_name }
+              data: { title, priority, postedBy: App.profile?.full_name || 'অ্যাডমিন' }
             })
           });
         }
@@ -4509,16 +4562,34 @@ async function editNotice(id) {
 }
 
 async function deleteNotice(id) {
-  if (!confirm('এই নোটিশটি ডিলিট করবেন?')) return;
+  showModal(
+    '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444"></i> নোটিশ ডিলিট',
+    `<p style="color:var(--gray-700);line-height:1.7">এই নোটিশটি স্থায়ীভাবে ডিলিট করবেন? এটি সবার জন্য সরিয়ে ফেলা হবে।</p>`,
+    `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+     <button class="btn btn-danger" onclick="closeModal();window._doDeleteNotice(${id})">
+       <i class="fa-solid fa-trash"></i> হ্যাঁ, ডিলিট করুন
+     </button>`
+  );
+}
+window._doDeleteNotice = async function(id) {
   const { error } = await sb.from('notices').delete().eq('id', id);
   if (error) return showToast('❌ ' + error.message, 'error');
   showToast('✅ নোটিশ ডিলিট হয়েছে');
   refreshNoticesList();
-}
+};
 
 // Employee — soft hide a notice from own list (admin still sees it)
 async function hideNoticeForMe(noticeId) {
-  if (!confirm('এই নোটিশটি আপনার তালিকা থেকে সরাবেন?\n\nℹ️ অন্যদের কাছে নোটিশটি থাকবে।')) return;
+  showModal(
+    '<i class="fa-solid fa-eye-slash" style="color:#f59e0b"></i> নোটিশ লুকান',
+    `<p style="color:var(--gray-700);line-height:1.7">এই নোটিশটি আপনার তালিকা থেকে সরাবেন?<br><small style="color:var(--gray-400)">ℹ️ অন্যদের কাছে নোটিশটি থাকবে।</small></p>`,
+    `<button class="btn btn-outline" onclick="closeModal()">না, রাখুন</button>
+     <button class="btn btn-warning" onclick="closeModal();window._doHideNotice(${noticeId})">
+       <i class="fa-solid fa-eye-slash"></i> হ্যাঁ, সরান
+     </button>`
+  );
+  return;
+  // (legacy code below is now unreachable, kept for reference)
   try {
     const { error } = await sb.from('notice_hides').upsert({ notice_id: noticeId, user_id: App.user.id });
     if (error) {
@@ -4533,6 +4604,22 @@ async function hideNoticeForMe(noticeId) {
     showToast('❌ ' + (e.message || 'সরানো ব্যর্থ'), 'error');
   }
 }
+
+window._doHideNotice = async function(noticeId) {
+  try {
+    const { error } = await sb.from('notice_hides').upsert({ notice_id: noticeId, user_id: App.user.id });
+    if (error) {
+      if (/notice_hides|relation.*does not exist/i.test(error.message||'')) {
+        return showToast('⚠️ Supabase v8 SQL এখনো চালানো হয়নি। এডমিনকে বলুন supabase_v8_soft_hide.sql চালাতে।', 'error');
+      }
+      throw error;
+    }
+    showToast('✅ আপনার তালিকা থেকে সরানো হয়েছে');
+    refreshNoticesList();
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'সরানো ব্যর্থ'), 'error');
+  }
+};
 
 // ═══════════════════════════════════════════════════════════
 // LEAVES
@@ -4561,16 +4648,16 @@ function renderLeaves() {
     <!-- Leave Tabs (admin only) -->
     ${App.isAdmin || App.isEditor ? `
     <div style="background:white;border-radius:14px;border:1px solid var(--border);padding:5px;display:flex;gap:4px;margin-bottom:16px;box-shadow:var(--shadow-sm)" id="leaveTabs">
-      <div style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;background:linear-gradient(135deg,#5b2d8a,#e91e63);color:white" data-tab="my">আমার ছুটি</div>
-      <div style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;color:var(--gray-600)" data-tab="pending">অপেক্ষমাণ <span id="pendingBadge" style="background:var(--pink-500);color:white;padding:1px 7px;border-radius:99px;font-size:11px">০</span></div>
-      <div style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;color:var(--gray-600)" data-tab="all">সকল আবেদন</div>
+      <div class="tab active" style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;background:linear-gradient(135deg,#5b2d8a,#e91e63);color:white" data-tab="my">আমার ছুটি</div>
+      <div class="tab" style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;color:var(--gray-600)" data-tab="pending">অপেক্ষমাণ <span id="pendingBadge" style="background:var(--pink-500);color:white;padding:1px 7px;border-radius:99px;font-size:11px">০</span></div>
+      <div class="tab" style="flex:1;padding:9px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;color:var(--gray-600)" data-tab="all">সকল আবেদন</div>
     </div>` : `<div id="leaveTabs" style="display:none"></div>`}
 
     <!-- Stats -->
     <div class="stats-grid" style="margin-bottom:20px">
       <div class="stat-card" style="border-left:4px solid var(--purple-500)">
         <div class="stat-icon purple"><i class="fa-solid fa-calendar"></i></div>
-        <h3 class="num">২০</h3><p>বার্ষিক ছুটি</p>
+        <h3 class="num" id="lvTotal">২০</h3><p>বার্ষিক ছুটি</p>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--amber-500)">
         <div class="stat-icon amber"><i class="fa-solid fa-calendar-day"></i></div>
@@ -4619,10 +4706,17 @@ function renderLeaves() {
 }
 
 async function refreshLeavesList() {
-  document.querySelectorAll('#leaveTabs .tab').forEach(t => {
+  // Wire tabs — use [data-tab] selector to support both .tab and non-.tab elements
+  document.querySelectorAll('#leaveTabs [data-tab]').forEach(t => {
     t.onclick = () => {
-      document.querySelectorAll('#leaveTabs .tab').forEach(x => x.classList.toggle('active', x === t));
       _leavesTab = t.dataset.tab;
+      // Update visual active state
+      document.querySelectorAll('#leaveTabs [data-tab]').forEach(x => {
+        const isActive = x === t;
+        x.style.background = isActive ? 'linear-gradient(135deg,#5b2d8a,#e91e63)' : '';
+        x.style.color = isActive ? 'white' : 'var(--gray-600)';
+        x.classList.toggle('active', isActive);
+      });
       _renderLeavesContent();
     };
   });
@@ -4636,8 +4730,17 @@ async function refreshLeavesList() {
       sb.from('leaves').select('id', { count: 'exact', head: true }).eq('status', 'pending')
     ]);
     const used = (myUsed||[]).reduce((s,r) => s + (r.total_days||0), 0);
+    // Load annual limit from leave_policies DB (fallback to 20 if not set)
+    let annualLimit = 20;
+    try {
+      const { data: policies } = await sb.from('leave_policies').select('yearly_limit').eq('is_active', true).gt('yearly_limit', 0);
+      if (policies && policies.length > 0) {
+        annualLimit = (policies||[]).reduce((s, p) => s + (p.yearly_limit || 0), 0);
+      }
+    } catch {}
+    document.getElementById('lvTotal') && (document.getElementById('lvTotal').textContent = bnDigits(annualLimit));
     document.getElementById('lvUsed') && (document.getElementById('lvUsed').textContent = bnDigits(used));
-    document.getElementById('lvRemaining') && (document.getElementById('lvRemaining').textContent = bnDigits(Math.max(0, 20 - used)));
+    document.getElementById('lvRemaining') && (document.getElementById('lvRemaining').textContent = bnDigits(Math.max(0, annualLimit - used)));
     document.getElementById('lvPending') && (document.getElementById('lvPending').textContent = bnDigits((myPending||[]).length));
     if (App.isAdmin && document.getElementById('pendingBadge')) document.getElementById('pendingBadge').textContent = bnDigits(pending || 0);
     // Sidebar badge
@@ -4826,6 +4929,7 @@ async function submitLeave() {
       leave_code,
       leave_type: leave_code.toLowerCase(),  // backward compat
       start_date, end_date, reason,
+      total_days: days,
       status: 'pending'
     });
     if (error) throw error;
@@ -4919,7 +5023,28 @@ async function notifyAdminsOfLeave(data) {
 }
 
 async function reviewLeave(id, decision) {
-  const comment = prompt(decision === 'approved' ? 'মন্তব্য (ঐচ্ছিক):' : 'প্রত্যাখ্যানের কারণ:') || '';
+  // Use modal instead of browser prompt (better UX, mobile-friendly)
+  return new Promise(resolve => {
+    showModal(
+      decision === 'approved'
+        ? '<i class="fa-solid fa-check" style="color:#10b981"></i> ছুটি অনুমোদন করুন'
+        : '<i class="fa-solid fa-xmark" style="color:#ef4444"></i> ছুটি প্রত্যাখ্যান করুন',
+      `<div class="form-group">
+        <label>${decision === 'approved' ? 'মন্তব্য (ঐচ্ছিক)' : 'প্রত্যাখ্যানের কারণ'}</label>
+        <textarea class="form-textarea" id="reviewCommentInput" placeholder="${decision === 'approved' ? 'অনুমোদন সংক্রান্ত যেকোনো মন্তব্য...' : 'কেন প্রত্যাখ্যান করা হচ্ছে তা লিখুন...'}" style="min-height:90px"></textarea>
+      </div>`,
+      `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+       <button class="btn ${decision === 'approved' ? 'btn-success' : 'btn-danger'}" id="reviewConfirmBtn"
+         onclick="closeModal();window._reviewLeaveDecision('${id}','${decision}',document.getElementById('reviewCommentInput')?.value||'')">
+         <i class="fa-solid fa-${decision === 'approved' ? 'check' : 'xmark'}"></i> ${decision === 'approved' ? 'অনুমোদন করুন' : 'প্রত্যাখ্যান করুন'}
+       </button>`
+    );
+    setTimeout(() => document.getElementById('reviewCommentInput')?.focus(), 100);
+  });
+}
+
+// Internal: called after modal confirms
+window._reviewLeaveDecision = async function(id, decision, comment) {
   try {
     const { error } = await sb.from('leaves').update({
       status: decision,
@@ -4978,12 +5103,21 @@ async function reviewLeave(id, decision) {
 }
 
 async function cancelLeave(id) {
-  if (!confirm('আবেদন বাতিল করবেন?')) return;
+  showModal(
+    '<i class="fa-solid fa-ban" style="color:#f59e0b"></i> আবেদন বাতিল',
+    `<p style="color:var(--gray-700);line-height:1.7">আপনার এই ছুটির আবেদনটি বাতিল করতে চান? এটি অনুমোদন পাবে না।</p>`,
+    `<button class="btn btn-outline" onclick="closeModal()">না, রাখুন</button>
+     <button class="btn btn-danger" onclick="closeModal();window._doCancelLeave(${id})">
+       <i class="fa-solid fa-ban"></i> হ্যাঁ, বাতিল করুন
+     </button>`
+  );
+}
+window._doCancelLeave = async function(id) {
   const { error } = await sb.from('leaves').update({ status: 'cancelled' }).eq('id', id);
   if (error) return showToast('❌ ' + error.message, 'error');
   showToast('✅ আবেদন বাতিল হয়েছে');
   refreshLeavesList();
-}
+};
 
 // Permanent delete for admin / soft-hide for employees
 async function deleteLeave(id) {
@@ -4995,17 +5129,41 @@ async function deleteLeave(id) {
     if (!App.isAdmin && !isOwn) return showToast('⚠️ আপনার এই আবেদন মুছার অনুমতি নেই', 'error');
 
     if (App.isAdmin) {
-      // Admin → real DB delete (affects everyone, including employee's view)
       const who = isOwn ? 'আপনার' : (leave.profiles?.full_name || 'এই এমপ্লয়ীর');
-      const msg = `${who} এই ছুটির আবেদন (${bnDigits(leave.total_days||0)} দিন) ডেটাবেজ থেকে স্থায়ীভাবে মুছবেন?\n\n⚠️ এই কাজ undo করা যাবে না।`;
-      if (!confirm(msg)) return;
+      showModal(
+        '<i class="fa-solid fa-trash" style="color:#ef4444"></i> আবেদন মুছুন',
+        `<p style="color:var(--gray-700);line-height:1.7">${who} এই ছুটির আবেদন (<b>${bnDigits(leave.total_days||0)} দিন</b>) ডেটাবেজ থেকে স্থায়ীভাবে মুছবেন?</p>
+         <div style="background:#fee2e2;border-radius:10px;padding:10px 14px;font-size:12px;color:#991b1b;margin-top:8px">
+           <i class="fa-solid fa-triangle-exclamation"></i> এই কাজ undo করা যাবে না।
+         </div>`,
+        `<button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+         <button class="btn btn-danger" onclick="closeModal();window._doDeleteLeave(${id}, true)">
+           <i class="fa-solid fa-trash"></i> হ্যাঁ, মুছুন
+         </button>`
+      );
+    } else {
+      showModal(
+        '<i class="fa-solid fa-eye-slash" style="color:#f59e0b"></i> তালিকা থেকে সরান',
+        `<p style="color:var(--gray-700);line-height:1.7">আপনার এই আবেদন (<b>${bnDigits(leave.total_days||0)} দিন</b>) আপনার তালিকা থেকে সরিয়ে ফেলবেন?</p>
+         <small style="color:var(--gray-400)">ℹ️ এডমিনের কাছে রেকর্ডটি থাকবে।</small>`,
+        `<button class="btn btn-outline" onclick="closeModal()">না, রাখুন</button>
+         <button class="btn btn-warning" onclick="closeModal();window._doDeleteLeave(${id}, false)">
+           <i class="fa-solid fa-eye-slash"></i> সরান
+         </button>`
+      );
+    }
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'মুছা ব্যর্থ'), 'error');
+  }
+}
+
+window._doDeleteLeave = async function(id, isAdminDelete) {
+  try {
+    if (isAdminDelete) {
       const { error } = await sb.from('leaves').delete().eq('id', id);
       if (error) throw error;
       showToast('🗑️ আবেদন স্থায়ীভাবে মুছে ফেলা হয়েছে');
     } else {
-      // Employee → soft-hide only from own view; admin still sees it
-      const msg = `আপনার এই আবেদন (${bnDigits(leave.total_days||0)} দিন) আপনার তালিকা থেকে সরিয়ে ফেলবেন?\n\nℹ️ এডমিনের কাছে রেকর্ডটি থাকবে।`;
-      if (!confirm(msg)) return;
       const { error } = await sb.from('leaves').update({ hidden_for_user: true }).eq('id', id).eq('user_id', App.user.id);
       if (error) {
         if (/hidden_for_user/i.test(error.message||'')) {
@@ -5015,14 +5173,13 @@ async function deleteLeave(id) {
       }
       showToast('✅ আপনার তালিকা থেকে সরানো হয়েছে');
     }
-
-    if (App.currentPage === 'leaves')   refreshLeavesList();
-    if (App.currentPage === 'inbox')    refreshInboxList?.();
+    if (App.currentPage === 'leaves')    refreshLeavesList();
+    if (App.currentPage === 'inbox')     refreshInboxList?.();
     if (App.currentPage === 'dashboard') loadDashboardLists();
   } catch (e) {
     showToast('❌ ' + (e.message || 'মুছা ব্যর্থ'), 'error');
   }
-}
+};
 </script>
 
 
