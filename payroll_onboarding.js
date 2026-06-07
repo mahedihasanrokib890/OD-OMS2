@@ -89,30 +89,48 @@ window.refreshEmployeeDocuments = async function() {
   if (!container) return;
   
   try {
-    const { data, error } = await sb.from('employee_documents').select('*, profiles(full_name)').order('created_at', { ascending: false });
-    if (error) throw error;
+    const { data: profiles, error: pErr } = await sb.from('profiles').select('id, full_name, designation').eq('is_active', true);
+    if (pErr) throw pErr;
     
-    if (!data || data.length === 0) {
-      container.innerHTML = `<div class="empty-state"><p>কোনো ডকুমেন্ট নেই।</p></div>`;
-      return;
-    }
+    const { data: docs, error: dErr } = await sb.from('employee_documents').select('*');
+    if (dErr) throw dErr;
+    
+    const docsByUser = {};
+    (docs || []).forEach(d => {
+      if (!docsByUser[d.user_id]) docsByUser[d.user_id] = [];
+      docsByUser[d.user_id].push(d);
+    });
     
     let html = `<table class="data-table">
-      <tr><th>এমপ্লয়ী</th><th>ডকুমেন্ট টাইপ</th><th>আপলোড তারিখ</th><th>অ্যাকশন</th></tr>`;
+      <tr><th>এমপ্লয়ী</th><th>আপলোডকৃত ডকুমেন্টস</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr>`;
       
-    data.forEach(doc => {
-      const empName = doc.profiles ? doc.profiles.full_name : 'অজ্ঞাত';
-      const dateStr = new Date(doc.created_at).toLocaleDateString('en-GB');
-        
+    (profiles || []).forEach(emp => {
+      const empDocs = docsByUser[emp.id] || [];
+      
+      let docsHtml = '';
+      if (empDocs.length === 0) {
+        docsHtml = `<span style="color:var(--gray-400); font-size:13px;">কোনো ডকুমেন্ট নেই</span>`;
+      } else {
+        docsHtml = empDocs.map(d => `<a href="${d.document_url}" target="_blank" class="badge" style="background:#e0e7ff; color:#3730a3; padding:4px 8px; border-radius:6px; font-size:12px; text-decoration:none; display:inline-block; margin:2px; border:1px solid #c7d2fe; transition:all 0.2s;"><i class="fa-solid fa-file-lines"></i> ${d.document_type}</a>`).join(' ');
+      }
+      
+      const statusHtml = empDocs.length > 0 
+          ? `<span class="leave-status approved">${empDocs.length} টি আপলোড হয়েছে</span>` 
+          : `<span class="leave-status pending">কিছু আপলোড হয়নি</span>`;
+      
       html += `<tr>
-        <td><b>${empName}</b></td>
-        <td>${doc.document_type}</td>
-        <td>${dateStr}</td>
         <td>
-          <a href="${doc.document_url}" target="_blank" class="btn btn-sm btn-primary"><i class="fa-solid fa-eye"></i> দেখুন</a>
+          <b>${emp.full_name}</b>
+          <div style="font-size:12px; color:var(--gray-500);">${emp.designation || 'পদবি নেই'}</div>
+        </td>
+        <td>${docsHtml}</td>
+        <td>${statusHtml}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="openUploadDocModal('${emp.id}')"><i class="fa-solid fa-upload"></i> আপলোড</button>
         </td>
       </tr>`;
     });
+    
     html += `</table>`;
     container.innerHTML = html;
   } catch (err) {
@@ -120,9 +138,12 @@ window.refreshEmployeeDocuments = async function() {
   }
 }
 
-window.openUploadDocModal = async function() {
+window.openUploadDocModal = async function(preselectUserId = null) {
   const { data: emps } = await sb.from('profiles').select('id, full_name').eq('is_active', true);
-  const opts = (emps||[]).map(e => `<option value="${e.id}">${e.full_name}</option>`).join('');
+  const opts = (emps||[]).map(e => {
+    const selected = (preselectUserId && e.id === preselectUserId) ? 'selected' : '';
+    return `<option value="${e.id}" ${selected}>${e.full_name}</option>`;
+  }).join('');
   showModal(
     `<i class="fa-solid fa-file-upload"></i> ডকুমেন্ট আপলোড করুন`,
     `
