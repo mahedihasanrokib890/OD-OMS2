@@ -8742,12 +8742,23 @@ window.showLocationMap = async function(coords, empName) {
   
   showModal(
     '<i class="fa-solid fa-location-dot" style="color:#ef4444"></i> ' + escapeHtml(empName||'এমপ্লয়ি') + '-এর এটেন্ডেন্স লোকেশন',
-    `<div id="locAddressContainer" style="padding: 30px 20px; text-align: center; font-size: 16px; color: var(--gray-700);">
+    `<div id="locAddressContainer" style="padding: 10px 20px; text-align: center; font-size: 16px; color: var(--gray-700);">
        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--brand-500); margin-bottom: 15px;"></i><br>
        সঠিক ঠিকানা খোঁজা হচ্ছে...
      </div>`,
     '<button class="btn btn-outline" onclick="closeModal()">বন্ধ করুন</button>'
   );
+
+  const initMap = () => {
+    setTimeout(() => {
+      const m = L.map('modalLeafletMap').setView([lat, lng], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(m);
+      L.marker([lat, lng]).addTo(m).bindPopup(escapeHtml(empName||'এমপ্লয়ি')).openPopup();
+    }, 150);
+  };
 
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
@@ -8756,19 +8767,30 @@ window.showLocationMap = async function(coords, empName) {
     if (container) {
       if (data && data.display_name) {
         container.innerHTML = `
-          <div style="font-size: 40px; color: #10b981; margin-bottom: 15px;"><i class="fa-solid fa-map-location-dot"></i></div>
-          <div style="font-weight: bold; margin-bottom: 8px; color: var(--gray-900); font-size: 18px;">ঠিকানা:</div>
-          <div style="line-height: 1.6; color: var(--gray-800);">${escapeHtml(data.display_name)}</div>
-          <div style="margin-top: 20px; font-size: 13px; color: var(--gray-500); background: var(--gray-50); padding: 8px; border-radius: 6px; display: inline-block;">কোঅর্ডিনেটস: ${lat}, ${lng}</div>
+          <div style="font-weight: bold; margin-bottom: 5px; color: var(--gray-900); font-size: 16px; text-align: left;">এলাকা/ঠিকানা:</div>
+          <div style="line-height: 1.4; color: var(--gray-800); font-size: 14px; margin-bottom: 15px; text-align: left;">${escapeHtml(data.display_name)}</div>
+          <div id="modalLeafletMap" style="height: 250px; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid var(--gray-200);"></div>
+          <div style="margin-top: 15px; font-size: 13px; color: var(--gray-500); background: var(--gray-50); padding: 8px; border-radius: 6px; display: inline-block;">কোঅর্ডিনেটস: ${lat}, ${lng}</div>
         `;
+        initMap();
       } else {
-        container.innerHTML = `<div style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 30px; margin-bottom: 10px;"></i><br>ঠিকানা খুঁজে পাওয়া যায়নি।</div><div style="margin-top: 15px; font-size: 13px; color: var(--gray-500);">কোঅর্ডিনেটস: ${lat}, ${lng}</div>`;
+        container.innerHTML = `
+          <div style="color: #ef4444; margin-bottom: 10px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 24px;"></i> ঠিকানা খুঁজে পাওয়া যায়নি।</div>
+          <div id="modalLeafletMap" style="height: 250px; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid var(--gray-200);"></div>
+          <div style="margin-top: 15px; font-size: 13px; color: var(--gray-500);">কোঅর্ডিনেটস: ${lat}, ${lng}</div>
+        `;
+        initMap();
       }
     }
   } catch(e) {
     const container = document.getElementById('locAddressContainer');
     if (container) {
-      container.innerHTML = `<div style="color: #ef4444;"><i class="fa-solid fa-wifi" style="font-size: 30px; margin-bottom: 10px;"></i><br>ইন্টারনেট বা সার্ভার সমস্যার কারণে ঠিকানা লোড করা যায়নি।</div><div style="margin-top: 15px; font-size: 13px; color: var(--gray-500);">কোঅর্ডিনেটস: ${lat}, ${lng}</div>`;
+      container.innerHTML = `
+        <div style="color: #ef4444; margin-bottom: 10px;"><i class="fa-solid fa-wifi" style="font-size: 24px;"></i> ইন্টারনেট বা সার্ভার সমস্যার কারণে ঠিকানা লোড করা যায়নি।</div>
+        <div id="modalLeafletMap" style="height: 250px; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid var(--gray-200);"></div>
+        <div style="margin-top: 15px; font-size: 13px; color: var(--gray-500);">কোঅর্ডিনেটস: ${lat}, ${lng}</div>
+      `;
+      initMap();
     }
   }
 }
