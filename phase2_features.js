@@ -201,27 +201,21 @@ window.saveJob = async function() {
 async function renderPerformance() {
   const isAdmin = App.isAdmin;
   return `
-    <div class="welcome-banner" style="background: linear-gradient(135deg, #ca8a04 0%, #a16207 100%); color: white;">
-      <div>
-        <h1 style="color:white">পারফরম্যান্স (OKRs)</h1>
-        <p style="color:#fef08a">এমপ্লয়ি টার্গেট এবং রেটিং ম্যানেজমেন্ট</p>
-      </div>
+    <div style="display:flex; justify-content:flex-end; margin-bottom:15px; gap: 10px;">
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openNewGoalModal()" style="border-radius: 50px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);"><i class="fa-solid fa-bullseye"></i> নতুন টার্গেট</button>` : ''}
+      ${isAdmin ? `<button class="btn btn-secondary" onclick="openNewReviewModal()" style="border-radius: 50px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); background: #f59e0b; color: white; border: none;"><i class="fa-solid fa-star"></i> নতুন রেটিং</button>` : ''}
     </div>
     
-    <div class="card">
-       <div class="card-title" style="display:flex;justify-content:space-between">
-        <span><i class="fa-solid fa-bullseye"></i> লক্ষ্য ও টার্গেটসমূহ (Goals)</span>
-        ${isAdmin ? `<button class="btn btn-sm btn-primary" onclick="openNewGoalModal()"><i class="fa-solid fa-plus"></i> নতুন টার্গেট</button>` : ''}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+      <div class="card" style="border:none; box-shadow:0 4px 15px rgba(0,0,0,0.03); border-radius:16px; margin:0;">
+         <div class="card-title" style="color:var(--gray-700); font-size:16px; font-weight:700;"><i class="fa-solid fa-bullseye" style="color:#8b5cf6;"></i> লক্ষ্য ও টার্গেটসমূহ</div>
+        <div id="goalsList" style="margin-top:10px;">লোড হচ্ছে...</div>
       </div>
-      <div id="goalsList">লোড হচ্ছে...</div>
-    </div>
-    
-    <div class="card" style="margin-top:20px;">
-       <div class="card-title" style="display:flex;justify-content:space-between">
-        <span><i class="fa-solid fa-star"></i> মাসিক রেটিং</span>
-        ${isAdmin ? `<button class="btn btn-sm btn-primary" onclick="openNewReviewModal()"><i class="fa-solid fa-plus"></i> নতুন রেটিং</button>` : ''}
+      
+      <div class="card" style="border:none; box-shadow:0 4px 15px rgba(0,0,0,0.03); border-radius:16px; margin:0;">
+         <div class="card-title" style="color:var(--gray-700); font-size:16px; font-weight:700;"><i class="fa-solid fa-star" style="color:#f59e0b;"></i> মাসিক রেটিং</div>
+        <div id="reviewsList" style="margin-top:10px;">লোড হচ্ছে...</div>
       </div>
-      <div id="reviewsList">লোড হচ্ছে...</div>
     </div>
   `;
 }
@@ -348,17 +342,14 @@ window.saveReview = async function() {
 // =========================================================
 async function renderExpense() {
   return `
-    <div class="welcome-banner" style="background: linear-gradient(135deg, #be123c 0%, #881337 100%); color: white;">
-      <div>
-        <h1 style="color:white">অফিসিয়াল খরচ (Expenses)</h1>
-        <p style="color:#fecdd3">ভাতা এবং খরচের বিল ভাউচার সাবমিট করুন</p>
-      </div>
-      <button class="btn btn-primary" onclick="openNewExpenseModal()">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+      <h3 style="font-size:18px; font-weight:700; color:var(--gray-700); margin:0;"><i class="fa-solid fa-receipt" style="color:#f43f5e;"></i> অফিসিয়াল খরচের তালিকা</h3>
+      <button class="btn btn-primary" onclick="openNewExpenseModal()" style="border-radius: 50px; background:linear-gradient(135deg, #e11d48, #be123c); border:none; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);">
         <i class="fa-solid fa-plus"></i> বিল সাবমিট
       </button>
     </div>
     
-    <div id="expenseList" style="margin-top:20px;">
+    <div id="expenseList" style="background:white; border-radius:16px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03); min-height:400px; border:1px solid var(--gray-100);">
       <div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto"></div></div>
     </div>
   `;
@@ -452,7 +443,117 @@ window.saveExpense = async function() {
   }
 }
 
-window.renderRecruitment = renderRecruitment;
+// =========================================================
+// HR TOOLS UNIFIED DASHBOARD
+// =========================================================
+window.renderHRTools = async function() {
+  const isAdmin = App.isAdmin;
+  const initialTool = isAdmin ? 'payroll' : 'performance';
+  
+  return `
+    <div class="welcome-banner" style="background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%); color: white;">
+      <div>
+        <h1 style="color:white">এইচআর টুলস ড্যাশবোর্ড</h1>
+        <p style="color:#c7d2fe">সব এইচআর ফিচার একসাথে পরিচালনা করুন</p>
+      </div>
+    </div>
+    
+    <div style="background: white; border-radius: var(--r-xl); box-shadow: var(--shadow-sm); border: 1px solid var(--border); margin-bottom: 20px; padding: 10px; overflow-x: auto;">
+      <div style="display: flex; gap: 10px; min-width: max-content;" id="hrToolsTabs">
+        ${isAdmin ? `
+        <button class="hr-tab-btn active" onclick="switchHRTool('payroll', this)">
+          <i class="fa-solid fa-money-bill-wave" style="color: #10b981;"></i> পেরোল
+        </button>
+        <button class="hr-tab-btn" onclick="switchHRTool('onboarding', this)">
+          <i class="fa-solid fa-user-plus" style="color: #3b82f6;"></i> অনবোর্ডিং
+        </button>
+        ` : ''}
+        <button class="hr-tab-btn ${!isAdmin ? 'active' : ''}" onclick="switchHRTool('performance', this)">
+          <i class="fa-solid fa-star" style="color: #8b5cf6;"></i> পারফরম্যান্স
+        </button>
+        <button class="hr-tab-btn" onclick="switchHRTool('expenses', this)">
+          <i class="fa-solid fa-receipt" style="color: #f43f5e;"></i> অফিসিয়াল খরচ
+        </button>
+      </div>
+    </div>
+
+    <style>
+      .hr-tab-btn {
+        padding: 12px 20px;
+        border: none;
+        background: transparent;
+        border-radius: 12px;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--gray-600);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+      .hr-tab-btn:hover {
+        background: var(--gray-50);
+        color: var(--gray-900);
+      }
+      .hr-tab-btn.active {
+        background: var(--purple-50);
+        color: var(--purple-700);
+        box-shadow: inset 0 0 0 1px var(--purple-200);
+      }
+      .hr-tab-btn i { font-size: 16px; }
+    </style>
+
+    <div id="hrToolsContent">
+      <div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto"></div></div>
+    </div>
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="setTimeout(()=>switchHRTool('${initialTool}', document.querySelector('#hrToolsTabs .hr-tab-btn.active')), 100)" style="display:none;">
+  `;
+}
+
+window.switchHRTool = async function(tool, el) {
+  if(el) {
+    document.querySelectorAll('#hrToolsTabs .hr-tab-btn').forEach(btn => btn.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  const container = document.getElementById('hrToolsContent');
+  if(!container) return;
+
+  container.innerHTML = '<div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto"></div></div>';
+
+  try {
+    let content = '';
+    
+    if (tool === 'payroll') {
+        content = await window.renderPayroll();
+    }
+    else if (tool === 'onboarding') {
+        content = await window.renderOnboarding();
+    }
+    else if (tool === 'performance') {
+        content = await window.renderPerformance();
+    }
+    else if (tool === 'expenses') {
+        content = await window.renderExpense();
+    }
+    
+    container.innerHTML = content;
+
+    setTimeout(() => {
+      if (tool === 'payroll') window.switchPayrollTab('records', document.querySelector('#payrollTabs .tab'));
+      else if (tool === 'onboarding') window.switchOnboardingTab('tasks', document.querySelector('#onboardingTabs .tab'));
+      else if (tool === 'performance') window.refreshPerformance();
+      else if (tool === 'expenses') window.refreshExpense();
+    }, 50);
+
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><h3>Error</h3><p>${err.message}</p></div>`;
+  }
+}
+
+window.renderHRTools = renderHRTools;
 window.renderRecruitment = renderRecruitment;
 window.renderPerformance = renderPerformance;
 window.renderExpense = renderExpense;

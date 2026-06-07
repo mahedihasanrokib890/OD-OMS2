@@ -6,22 +6,23 @@ async function renderOnboarding() {
   if (!App.isAdmin) return `<div class="empty-state"><i class="fa-solid fa-lock"></i><h3>Access Denied</h3></div>`;
   
   return `
-    <div class="welcome-banner" style="background: linear-gradient(135deg, #1e0a30 0%, #5b2d8a 100%); color: white;">
-      <div>
-        <h1 style="color:white">এমপ্লয়ী অনবোর্ডিং ও ডকুমেন্টস</h1>
-        <p style="color:#d8b4fe">নতুন এমপ্লয়ী যুক্ত করুন এবং তাদের ডকুমেন্ট সংরক্ষণ করুন</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+      <div class="tabs" id="onboardingTabs" style="margin:0; border-bottom:none; display:flex; gap:5px;">
+        <div class="tab active" onclick="switchOnboardingTab('tasks', this)" style="border-radius:50px; padding:8px 20px; border:none; background:var(--gray-100); color:var(--gray-600);"><i class="fa-solid fa-list-check"></i> অনবোর্ডিং টাস্ক</div>
+        <div class="tab" onclick="switchOnboardingTab('docs', this)" style="border-radius:50px; padding:8px 20px; border:none; background:var(--gray-100); color:var(--gray-600);"><i class="fa-solid fa-folder-open"></i> এমপ্লয়ী ডকুমেন্টস</div>
       </div>
-      <button class="btn btn-primary" onclick="openUploadDocModal()">
+      <button class="btn btn-primary" onclick="openUploadDocModal()" style="border-radius: 50px; padding: 10px 20px; box-shadow: 0 4px 12px rgba(91, 45, 138, 0.25);">
         <i class="fa-solid fa-upload"></i> ডকুমেন্ট আপলোড
       </button>
     </div>
     
-    <div class="tabs" id="onboardingTabs">
-      <div class="tab active" onclick="switchOnboardingTab('tasks', this)">অনবোর্ডিং টাস্ক</div>
-      <div class="tab" onclick="switchOnboardingTab('docs', this)">এমপ্লয়ী ডকুমেন্টস</div>
-    </div>
-    
-    <div id="onboardingTabContent">
+    <style>
+      #onboardingTabs .tab.active { background: var(--purple-100) !important; color: var(--purple-700) !important; font-weight:700; box-shadow:none; }
+      #onboardingTabs .tab { transition: all 0.2s; cursor: pointer; }
+      #onboardingTabs .tab:hover { background: var(--gray-200) !important; }
+    </style>
+
+    <div id="onboardingTabContent" style="background:white; border-radius:16px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03); min-height:400px; border:1px solid var(--gray-100);">
       <div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto"></div></div>
     </div>
   `;
@@ -188,22 +189,23 @@ async function renderPayroll() {
   if (!App.isAdmin) return `<div class="empty-state"><i class="fa-solid fa-lock"></i><h3>Access Denied</h3></div>`;
   
   return `
-    <div class="welcome-banner" style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); color: white;">
-      <div>
-        <h1 style="color:white">পেরোল ও স্যালারি</h1>
-        <p style="color:#94a3b8">সকল এমপ্লয়ীর বেতন ও পেরোল স্লিপ পরিচালনা করুন</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+      <div class="tabs" id="payrollTabs" style="margin:0; border-bottom:none; display:flex; gap:5px;">
+        <div class="tab active" onclick="switchPayrollTab('records', this)" style="border-radius:50px; padding:8px 20px; border:none; background:var(--gray-100); color:var(--gray-600);"><i class="fa-solid fa-file-invoice-dollar"></i> পেরোল রেকর্ডস</div>
+        <div class="tab" onclick="switchPayrollTab('structure', this)" style="border-radius:50px; padding:8px 20px; border:none; background:var(--gray-100); color:var(--gray-600);"><i class="fa-solid fa-sitemap"></i> স্যালারি স্ট্রাকচার (সেটআপ)</div>
       </div>
-      <button class="btn btn-success" onclick="generateMonthlyPayroll()">
-        <i class="fa-solid fa-file-invoice-dollar"></i> এই মাসের পেরোল তৈরি করুন
+      <button class="btn btn-success" onclick="generateMonthlyPayroll()" style="border-radius: 50px; padding: 10px 20px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> এই মাসের পেরোল তৈরি করুন
       </button>
     </div>
     
-    <div class="tabs" id="payrollTabs">
-      <div class="tab active" onclick="switchPayrollTab('records', this)">পেরোল রেকর্ডস</div>
-      <div class="tab" onclick="switchPayrollTab('structure', this)">স্যালারি স্ট্রাকচার (সেটআপ)</div>
-    </div>
-    
-    <div id="payrollTabContent">
+    <style>
+      #payrollTabs .tab.active { background: #d1fae5 !important; color: #047857 !important; font-weight:700; box-shadow:none; }
+      #payrollTabs .tab { transition: all 0.2s; cursor: pointer; }
+      #payrollTabs .tab:hover { background: var(--gray-200) !important; }
+    </style>
+
+    <div id="payrollTabContent" style="background:white; border-radius:16px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03); min-height:400px; border:1px solid var(--gray-100);">
       <div style="text-align:center; padding:30px;"><div class="spinner" style="margin:0 auto"></div></div>
     </div>
   `;
@@ -406,9 +408,106 @@ window.saveSalaryStructure = async function() {
   }
 }
 
-window.viewPayslip = function(id) {
-    showToast('PDF Payslip জেনারেট হচ্ছে...', 'warning');
-    setTimeout(() => { showToast('Payslip তৈরি হয়েছে।', 'success'); }, 1500);
+window.viewPayslip = async function(id) {
+    const { data: p } = await sb.from('payroll_records').select('*, profiles(full_name, designation, email)').eq('id', id).maybeSingle();
+    if (!p) return showToast('পেরোল রেকর্ড পাওয়া যায়নি', 'error');
+
+    const overlay = document.getElementById('payslipOverlay');
+    const content = document.getElementById('payslipContent');
+
+    const dateTokens = p.month.split('-'); // e.g., '2023-10'
+    const months = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+    const monthBn = months[parseInt(dateTokens[1])-1] + ' ' + bnDigits(dateTokens[0]);
+
+    const payslipHTML = `
+      <div class="ll-letter-doc">
+        <div class="ll-doc-page">
+          <svg class="ll-doc-watermark" xmlns="http://www.w3.org/2000/svg" viewBox="180 50 640 890">
+            <path fill="#4B247A" d="M 475 90 L 355 90 A 120 120 0 0 0 235 210 L 235 230 A 120 120 0 0 0 355 350 L 475 350 Z" />
+            <path fill="#ED2880" d="M 525 90 L 645 90 A 120 120 0 0 1 765 210 L 765 350 L 645 350 A 120 120 0 0 1 525 230 Z" />
+            <path fill="#ED2880" d="M 500 450 A 159.1 159.1 0 0 1 725 675 Z" />
+            <path fill="#4B247A" d="M 500 900 L 275 675 A 159.1 159.1 0 0 1 500 450 L 725 675 Z" />
+          </svg>
+          <div class="ll-doc-header">
+            <div class="ll-doc-brand">
+              <img class="ll-doc-logo" src="https://ordhekdeen.com/uploads/20221205130621.svg" alt="Logo" style="width: 80px; height: auto;">
+            </div>
+            <div class="ll-doc-contact">
+              <div>✉ info@ordhekdeen.com</div>
+              <div>📞 +৮৮০১৭৬০৪৪২৪৭৬</div>
+            </div>
+          </div>
+          <div class="ll-doc-body">
+            <h2 class="ll-doc-title" style="text-decoration:none;">পে-স্লিপ (Payslip)</h2>
+            <div style="text-align:center; font-size:16px; color:#475569; margin-bottom:30px; font-weight:700;">মাস: ${monthBn}</div>
+            
+            <div class="ll-doc-meta">
+              <div class="ll-doc-meta-row"><div class="lbl">এমপ্লয়ী নাম:</div><div class="val">${p.profiles.full_name}</div></div>
+              <div class="ll-doc-meta-row"><div class="lbl">পদবি:</div><div class="val">${p.profiles.designation || '-'}</div></div>
+              <div class="ll-doc-meta-row"><div class="lbl">ইমেইল:</div><div class="val">${p.profiles.email || '-'}</div></div>
+              <div class="ll-doc-meta-row"><div class="lbl">স্ট্যাটাস:</div><div class="val">${p.status === 'Paid' ? 'পেইড (Paid)' : 'পেন্ডিং (Pending)'}</div></div>
+            </div>
+
+            <table style="width:100%; border-collapse:collapse; margin-top:20px;">
+              <thead>
+                <tr style="background:#f1f5f9;">
+                  <th style="padding:12px; border:1px solid #cbd5e1; text-align:left;">বিবরণ</th>
+                  <th style="padding:12px; border:1px solid #cbd5e1; text-align:right;">উপার্জন (Earnings)</th>
+                  <th style="padding:12px; border:1px solid #cbd5e1; text-align:right;">কর্তন (Deductions)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding:12px; border:1px solid #cbd5e1;">বেসিক স্যালারি</td>
+                  <td style="padding:12px; border:1px solid #cbd5e1; text-align:right;">৳ ${bnDigits(p.base_salary)}</td>
+                  <td style="padding:12px; border:1px solid #cbd5e1; text-align:right;">-</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px; border:1px solid #cbd5e1;">ভাতা (Total Allowance)</td>
+                  <td style="padding:12px; border:1px solid #cbd5e1; text-align:right;">৳ ${bnDigits(p.total_allowance)}</td>
+                  <td style="padding:12px; border:1px solid #cbd5e1; text-align:right;">-</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px; border:1px solid #cbd5e1;">ডিডাকশন (Total Deduction)</td>
+                  <td style="padding:12px; border:1px solid #cbd5e1; text-align:right;">-</td>
+                  <td style="padding:12px; border:1px solid #cbd5e1; text-align:right;">৳ ${bnDigits(p.total_deduction)}</td>
+                </tr>
+                <tr style="font-weight:700; background:#f8fafc;">
+                  <td style="padding:12px; border:1px solid #cbd5e1;">সর্বমোট (Net Salary)</td>
+                  <td colspan="2" style="padding:12px; border:1px solid #cbd5e1; text-align:right; font-size:18px; color:#5b2d8a;">৳ ${bnDigits(p.net_salary)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="ll-signatures">
+              <div class="ll-sig">
+                <br><br>
+                _______________________<br>
+                <small>এমপ্লয়ী স্বাক্ষর</small>
+              </div>
+              <div class="ll-sig">
+                <br><br>
+                _______________________<br>
+                <small>অথরাইজড সিগনেচার (অ্যাডমিন)</small>
+              </div>
+            </div>
+          </div>
+          <div class="ll-doc-footer">
+            <span>Ordhekdeen HRMS</span>
+            <span>Generated on: ${formatBnDate(new Date())}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    content.innerHTML = payslipHTML;
+    overlay.classList.add('show');
+}
+
+window.doPrintPayslip = function() {
+    document.body.classList.add('printing-payslip');
+    window.print();
+    document.body.classList.remove('printing-payslip');
 }
 
 // Attach functions to window if not already there, so index.html's navigate() can find them.
