@@ -8322,7 +8322,7 @@ async function saveOverallImport() {
       }
       if (error) { failed += batch.length; console.warn(error); } else saved += batch.length;
     }
-    if (saved > 0) showToast(`✅ ${bnDigits(saved)} টি মাসিক রেকর্ড সেভ হয়েছে`, 'success');
+    if (saved > 0) showToast(`✅ ${bnDigits(saved)} টি রেকর্ড আপডেট হয়েছে (v3)`, 'success');
     else showToast('⚠️ সেভ হয়নি — supabase_v10 SQL চালান', 'error');
     _actAllRows = null;
   } catch (e) {
