@@ -8350,10 +8350,11 @@ async function importOverall() {
             totalLeave += n; 
             leaveCells.push(n); 
             // map header to specific leave — check whRowIdx first (actual header row), then row above
+            const h0 = (rows[0]?.[c] || '').toLowerCase();
             const h1 = (rows[whRowIdx]?.[c] || '').toLowerCase();
             const h2 = (rows[whRowIdx-1]?.[c] || '').toLowerCase();
-            const h = (h1 && /sick|casual|earn|comp|marr|public|holiday|unpaid|without|irresponsib|responsib/.test(h1)) ? h1 : 
-                       (h2 && /sick|casual|earn|comp|marr|public|holiday|unpaid|without|irresponsib|responsib/.test(h2)) ? h2 : h1;
+            const hReg = /sick|casual|earn|comp|marr|public|holiday|unpaid|without|irresponsib|responsib/;
+            const h = (h0 && hReg.test(h0)) ? h0 : (h1 && hReg.test(h1)) ? h1 : (h2 && hReg.test(h2)) ? h2 : h0 || h1 || h2;
             if (h.includes('sick')) sl += n;
             else if (h.includes('casual')) cl += n;
             else if (h.includes('earn')) el += n;
