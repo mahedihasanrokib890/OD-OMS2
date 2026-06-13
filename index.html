@@ -7750,7 +7750,7 @@ async function openEmpReportModal(userId) {
         <td>${hasLimit ? `<div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden;width:120px"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div>` : '<span style="font-size:10px;color:var(--gray-400)">প্রযোজ্য নয়</span>'}</td>
       </tr>
     `;
-  }).join('');
+  }).join('') : `<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--gray-600);font-size:14px"><i class="fa-solid fa-info-circle" style="color:var(--purple-500)"></i> মোট ছুটি নেওয়া: <b class="num" style="font-size:18px;color:#be185d">${bnDigits(u.totalLeaveUsed)}</b> দিন<br><small style="color:var(--gray-400)">বিস্তারিত ভাঙা দেখতে Google Sheet থেকে আবার Overall Import করুন</small></td></tr>`;
 
   const init = (p.full_name||'আ').charAt(0).toUpperCase();
   const body = `
