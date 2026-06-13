@@ -8345,19 +8345,26 @@ async function importOverall() {
       let totalLeave = 0;
 
       for (let c = startCol; c < a; c++) {
-         const header = (rows[whRowIdx][c] || '').toLowerCase();
+         let header = '';
+         for (let hi = 0; hi < monthRows[0].i; hi++) {
+             if (rows[hi] && rows[hi][c]) header += ' ' + rows[hi][c];
+         }
+         header = header.toLowerCase();
+
          const val = ov_num(r[c]) || 0;
-         if (header.includes('casual') || header === 'cl') { cl += val; totalLeave += val; }
-         else if (header.includes('sick') || header === 'sl') { sl += val; totalLeave += val; }
-         else if (header.includes('earn') || header === 'el') { el += val; totalLeave += val; }
-         else if (header.includes('comp') && !header.includes('responsib')) { col += val; totalLeave += val; }
-         else if (header.includes('marri') || header === 'ml') { ml += val; totalLeave += val; }
-         else if (header.includes('public') || header.includes('holiday') || header === 'ph') { ph += val; totalLeave += val; }
-         else if (header.includes('unpaid') || header.includes('without') || header === 'ul') { ul += val; totalLeave += val; }
-         else if (header.includes('irresponsib') || header.includes('responsib') || header === 'il') { il += val; totalLeave += val; }
+         const isMatch = (regex) => regex.test(header);
+         
+         if (isMatch(/casual|\bcl\b/)) { cl += val; totalLeave += val; }
+         else if (isMatch(/sick|\bsl\b/)) { sl += val; totalLeave += val; }
+         else if (isMatch(/earn|\bel\b/)) { el += val; totalLeave += val; }
+         else if (isMatch(/comp/) && !isMatch(/responsib/)) { col += val; totalLeave += val; }
+         else if (isMatch(/marri|\bml\b/)) { ml += val; totalLeave += val; }
+         else if (isMatch(/public|holiday|\bph\b/)) { ph += val; totalLeave += val; }
+         else if (isMatch(/unpaid|without|\bul\b/)) { ul += val; totalLeave += val; }
+         else if (isMatch(/irresponsib|\bil\b/)) { il += val; totalLeave += val; }
       }
 
-      if (totalLeave === 0 && !rows[whRowIdx].slice(startCol, a).some(h => /casual|sick|earn|comp|marri|public|unpaid|irresponsib|cl|sl|el|ml|ph|ul|il/i.test(h||''))) {
+      if (totalLeave === 0) {
           totalLeave = ov_num(r[a-1]) || 0;
       }
 
