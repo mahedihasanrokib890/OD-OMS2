@@ -8446,12 +8446,7 @@ async function importOverall() {
             }
         }
     });
-      });
-      if (cands.length === 0) return;
-      cands.sort((a, b) => (a.md - b.md) || (Math.abs(a.bi - ti) - Math.abs(b.bi - ti)));
-      tabToBlock[tab] = cands[0].bi;
-      used.add(cands[0].bi);
-    });
+
 
     // 7. Build records for every month using the correct block per tab (preserve sheet/tab order)
     const records = [];
