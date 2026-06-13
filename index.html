@@ -7487,21 +7487,25 @@ function openActivityEmpModal(name, year) {
   const remaining = Math.max(0, totalAllowed - totalLeave);
   const present = u ? u.present : Math.round(totalW / 8);
 
-  let remLeaveToDistribute = totalLeave;
+  // Build real leave usage from monthly_activity rows
+  const realLeaveByCode = {};
+  rows.forEach(r => {
+      realLeaveByCode['CL'] = (realLeaveByCode['CL'] || 0) + Number(r.cl_days || 0);
+      realLeaveByCode['SL'] = (realLeaveByCode['SL'] || 0) + Number(r.sl_days || 0);
+      realLeaveByCode['EL'] = (realLeaveByCode['EL'] || 0) + Number(r.el_days || 0);
+      realLeaveByCode['COL'] = (realLeaveByCode['COL'] || 0) + Number(r.col_days || 0);
+      realLeaveByCode['ML'] = (realLeaveByCode['ML'] || 0) + Number(r.ml_days || 0);
+      realLeaveByCode['PH'] = (realLeaveByCode['PH'] || 0) + Number(r.ph_days || 0);
+      realLeaveByCode['UL'] = (realLeaveByCode['UL'] || 0) + Number(r.ul_days || 0);
+      realLeaveByCode['IL'] = (realLeaveByCode['IL'] || 0) + Number(r.il_days || 0);
+  });
+
   const leaveBalanceTable = policies.map(po => {
     const isPH = po.code.toUpperCase() === 'PH';
     const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : po.yearly_limit;
-    const hasLimit = total !== null && total !== undefined;
-    let used = u && u.leaveByCode ? (u.leaveByCode[po.code] || 0) : 0;
-    
-    // Distribute totalLeave into standard leaves if DB detailed usage is empty
-    if ((!u || Object.keys(u.leaveByCode || {}).length === 0) && remLeaveToDistribute > 0 && !isPH && ['CL','SL','EL','AL'].includes(po.code)) {
-       let toTake = Math.min(remLeaveToDistribute, total || 0);
-       if (toTake > 0) {
-           used = toTake;
-           remLeaveToDistribute -= toTake;
-       }
-    }
+    // Treat 0 as no limit ONLY for specific types, or if it is null
+    const hasLimit = (total !== null && total !== undefined) && !(total === 0 && ['IL', 'UL'].includes(po.code.toUpperCase()));
+    let used = realLeaveByCode[po.code.toUpperCase()] || 0;
 
     const remain = hasLimit ? Math.max(0, total - used) : null;
     const pct = hasLimit && total ? Math.min(100, (used/total)*100) : 0;
