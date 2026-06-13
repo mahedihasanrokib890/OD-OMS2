@@ -8394,17 +8394,17 @@ async function importOverall() {
         let yTotal = 0;
         trows.slice(hidx+1).forEach(rr => { 
           if (ov_clean(rr[0]) && /\d/.test(ov_clean(rr[0]))) w += ov_hms(rr[6]); 
-          const j = rr.join(' ').toLowerCase();
-          const n = ov_num(rr[rr.length-1]) || 0;
-          if (n > 0) {
-            if (j.includes('casual')) { yLv.cl = n; yTotal += n; }
-            else if (j.includes('sick')) { yLv.sl = n; yTotal += n; }
-            else if (j.includes('earn')) { yLv.el = n; yTotal += n; }
-            else if (j.includes('comp') && !j.includes('responsib')) { yLv.col = n; yTotal += n; }
-            else if (j.includes('marri')) { yLv.ml = n; yTotal += n; }
-            else if (j.includes('public') || j.includes('holiday')) { yLv.ph = n; yTotal += n; }
-            else if (j.includes('unpaid') || j.includes('without')) { yLv.ul = n; yTotal += n; }
-            else if (j.includes('irresponsib') || j.includes('responsib')) { yLv.il = n; yTotal += n; }
+          let foundLeave = false;
+          for (let c of rr) {
+            const v = c.trim().toLowerCase();
+            if (v === 'cl' || v.includes('casual')) { yLv.cl += 1; yTotal += 1; foundLeave = true; break; }
+            if (v === 'sl' || v.includes('sick')) { yLv.sl += 1; yTotal += 1; foundLeave = true; break; }
+            if (v === 'el' || v.includes('earn')) { yLv.el += 1; yTotal += 1; foundLeave = true; break; }
+            if (v === 'col' || v === 'comp' || (v.includes('comp') && !v.includes('responsib'))) { yLv.col += 1; yTotal += 1; foundLeave = true; break; }
+            if (v === 'ml' || v.includes('marri')) { yLv.ml += 1; yTotal += 1; foundLeave = true; break; }
+            if (v === 'ph' || v.includes('public') || v.includes('holiday')) { yLv.ph += 1; yTotal += 1; foundLeave = true; break; }
+            if (v === 'ul' || v.includes('unpaid') || v.includes('without')) { yLv.ul += 1; yTotal += 1; foundLeave = true; break; }
+            if (v === 'il' || v.includes('irresponsib')) { yLv.il += 1; yTotal += 1; foundLeave = true; break; }
           }
         });
         tabWorked[tab] = { minutes: Math.round(w*100)/100, yLv, yTotal };
