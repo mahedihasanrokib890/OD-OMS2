@@ -1198,6 +1198,21 @@ const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, storageKey: LS_PREFIX + 'auth' }
 });
 
+// Default leave policies fallback (used when leave_policies table is empty)
+const DEFAULT_LEAVE_POLICIES = [
+  {code:'CL',  name_bn:'নৈমিত্তিক ছুটি (CL)',   yearly_limit:10, is_active:true, display_order:1, is_paid:true},
+  {code:'SL',  name_bn:'অসুস্থতা ছুটি (SL)',     yearly_limit:14, is_active:true, display_order:2, is_paid:true},
+  {code:'EL',  name_bn:'অর্জিত ছুটি (EL)',       yearly_limit:0,  is_active:true, display_order:3, is_paid:true},
+  {code:'COL', name_bn:'সমবেদনা ছুটি (COL)',      yearly_limit:3,  is_active:true, display_order:4, is_paid:true},
+  {code:'ML',  name_bn:'বিবাহ ছুটি (ML)',         yearly_limit:10, is_active:true, display_order:5, is_paid:true},
+  {code:'PH',  name_bn:'সরকারি ছুটি (PH)',        yearly_limit:null, is_active:true, display_order:6, is_paid:true},
+  {code:'UL',  name_bn:'বিনা বেতনে ছুটি (UL)',    yearly_limit:null, is_active:true, display_order:7, is_paid:false},
+  {code:'IL',  name_bn:'দায়িত্বহীন ছুটি (IL)',    yearly_limit:null, is_active:true, display_order:8, is_paid:false}
+];
+function getPoliciesWithFallback(dbPolicies) {
+  return (dbPolicies && dbPolicies.length > 0) ? dbPolicies : DEFAULT_LEAVE_POLICIES;
+}
+
 // ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
@@ -6601,21 +6616,22 @@ async function loadEmpQuickStats(userId) {
 
     // Leave balance bars
     const lbEl = document.getElementById('empQuickLeaveBalance');
-    if (lbEl && policies.length > 0) {
+    if (lbEl) {
       lbEl.innerHTML = `
         <div class="card-title" style="margin-bottom:8px"><span><i class="fa-solid fa-scale-balanced"></i> ছুটির ব্যালেন্স (${bnDigits(year)})</span></div>
         ${policies.map(po => {
           const used = leaveByCode[po.code] || 0;
-          const remain = Math.max(0, (po.yearly_limit||0) - used);
-          const pct = po.yearly_limit ? Math.min(100, (used/po.yearly_limit)*100) : 0;
+          const hasLimit = po.yearly_limit !== null && po.yearly_limit !== undefined && po.yearly_limit > 0;
+          const remain = hasLimit ? Math.max(0, po.yearly_limit - used) : null;
+          const pct = hasLimit ? Math.min(100, (used/po.yearly_limit)*100) : 0;
           const barColor = pct < 50 ? 'linear-gradient(90deg,#10b981,#059669)' : pct < 80 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)';
           return `
             <div style="margin-bottom:10px">
               <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px">
                 <span style="font-weight:700;color:var(--gray-800)">${escapeHtml(po.name_bn)} <small style="color:var(--gray-400);font-weight:500">(${escapeHtml(po.code)})</small></span>
-                <span class="num" style="font-weight:800">${bnDigits(remain)}<span style="color:var(--gray-400)">/${bnDigits(po.yearly_limit||0)}</span> দিন</span>
+                ${hasLimit ? `<span class="num" style="font-weight:800">${bnDigits(remain)}<span style="color:var(--gray-400)">/${bnDigits(po.yearly_limit)}</span> দিন</span>` : `<span class="num" style="font-weight:800;color:var(--gray-500)">ব্যবহৃত: <span style="color:var(--gray-800)">${bnDigits(used)}</span> দিন</span>`}
               </div>
-              <div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .6s"></div></div>
+              ${hasLimit ? `<div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .6s"></div></div>` : ''}
             </div>
           `;
         }).join('')}
@@ -6982,7 +6998,7 @@ async function loadEmpReport() {
       sb.from('monthly_activity').select('*').like('month', yearStr + '-%')
     ]);
     const profiles = profRes.data || [];
-    const policies = (polRes.data || []);
+    const policies = getPoliciesWithFallback(polRes.data);
     const activities = actRes.data || [];
 
     // Map profiles by normalized name or email
@@ -7482,12 +7498,12 @@ function openActivityEmpModal(name, year) {
   const u = cache && cache.rows ? cache.rows.find(x => x.profile.full_name === name || x.profile.email === name) : null;
   const p = u ? u.profile : { full_name: name, email: '', designation: '' };
   
-  const policies = cache && cache.policies ? cache.policies : [];
+  const policies = getPoliciesWithFallback(cache && cache.policies ? cache.policies : []);
   const totalAllowed = policies.filter(po => ['CL','SL','EL','AL'].includes(po.code)).reduce((s,po) => s + (po.yearly_limit||0), 0);
   const remaining = Math.max(0, totalAllowed - totalLeave);
   const present = u ? u.present : Math.round(totalW / 8);
 
-  // Build real leave usage from monthly_activity rows
+  // Build real leave usage from monthly_activity rows (SHEET DATA)
   const realLeaveByCode = {};
   rows.forEach(r => {
       realLeaveByCode['CL'] = (realLeaveByCode['CL'] || 0) + Number(r.cl_days || 0);
@@ -7503,8 +7519,7 @@ function openActivityEmpModal(name, year) {
   const leaveBalanceTable = policies.map(po => {
     const isPH = po.code.toUpperCase() === 'PH';
     const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : po.yearly_limit;
-    // Treat 0 as no limit ONLY for specific types, or if it is null
-    const hasLimit = (total !== null && total !== undefined) && !(total === 0 && ['IL', 'UL'].includes(po.code.toUpperCase()));
+    const hasLimit = total !== null && total !== undefined && total > 0;
     let used = realLeaveByCode[po.code.toUpperCase()] || 0;
 
     const remain = hasLimit ? Math.max(0, total - used) : null;
@@ -7707,7 +7722,7 @@ async function openEmpReportModal(userId) {
   const u = cache.rows.find(x => x.profile.id === userId);
   if (!u) return showToast('তথ্য পাওয়া যায়নি', 'error');
   const p = u.profile;
-  const policies = cache.policies || [];
+  const policies = getPoliciesWithFallback(cache.policies);
   const totalAllowed = policies.filter(p => ['CL','SL','EL','AL'].includes(p.code)).reduce((s,po) => s + (po.yearly_limit||0), 0);
   const remaining = Math.max(0, totalAllowed - u.totalLeaveUsed);
 
@@ -7728,18 +7743,19 @@ async function openEmpReportModal(userId) {
 
   const leaveBalanceTable = policies.map(po => {
     const isPH = po.code.toUpperCase() === 'PH';
-    const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : (po.yearly_limit || 0);
+    const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : po.yearly_limit;
+    const hasLimit = total !== null && total !== undefined && total > 0;
     const used = u.leaveByCode[po.code] || 0;
-    const remain = Math.max(0, total - used);
-    const pct = total ? Math.min(100, (used/total)*100) : 0;
+    const remain = hasLimit ? Math.max(0, total - used) : null;
+    const pct = hasLimit ? Math.min(100, (used/total)*100) : 0;
     const barColor = pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
     return `
       <tr>
         <td><b>${escapeHtml(po.name_bn)}</b> <small style="color:var(--gray-400)">(${po.code})</small></td>
-        <td class="num">${bnDigits(total)}</td>
+        <td class="num">${hasLimit ? bnDigits(total) : '<span style="font-size:11px;color:var(--gray-400)">সীমা নেই</span>'}</td>
         <td class="num" style="color:#dc2626">${bnDigits(used)}</td>
-        <td class="num" style="color:#059669;font-weight:800">${bnDigits(remain)}</td>
-        <td><div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden;width:120px"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div></td>
+        <td class="num" style="color:#059669;font-weight:800">${hasLimit ? bnDigits(remain) : '—'}</td>
+        <td>${hasLimit ? `<div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden;width:120px"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div>` : '<span style="font-size:10px;color:var(--gray-400)">প্রযোজ্য নয়</span>'}</td>
       </tr>
     `;
   }).join('');
