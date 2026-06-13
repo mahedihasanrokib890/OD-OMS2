@@ -7108,19 +7108,8 @@ async function loadEmpReport() {
       
       u.attPct = Math.min(100, Math.round((u.present / denom) * 100));
       
-      // If no explicit leave breakdown was found but totalLeaveUsed > 0, fallback to auto-distribute
-      const explicitLeavesSum = ['CL','SL','EL','COL','ML','PH','UL','IL'].reduce((sum, code) => sum + (u.leaveByCode[code] || 0), 0);
-      if (explicitLeavesSum === 0 && u.totalLeaveUsed > 0) {
-        let remLeaveToDistribute = u.totalLeaveUsed;
-        policies.filter(po => ['CL','SL','EL','AL'].includes(po.code)).forEach(po => {
-           let totalAllowed = po.yearly_limit || 0;
-           let toTake = Math.min(remLeaveToDistribute, totalAllowed);
-           if (toTake > 0) {
-              u.leaveByCode[po.code] = toTake;
-              remLeaveToDistribute -= toTake;
-           }
-        });
-      }
+      // Leave breakdown comes directly from sheet data (cl_days, sl_days, etc.)
+      // No auto-distribution — show actual data from Google Sheet
 
       rows.push(u);
     });
