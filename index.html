@@ -8349,23 +8349,47 @@ async function importOverall() {
          for (let hi = 0; hi < monthRows[0].i; hi++) {
              if (rows[hi] && rows[hi][c]) header += ' ' + rows[hi][c];
          }
+         
+         // FALLBACK: If header is empty, use the header from Block 0 for the same relative position
+         if (!header.trim() && anchors[0] !== undefined) {
+             let offset = a - c;
+             let c0 = anchors[0] - offset;
+             if (c0 >= 3) { // 0,1,2 are global columns (Month, etc.)
+                 for (let hi = 0; hi < monthRows[0].i; hi++) {
+                     if (rows[hi] && rows[hi][c0]) header += ' ' + rows[hi][c0];
+                 }
+             }
+         }
+         
          header = header.toLowerCase();
 
          const val = ov_num(r[c]) || 0;
          const isMatch = (regex) => regex.test(header);
          
-         if (isMatch(/casual|\bcl\b/)) { cl += val; totalLeave += val; }
-         else if (isMatch(/sick|\bsl\b/)) { sl += val; totalLeave += val; }
-         else if (isMatch(/earn|\bel\b/)) { el += val; totalLeave += val; }
-         else if (isMatch(/comp/) && !isMatch(/responsib/)) { col += val; totalLeave += val; }
-         else if (isMatch(/marri|\bml\b/)) { ml += val; totalLeave += val; }
-         else if (isMatch(/public|holiday|\bph\b/)) { ph += val; totalLeave += val; }
-         else if (isMatch(/unpaid|without|\bul\b/)) { ul += val; totalLeave += val; }
-         else if (isMatch(/irresponsib|\bil\b/)) { il += val; totalLeave += val; }
+         let matched = false;
+         if (isMatch(/casual|\bcl\b/)) { cl += val; matched = true; }
+         else if (isMatch(/sick|\bsl\b/)) { sl += val; matched = true; }
+         else if (isMatch(/earn|\bel\b/)) { el += val; matched = true; }
+         else if (isMatch(/comp/) && !isMatch(/responsib/)) { col += val; matched = true; }
+         else if (isMatch(/marri|\bml\b/)) { ml += val; matched = true; }
+         else if (isMatch(/public|holiday|\bph\b/)) { ph += val; matched = true; }
+         else if (isMatch(/unpaid|without|\bul\b/)) { ul += val; matched = true; }
+         else if (isMatch(/irresponsib|\bil\b/)) { il += val; matched = true; }
+         
+         if (matched) {
+             totalLeave += val;
+         }
       }
 
-      if (totalLeave === 0) {
-          totalLeave = ov_num(r[a-1]) || 0;
+      // If absolutely no specific leave was matched and totalLeave is 0, fallback to reading a-1 as total.
+      // But we ONLY want to do this if no headers at all matched, to avoid overriding real 0s.
+      if (totalLeave === 0 && cl===0 && sl===0 && el===0 && ph===0 && ul===0) {
+          // If all are 0, maybe there are no headers. Let's fallback to a-1 just in case it's a generic Total column.
+          // But only if a-1 is a number > 0.
+          const fallbackVal = ov_num(r[a-1]) || 0;
+          if (fallbackVal > 0) {
+              totalLeave = fallbackVal;
+          }
       }
 
       const w = ov_hms(r[a]);
