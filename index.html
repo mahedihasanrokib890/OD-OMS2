@@ -7928,7 +7928,7 @@ function handleCsvFile(e) {
 }
 
 function parseCSV(text) {
-  const lines = text.replace(/^\ufeff/,'').split(/\r?\n/).filter(l => l.trim());
+  const lines = text.replace(/^\ufeff/,'').split(/\n?\n/).filter(l => l.trim());
   if (lines.length < 2) throw new Error('CSV-তে কোনো ডাটা নেই');
   const parseLine = (line) => {
     const out = []; let cur = '', inQ = false;
@@ -8085,7 +8085,7 @@ function parseCsvLine(line) {
   out.push(cur); return out;
 }
 function csvToRows(text) {
-  return text.replace(/^\ufeff/,'').split(/\r?\n/).map(parseCsvLine);
+  return text.replace(/^\ufeff/,'').split(/\n?\n/).map(parseCsvLine);
 }
 function hmsToHours(s) {
   if (!s) return 0;
@@ -8390,8 +8390,24 @@ async function importOverall() {
         let hidx = trows.findIndex(rr => rr.some(c => /start time/i.test(c||'')));
         if (hidx < 0) hidx = 2;
         let w = 0;
-        trows.slice(hidx+1).forEach(rr => { if (ov_clean(rr[0]) && /\d/.test(ov_clean(rr[0]))) w += ov_hms(rr[6]); });
-        tabWorked[tab] = Math.round(w*100)/100;
+        const yLv = { cl:0, sl:0, el:0, col:0, ml:0, ph:0, ul:0, il:0 };
+        let yTotal = 0;
+        trows.slice(hidx+1).forEach(rr => { 
+          if (ov_clean(rr[0]) && /\d/.test(ov_clean(rr[0]))) w += ov_hms(rr[6]); 
+          const j = rr.join(' ').toLowerCase();
+          const n = ov_num(rr[rr.length-1]) || 0;
+          if (n > 0) {
+            if (j.includes('casual')) { yLv.cl = n; yTotal += n; }
+            else if (j.includes('sick')) { yLv.sl = n; yTotal += n; }
+            else if (j.includes('earn')) { yLv.el = n; yTotal += n; }
+            else if (j.includes('comp') && !j.includes('responsib')) { yLv.col = n; yTotal += n; }
+            else if (j.includes('marri')) { yLv.ml = n; yTotal += n; }
+            else if (j.includes('public') || j.includes('holiday')) { yLv.ph = n; yTotal += n; }
+            else if (j.includes('unpaid') || j.includes('without')) { yLv.ul = n; yTotal += n; }
+            else if (j.includes('irresponsib') || j.includes('responsib')) { yLv.il = n; yTotal += n; }
+          }
+        });
+        tabWorked[tab] = { minutes: Math.round(w*100)/100, yLv, yTotal };
       } catch { tabWorked[tab] = 0; }
     }
 
@@ -8400,11 +8416,11 @@ async function importOverall() {
     const used = new Set();
     const tabToBlock = {};
     tabs.forEach((tab, ti) => {
-      const w = tabWorked[tab];
+      const w = tabWorked[tab].minutes;
       const cands = [];
       blockMonthly.forEach((arr, bi) => {
         if (used.has(bi)) return;
-        const md = Math.min(...arr.map(x => Math.abs(x - w)));
+        const md = Math.min(...arr.map(x => Math.abs(x - tabWorked[tab].minutes)));
         cands.push({ bi, md });
       });
       if (cands.length === 0) return;
@@ -8424,13 +8440,34 @@ async function importOverall() {
         const r = rows[i];
         const d = blockData(r, bi);
         if (d.worked > 0 || d.act !== null || d.totalLeave > 0) {
+          let cl = 0, sl = 0, el = 0, col = 0, ml = 0, ph = 0, ul = 0, il = 0;
+          const totalLeave = d.totalLeave || 0;
+          if (totalLeave > 0 && tabWorked[tab]) {
+            const yt = tabWorked[tab].yTotal || 0;
+            const yl = tabWorked[tab].yLv || {};
+            if (yt > 0) {
+              const dist = (key) => Math.round((yl[key] / yt) * totalLeave);
+              cl = dist('cl'); sl = dist('sl'); el = dist('el'); col = dist('col');
+              ml = dist('ml'); ph = dist('ph'); ul = dist('ul'); il = dist('il');
+              const newSum = cl + sl + el + col + ml + ph + ul + il;
+              if (newSum !== totalLeave) {
+                const diff = totalLeave - newSum;
+                const maxKey = Object.keys(yl).reduce((a, b) => yl[a] > yl[b] ? a : b);
+                if (maxKey === 'cl') cl += diff; else if (maxKey === 'sl') sl += diff;
+                else if (maxKey === 'el') el += diff; else if (maxKey === 'col') col += diff;
+                else if (maxKey === 'ml') ml += diff; else if (maxKey === 'ph') ph += diff;
+                else if (maxKey === 'ul') ul += diff; else if (maxKey === 'il') il += diff;
+              }
+            }
+          }
+
           records.push({
             employee_name: tab, emp_code: '', designation: '',
             month: monthISO, month_label: label,
             present_days: 0, late_count: 0,
             worked_hours: d.worked, late_hours: d.late,
-            cl_days: d.cl || 0, sl_days: d.sl || 0, el_days: d.el || 0, col_days: d.col || 0, ml_days: d.ml || 0, ph_days: d.ph || 0, ul_days: d.ul || 0, il_days: d.il || 0,
-            total_leave: d.totalLeave || 0,
+            cl_days: cl, sl_days: sl, el_days: el, col_days: col, ml_days: ml, ph_days: ph, ul_days: ul, il_days: il,
+            total_leave: totalLeave,
             activity_pct: d.act || 0, attendance_pct: d.act || 0,
             source: 'overall',
             sort_order: tabs.indexOf(tab)
