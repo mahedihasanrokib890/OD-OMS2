@@ -8325,6 +8325,10 @@ async function importOverall() {
     if (tabs.length === 0) throw new Error('কোনো এমপ্লয়ী ট্যাব পাওয়া যায়নি');
 
     // 2. Overall CSV
+    const headerCsvText = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=6&sheet=Overall`).then(r => r.text());
+    const headerRows = csvToRows(headerCsvText);
+    const masterHeaders = headerRows[0] || [];
+
     const csv = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Overall`).then(r => r.text());
     const rows = csvToRows(csv);
     let whRowIdx = rows.findIndex(r => r.filter(c => /worked hrs/i.test(c||'')).length >= 2);
@@ -8345,23 +8349,7 @@ async function importOverall() {
       let totalLeave = 0;
 
       for (let c = startCol; c < a; c++) {
-         let header = '';
-         for (let hi = 0; hi < monthRows[0].i; hi++) {
-             if (rows[hi] && rows[hi][c]) header += ' ' + rows[hi][c];
-         }
-         
-         // FALLBACK: If header is empty, use the header from Block 0 for the same relative position
-         if (!header.trim() && anchors[0] !== undefined) {
-             let offset = a - c;
-             let c0 = anchors[0] - offset;
-             if (c0 >= 3) { // 0,1,2 are global columns (Month, etc.)
-                 for (let hi = 0; hi < monthRows[0].i; hi++) {
-                     if (rows[hi] && rows[hi][c0]) header += ' ' + rows[hi][c0];
-                 }
-             }
-         }
-         
-         header = header.toLowerCase();
+         let header = (masterHeaders[c] || '').toLowerCase();
 
          const val = ov_num(r[c]) || 0;
          const isMatch = (regex) => regex.test(header);
@@ -8381,11 +8369,7 @@ async function importOverall() {
          }
       }
 
-      // If absolutely no specific leave was matched and totalLeave is 0, fallback to reading a-1 as total.
-      // But we ONLY want to do this if no headers at all matched, to avoid overriding real 0s.
       if (totalLeave === 0 && cl===0 && sl===0 && el===0 && ph===0 && ul===0) {
-          // If all are 0, maybe there are no headers. Let's fallback to a-1 just in case it's a generic Total column.
-          // But only if a-1 is a number > 0.
           const fallbackVal = ov_num(r[a-1]) || 0;
           if (fallbackVal > 0) {
               totalLeave = fallbackVal;
@@ -8437,12 +8421,31 @@ async function importOverall() {
     const used = new Set();
     const tabToBlock = {};
     tabs.forEach((tab, ti) => {
-      const w = tabWorked[tab].minutes;
-      const cands = [];
-      blockMonthly.forEach((arr, bi) => {
-        if (used.has(bi)) return;
-        const md = Math.min(...arr.map(x => Math.abs(x - tabWorked[tab].minutes)));
-        cands.push({ bi, md });
+        let bestBi = -1;
+        for (let bi = 0; bi < anchors.length; bi++) {
+            if (used.has(bi)) continue;
+            const a = anchors[bi];
+            const startCol = bi === 0 ? 3 : anchors[bi-1] + 1;
+            for (let c = startCol; c <= a; c++) {
+                if (masterHeaders[c] && masterHeaders[c].toLowerCase().includes(tab.toLowerCase())) {
+                    bestBi = bi;
+                    break;
+                }
+            }
+            if (bestBi !== -1) break;
+        }
+        if (bestBi !== -1) {
+            tabToBlock[tab] = bestBi;
+            used.add(bestBi);
+        } else {
+            // fallback picking nearest unused
+            bestBi = Array.from(Array(anchors.length).keys()).find(x => !used.has(x));
+            if (bestBi !== undefined) {
+                tabToBlock[tab] = bestBi;
+                used.add(bestBi);
+            }
+        }
+    });
       });
       if (cands.length === 0) return;
       cands.sort((a, b) => (a.md - b.md) || (Math.abs(a.bi - ti) - Math.abs(b.bi - ti)));
