@@ -8339,42 +8339,32 @@ async function importOverall() {
     const ov_num = (v) => { v = ov_clean(v); return /^-?\d+(\.\d+)?%?$/.test(v) ? parseFloat(v) : null; };
     function blockData(r, bi) {
       const a = anchors[bi];
-      const leaveStart = bi === 0 ? 3 : (anchors[bi-1] + 3); // after prev block's activity col
-      // leave breakdown: sum numeric cells between leaveStart and anchor
-      let totalLeave = 0; const leaveCells = [];
-      let sl = 0, cl = 0, el = 0, col = 0, ml = 0, ph = 0, ul = 0, il = 0;
+      const startCol = bi === 0 ? 3 : anchors[bi-1] + 1;
+      
+      let cl = 0, sl = 0, el = 0, col = 0, ml = 0, ph = 0, ul = 0, il = 0;
+      let totalLeave = 0;
 
-      for (let c = leaveStart; c < a; c++) { 
-         const n = ov_num(r[c]); 
-         if (n !== null) { 
-            totalLeave += n; 
-            leaveCells.push(n); 
-            // map header to specific leave — check whRowIdx first (actual header row), then row above
-            const h0 = (rows[0]?.[c] || '').toLowerCase();
-            const h1 = (rows[whRowIdx]?.[c] || '').toLowerCase();
-            const h2 = (rows[whRowIdx-1]?.[c] || '').toLowerCase();
-            const hReg = /sick|casual|earn|comp|marr|public|holiday|unpaid|without|irresponsib|responsib/;
-            const h = (h0 && hReg.test(h0)) ? h0 : (h1 && hReg.test(h1)) ? h1 : (h2 && hReg.test(h2)) ? h2 : h0 || h1 || h2;
-            if (h.includes('sick')) sl += n;
-            else if (h.includes('casual')) cl += n;
-            else if (h.includes('earn')) el += n;
-            else if (h.includes('comp') && !h.includes('irresponsib') && !h.includes('responsib')) col += n;
-            else if (h.includes('marriage') || h.includes('marri')) ml += n;
-            else if (h.includes('public') || h.includes('holiday')) ph += n;
-            else if (h.includes('unpaid') || h.includes('without')) ul += n;
-            else if (h.includes('irresponsib') || h.includes('responsib')) il += n;
-         } 
+      for (let c = startCol; c < a; c++) {
+         const header = (rows[whRowIdx][c] || '').toLowerCase();
+         const val = ov_num(r[c]) || 0;
+         if (header.includes('casual') || header === 'cl') { cl += val; totalLeave += val; }
+         else if (header.includes('sick') || header === 'sl') { sl += val; totalLeave += val; }
+         else if (header.includes('earn') || header === 'el') { el += val; totalLeave += val; }
+         else if (header.includes('comp') && !header.includes('responsib')) { col += val; totalLeave += val; }
+         else if (header.includes('marri') || header === 'ml') { ml += val; totalLeave += val; }
+         else if (header.includes('public') || header.includes('holiday') || header === 'ph') { ph += val; totalLeave += val; }
+         else if (header.includes('unpaid') || header.includes('without') || header === 'ul') { ul += val; totalLeave += val; }
+         else if (header.includes('irresponsib') || header.includes('responsib') || header === 'il') { il += val; totalLeave += val; }
       }
-      const worked = ov_hms(r[a]);
-      let lateCol = a + 1, actCol = a + 2;
-      for (let c = a + 1; c < Math.min(a + 5, r.length); c++) {
-        const h = (rows[whRowIdx][c]||'').toLowerCase();
-        if (h.includes('late') && !h.includes('count')) lateCol = c;
-        if (h.includes('activity') || h.includes('act')) actCol = c;
+
+      if (totalLeave === 0 && !rows[whRowIdx].slice(startCol, a).some(h => /casual|sick|earn|comp|marri|public|unpaid|irresponsib|cl|sl|el|ml|ph|ul|il/i.test(h||''))) {
+          totalLeave = ov_num(r[a-1]) || 0;
       }
-      const late = ov_num(r[lateCol]) || 0;       // late hrs
-      const act = ov_num(r[actCol]);             // activity %
-      return { worked, late, act, totalLeave, leaveCells, sl, cl, el, col, ml, ph, ul, il };
+
+      const w = ov_hms(r[a]);
+      const late = ov_hms(r[a+1]);
+      const act = ov_num(r[a+2]);
+      return { totalLeave, worked: w, late: late, act: act, cl, sl, el, col, ml, ph, ul, il };
     }
 
     // 4. Build each block's monthly worked-hours array (across all months)
@@ -8408,7 +8398,7 @@ async function importOverall() {
           }
         });
         tabWorked[tab] = { minutes: Math.round(w*100)/100, yLv, yTotal };
-      } catch { tabWorked[tab] = 0; }
+      } catch { tabWorked[tab] = {minutes: 0, yLv: {}, yTotal: 0}; }
     }
 
     // 6. Match each tab (in sheet order) to nearest unused block by closest monthly worked,
@@ -8440,34 +8430,13 @@ async function importOverall() {
         const r = rows[i];
         const d = blockData(r, bi);
         if (d.worked > 0 || d.act !== null || d.totalLeave > 0) {
-          let cl = 0, sl = 0, el = 0, col = 0, ml = 0, ph = 0, ul = 0, il = 0;
-          const totalLeave = d.totalLeave || 0;
-          if (totalLeave > 0 && tabWorked[tab]) {
-            const yt = tabWorked[tab].yTotal || 0;
-            const yl = tabWorked[tab].yLv || {};
-            if (yt > 0) {
-              const dist = (key) => Math.round((yl[key] / yt) * totalLeave);
-              cl = dist('cl'); sl = dist('sl'); el = dist('el'); col = dist('col');
-              ml = dist('ml'); ph = dist('ph'); ul = dist('ul'); il = dist('il');
-              const newSum = cl + sl + el + col + ml + ph + ul + il;
-              if (newSum !== totalLeave) {
-                const diff = totalLeave - newSum;
-                const maxKey = Object.keys(yl).reduce((a, b) => yl[a] > yl[b] ? a : b);
-                if (maxKey === 'cl') cl += diff; else if (maxKey === 'sl') sl += diff;
-                else if (maxKey === 'el') el += diff; else if (maxKey === 'col') col += diff;
-                else if (maxKey === 'ml') ml += diff; else if (maxKey === 'ph') ph += diff;
-                else if (maxKey === 'ul') ul += diff; else if (maxKey === 'il') il += diff;
-              }
-            }
-          }
-
           records.push({
             employee_name: tab, emp_code: '', designation: '',
             month: monthISO, month_label: label,
             present_days: 0, late_count: 0,
             worked_hours: d.worked, late_hours: d.late,
-            cl_days: cl, sl_days: sl, el_days: el, col_days: col, ml_days: ml, ph_days: ph, ul_days: ul, il_days: il,
-            total_leave: totalLeave,
+            cl_days: d.cl||0, sl_days: d.sl||0, el_days: d.el||0, col_days: d.col||0, ml_days: d.ml||0, ph_days: d.ph||0, ul_days: d.ul||0, il_days: d.il||0,
+            total_leave: d.totalLeave || 0,
             activity_pct: d.act || 0, attendance_pct: d.act || 0,
             source: 'overall',
             sort_order: tabs.indexOf(tab)
