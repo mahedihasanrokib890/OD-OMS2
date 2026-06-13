@@ -7108,8 +7108,9 @@ async function loadEmpReport() {
       
       u.attPct = Math.min(100, Math.round((u.present / denom) * 100));
       
-      // Leave breakdown comes directly from sheet data (cl_days, sl_days, etc.)
-      // No auto-distribution — show actual data from Google Sheet
+      // If breakdown columns are empty, mark it so UI shows total only
+      const explicitSum = ["CL","SL","EL","COL","ML","PH","UL","IL"].reduce((s, c) => s + (u.leaveByCode[c] || 0), 0);
+      u.hasLeaveBreakdown = explicitSum > 0;
 
       rows.push(u);
     });
@@ -7505,7 +7506,8 @@ function openActivityEmpModal(name, year) {
       realLeaveByCode['IL'] = (realLeaveByCode['IL'] || 0) + Number(r.il_days || 0);
   });
 
-  const leaveBalanceTable = policies.map(po => {
+  const hasBreakdown = ['CL','SL','EL','COL','ML','PH','UL','IL'].reduce((s,c) => s + (realLeaveByCode[c] || 0), 0) > 0;
+  const leaveBalanceTable = hasBreakdown ? policies.map(po => {
     const isPH = po.code.toUpperCase() === 'PH';
     const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : po.yearly_limit;
     const hasLimit = total !== null && total !== undefined && total > 0;
@@ -7523,7 +7525,7 @@ function openActivityEmpModal(name, year) {
         <td>${hasLimit ? `<div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden;width:120px"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div>` : '<span style="font-size:10px;color:var(--gray-400)">প্রযোজ্য নয়</span>'}</td>
       </tr>
     `;
-  }).join('') || `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">কোনো পলিসি ডাটা নেই</td></tr>`;
+  }).join('') : `<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--gray-600);font-size:14px"><i class="fa-solid fa-info-circle" style="color:var(--purple-500)"></i> মোট ছুটি নেওয়া: <b class="num" style="font-size:18px;color:#be185d">${bnDigits(totalLeave)}</b> দিন<br><small style="color:var(--gray-400)">বিস্তারিত ভাঙা দেখতে Google Sheet থেকে আবার Overall Import করুন</small></td></tr>`;
 
   const init = (name||'এ').charAt(0).toUpperCase();
   showModal(
@@ -7730,7 +7732,8 @@ async function openEmpReportModal(userId) {
     </tr>
   `).join('') || `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--gray-400)">এই বছরে কোনো ছুটির রেকর্ড নেই</td></tr>`;
 
-  const leaveBalanceTable = policies.map(po => {
+  // Use actual breakdown if available, otherwise show total
+  const leaveBalanceTable = u.hasLeaveBreakdown ? policies.map(po => {
     const isPH = po.code.toUpperCase() === 'PH';
     const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : po.yearly_limit;
     const hasLimit = total !== null && total !== undefined && total > 0;
