@@ -1181,8 +1181,8 @@
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const SUPA_URL = 'https://dfdccqadrmyhgfkzgmqk.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmZGNjcWFkcm15aGdma3pnbXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjQ0MzAsImV4cCI6MjA5NTM0MDQzMH0.dmtb6Ubl5HFZRJT8kb7oh3q7WjSAJ898BnMg7DxbgLA';
+const SUPA_URL = 'https://napkzwngkotuuoexoeib.supabase.co';
+const SUPA_KEY = 'sb_publishable_1G0YLv0iOXjHh-4vo4U9CQ_JQEcwRi1';
 const LS_PREFIX = 'odhrms_v1_';
 
 // Admin email allow-list — these users automatically get admin role
@@ -2057,7 +2057,7 @@ async function handleResetRequest(reqId, email) {
       <details style="margin-top:14px">
         <summary style="cursor:pointer;font-size:12px;color:var(--purple-600);font-weight:700">অথবা অ্যাডমিন নিজেই বদলাবেন (Supabase ড্যাশবোর্ড)</summary>
         <div style="margin-top:8px;padding:10px;background:var(--gray-50);border-radius:8px;font-size:12px;color:var(--gray-600);line-height:1.7">
-          <p>১. <a href="https://supabase.com/dashboard/project/dfdccqadrmyhgfkzgmqk/auth/users" target="_blank" style="color:var(--purple-700);font-weight:700">Supabase Users</a> এ যান</p>
+          <p>১. <a href="https://supabase.com/dashboard/project/napkzwngkotuuoexoeib/auth/users" target="_blank" style="color:var(--purple-700);font-weight:700">Supabase Users</a> এ যান</p>
           <p>২. <b>${escapeHtml(email)}</b> খুঁজুন → ⋯ → "Send password recovery"</p>
         </div>
       </details>
@@ -2183,7 +2183,7 @@ function navigate(route) {
       else if (_inboxActiveTab === 'leaves') refreshInboxList();
       else initChat();
     }
-    if (route === 'settings') { loadOfficeTimes(); if(typeof renderBonusSettings === 'function') renderBonusSettings(); }
+    if (route === 'settings') { loadOfficeTimes(); if(typeof renderBonusSettings === 'function') renderBonusSettings(); if(typeof renderLeavePolicies === 'function') renderLeavePolicies(); }
     if (route === 'reports')  loadEmpReport();
     if (route === 'onboarding') refreshOnboardingList();
     if (route === 'payroll') refreshPayrollList();
@@ -2191,7 +2191,7 @@ function navigate(route) {
     if (route === 'performance') refreshPerformance();
     if (route === 'expenses') refreshExpense();
     if (route === 'live_location') refreshLiveLocation();
-    if (route === 'reports')  loadImportedActivity();
+    
 
     // Premium polish: counters + reveal animations on every page
     setTimeout(() => {
@@ -2797,13 +2797,14 @@ async function loadDashboardLists() {
     (myUsed||[]).forEach(l => { usedMap[l.leave_code] = (usedMap[l.leave_code]||0) + (l.total_days||0); });
     const el = document.getElementById('dashLeaveBalance');
     if (el) {
-      const validPolicies = (policies||[]).filter(p => p.yearly_limit);
+      const validPolicies = (policies||[]).filter(p => p.yearly_limit || p.code === 'PH' || p.code === 'ph');
       if (validPolicies.length === 0) {
         el.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-info-circle"></i><h3>কোনো ছুটির পলিসি সেট করা নেই</h3></div>`;
       } else {
         el.innerHTML = validPolicies.map(p => {
           const used = usedMap[p.code] || 0;
-          const total = p.yearly_limit;
+          const isPH = p.code.toUpperCase() === 'PH';
+          const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : p.yearly_limit;
           const remaining = Math.max(0, total - used);
           const pct = Math.min(100, (used/total)*100);
           const barColor = pct < 50 ? 'linear-gradient(90deg,#10b981,#059669)' : pct < 80 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)';
@@ -4736,13 +4737,13 @@ async function refreshLeavesList() {
       sb.from('leaves').select('id').eq('user_id', App.user.id).eq('status','pending'),
       sb.from('leaves').select('id', { count: 'exact', head: true }).eq('status', 'pending')
     ]);
-    const used = (myUsed||[]).reduce((s,r) => s + (r.total_days||0), 0);
+    const used = (myUsed||[]).filter(r => ['CL','SL','EL','AL'].includes(r.leave_code)).reduce((s,r) => s + (r.total_days||0), 0);
     // Load annual limit from leave_policies DB (fallback to 20 if not set)
     let annualLimit = 20;
     try {
-      const { data: policies } = await sb.from('leave_policies').select('yearly_limit').eq('is_active', true).gt('yearly_limit', 0);
+      const { data: policies } = await sb.from('leave_policies').select('yearly_limit, code').eq('is_active', true).gt('yearly_limit', 0);
       if (policies && policies.length > 0) {
-        annualLimit = (policies||[]).reduce((s, p) => s + (p.yearly_limit || 0), 0);
+        annualLimit = (policies||[]).filter(p => ['CL','SL','EL','AL'].includes(p.code)).reduce((s, p) => s + (p.yearly_limit || 0), 0);
       }
     } catch {}
     document.getElementById('lvTotal') && (document.getElementById('lvTotal').textContent = bnDigits(annualLimit));
@@ -6541,7 +6542,7 @@ async function loadEmpQuickStats(userId) {
       sb.from('attendance').select('status, late_minutes, total_hours, lunch_out, lunch_in, date').eq('user_id', userId).gte('date', yearStart).lte('date', yearEnd)
     ]);
 
-    const policies = (polRes.data||[]).filter(p => p.yearly_limit);
+    const policies = (polRes.data||[]);
     const leaves   = lvRes.data || [];
     const atts     = attRes.data || [];
 
@@ -6553,8 +6554,8 @@ async function loadEmpQuickStats(userId) {
       const code = l.leave_code || 'CL';
       leaveByCode[code] = (leaveByCode[code]||0) + (l.total_days||0);
     });
-    const totalLeaveUsed = approved.reduce((s,l) => s + (l.total_days||0), 0);
-    const totalAllowed   = policies.reduce((s,p) => s + (p.yearly_limit||0), 0);
+    const totalLeaveUsed = approved.filter(l => ['CL','SL','EL','AL'].includes(l.leave_code)).reduce((s,l) => s + (l.total_days||0), 0);
+    const totalAllowed   = policies.filter(p => ['CL','SL','EL','AL'].includes(p.code)).reduce((s,p) => s + (p.yearly_limit||0), 0);
     const remaining      = Math.max(0, totalAllowed - totalLeaveUsed);
 
     let present = 0, late = 0, lateMins = 0, hours = 0, breakMins = 0, monthPresent = 0, monthLate = 0;
@@ -6878,6 +6879,21 @@ async function renderReports() {
         <span><i class="fa-solid fa-id-card-clip" style="color:var(--purple-600)"></i> প্রতিটি এমপ্লয়ীর ছুটি ও উপস্থিতি রিপোর্ট</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="form-select" id="empRptYear" onchange="loadEmpReport()" style="width:auto;min-height:38px;padding:8px 30px 8px 12px;font-size:13px"></select>
+          <select class="form-select" id="empRptMonth" onchange="loadEmpReport()" style="width:auto;min-height:38px;padding:8px 30px 8px 12px;font-size:13px">
+            <option value="all">পুরো বছর</option>
+            <option value="01">জানুয়ারি</option>
+            <option value="02">ফেব্রুয়ারি</option>
+            <option value="03">মার্চ</option>
+            <option value="04">এপ্রিল</option>
+            <option value="05">মে</option>
+            <option value="06">জুন</option>
+            <option value="07">জুলাই</option>
+            <option value="08">আগস্ট</option>
+            <option value="09">সেপ্টেম্বর</option>
+            <option value="10">অক্টোবর</option>
+            <option value="11">নভেম্বর</option>
+            <option value="12">ডিসেম্বর</option>
+          </select>
           <input class="form-input" id="empRptSearch" placeholder="🔍 নাম/ইমেইল/ডিপার্টমেন্ট" oninput="filterEmpReport()" style="width:240px;min-height:38px;padding:8px 14px;font-size:13px">
           <button class="btn btn-outline btn-sm" onclick="loadEmpReport()"><i class="fa-solid fa-arrows-rotate"></i> রিফ্রেশ</button>
         </div>
@@ -6900,31 +6916,7 @@ async function renderReports() {
       </div>
     </div>
 
-    <!-- ═══ YEARLY ACTIVITY REPORT (app data, no sheet needed) ═══ -->
-    <div class="card" style="margin-top:18px;padding:0;overflow:hidden">
-      <div style="background:linear-gradient(135deg,#2d1b69 0%,#5b2d8a 45%,#c2185b 100%);color:#fff;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-        <div>
-          <h2 style="font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-chart-line"></i> সামগ্রিক উপস্থিতি রিপোর্ট</h2>
-          <p style="opacity:.8;font-size:13px;margin-top:4px">অ্যাপে সংরক্ষিত — প্রতি এমপ্লয়ীর বার্ষিক তথ্য (শিটের আর প্রয়োজন নেই)</p>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <!-- Mode toggle -->
-          <div style="display:flex;background:rgba(0,0,0,.25);border-radius:99px;padding:3px;gap:2px">
-            <button id="actModeYear" onclick="switchActMode('year')" style="padding:6px 14px;border-radius:99px;border:none;background:transparent;color:rgba(255,255,255,.75);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-days"></i> বছর</button>
-            <button id="actModeMonth" onclick="switchActMode('month')" style="padding:6px 14px;border-radius:99px;border:none;background:#fff;color:var(--purple-700);font-family:var(--font-bn);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s"><i class="fa-solid fa-calendar-week"></i> মাস</button>
-          </div>
-          <!-- Year tabs (year mode) -->
-          <div id="actYearTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          <!-- Month picker (month mode, hidden by default) -->
-          <input type="month" id="actMonthPicker" value="" onchange="loadImportedActivity()" style="display:none;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-family:var(--font-en);font-weight:700;font-size:13px;cursor:pointer;outline:none;color-scheme:dark">
-          <button class="act-year-tab" onclick="_actAllRows=null;loadImportedActivity()" title="রিফ্রেশ"><i class="fa-solid fa-arrows-rotate"></i></button>
-        </div>
-      </div>
-      <div style="padding:20px">
-        <div id="importedActivityBox"><div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
-      </div>
-    </div>
-  `;
+    `;
 }
 
 let _charts = {};
@@ -6983,74 +6975,142 @@ async function loadEmpReport() {
   if (grid) grid.innerHTML = `<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div>`;
 
   try {
-    const [profRes, polRes, lvRes, attRes, otRes] = await Promise.all([
+    const yearStr = String(year);
+    const [profRes, polRes, actRes] = await Promise.all([
       sb.from('profiles').select('id, full_name, email, photo_url, designation, department, employee_type_id, employee_types(name_bn)').eq('is_active', true).order('full_name'),
       sb.from('leave_policies').select('*').eq('is_active', true).order('display_order'),
-      sb.from('leaves').select('user_id, leave_code, total_days, status, start_date').eq('status', 'approved').gte('start_date', yearStart).lte('start_date', yearEnd),
-      sb.from('attendance').select('user_id, status, late_minutes, total_hours, date, check_in').gte('date', yearStart).lte('date', yearEnd),
-      sb.from('office_times').select('*')
+      sb.from('monthly_activity').select('*').like('month', yearStr + '-%')
     ]);
     const profiles = profRes.data || [];
-    const policies = (polRes.data || []).filter(p => p.yearly_limit);
-    const leaves   = lvRes.data || [];
-    const atts     = attRes.data || [];
-    const otMap = {};
-    (otRes.data||[]).forEach(o => { otMap[o.employee_type_id] = o; });
-    const otDefault = (otRes.data && otRes.data.length) ? otRes.data[0] : null;
-    const typeOfUser = {};
-    profiles.forEach(p => { typeOfUser[p.id] = p.employee_type_id; });
+    const policies = (polRes.data || []);
+    const activities = actRes.data || [];
 
-    // Aggregate per user
+    // Map profiles by normalized name or email
+    const norm = s => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+    
+    // Create byUser map keyed by profile ID
     const byUser = {};
     profiles.forEach(p => {
       byUser[p.id] = {
         profile: p,
-        leaveByCode: {},        // code → days used
+        leaveByCode: {},        
         totalLeaveUsed: 0,
         present: 0, late: 0, lateMinutes: 0, absent: 0, hours: 0,
         workDays: 0
       };
     });
-    leaves.forEach(l => {
-      const u = byUser[l.user_id]; if (!u) return;
-      const code = l.leave_code || 'CL';
-      u.leaveByCode[code] = (u.leaveByCode[code] || 0) + (l.total_days || 0);
-      u.totalLeaveUsed   += (l.total_days || 0);
-    });
-    atts.forEach(a => {
-      const u = byUser[a.user_id]; if (!u) return;
-      u.workDays++;
-      u.hours += Number(a.total_hours||0);
-      // Recompute late from office time (fallback to stored)
-      const ot = otMap[typeOfUser[a.user_id]] || otDefault;
-      let lm = a.late_minutes || 0;
-      if (a.check_in && ot && a.status !== 'leave' && a.status !== 'absent' && a.status !== 'holiday') {
-        lm = Math.max(lm, computeLateMinutes(a.check_in, ot));
+
+    const mSel = document.getElementById('empRptMonth');
+    const selMonth = mSel ? mSel.value : 'all';
+
+    // Handle activities from Google Sheet to create unlinked records if no profile is found
+    const unlinkedUsers = {};
+
+    activities.forEach(r => {
+      const eName = r.employee_name || '';
+      const key = norm(eName);
+      
+      // try to link to profile
+      let pId = null;
+      if (r.user_id && byUser[r.user_id]) {
+         pId = r.user_id;
+      } else {
+         const match = profiles.find(pr => norm(pr.full_name) === key || norm((pr.email||'').split('@')[0]) === key);
+         if (match) pId = match.id;
       }
-      if (lm > 0) { u.late++; u.lateMinutes += lm; }
-      if (a.status === 'present' || a.status === 'late') u.present++;
-      else if (a.status === 'absent') u.absent++;
+
+      let u;
+      if (pId) {
+        u = byUser[pId];
+      } else {
+        if (!unlinkedUsers[key]) {
+           unlinkedUsers[key] = {
+             profile: { id: key, full_name: eName, designation: r.designation, photo_url: null },
+             leaveByCode: {},
+             totalLeaveUsed: 0,
+             present: 0, late: 0, lateMinutes: 0, absent: 0, hours: 0,
+             workDays: 0
+           };
+        }
+        u = unlinkedUsers[key];
+      }
+
+      // Always aggregate yearly leaves
+      u.totalLeaveUsed += Number(r.total_leave || 0);
+      u.leaveByCode['CL'] = (u.leaveByCode['CL'] || 0) + Number(r.cl_days || 0);
+      u.leaveByCode['SL'] = (u.leaveByCode['SL'] || 0) + Number(r.sl_days || 0);
+      u.leaveByCode['EL'] = (u.leaveByCode['EL'] || 0) + Number(r.el_days || 0);
+      u.leaveByCode['COL'] = (u.leaveByCode['COL'] || 0) + Number(r.col_days || 0);
+      u.leaveByCode['ML'] = (u.leaveByCode['ML'] || 0) + Number(r.ml_days || 0);
+      u.leaveByCode['PH'] = (u.leaveByCode['PH'] || 0) + Number(r.ph_days || 0);
+      u.leaveByCode['UL'] = (u.leaveByCode['UL'] || 0) + Number(r.ul_days || 0);
+      u.leaveByCode['IL'] = (u.leaveByCode['IL'] || 0) + Number(r.il_days || 0);
+
+      // Aggregate present/late/hours based on selected month
+      const rMonth = (r.month || '').split('-')[1] || '';
+      if (selMonth === 'all' || selMonth === rMonth) {
+        u.present += Number(r.present_days || 0);
+        u.late += Number(r.late_count || 0) + Number(r.late_hours || 0);
+        u.hours += Number(r.worked_hours || 0);
+      }
     });
 
     // Compute attendance % per user.
-    // Denominator = elapsed days in the selected year (cap at year length), excluding nothing for simplicity.
     const now = new Date();
-    const yStart = new Date(`${year}-01-01`);
-    let elapsedDays;
-    if (year < now.getFullYear()) {
-      elapsedDays = Math.round((new Date(`${year}-12-31`) - yStart) / 86400000) + 1;
-    } else if (year > now.getFullYear()) {
-      elapsedDays = 1;
+    let elapsedDays = 1;
+    
+    if (selMonth === 'all') {
+      const yStart = new Date(`${year}-01-01`);
+      if (year < now.getFullYear()) {
+        elapsedDays = Math.round((new Date(`${year}-12-31`) - yStart) / 86400000) + 1;
+      } else if (year > now.getFullYear()) {
+        elapsedDays = 1;
+      } else {
+        elapsedDays = Math.round((now - yStart) / 86400000) + 1;
+      }
     } else {
-      elapsedDays = Math.round((now - yStart) / 86400000) + 1;
+      const mInt = parseInt(selMonth, 10);
+      if (year === now.getFullYear() && mInt === now.getMonth() + 1) {
+        elapsedDays = now.getDate();
+      } else if (year > now.getFullYear() || (year === now.getFullYear() && mInt > now.getMonth() + 1)) {
+        elapsedDays = 1; 
+      } else {
+        elapsedDays = new Date(year, mInt, 0).getDate();
+      }
     }
     const denom = Math.max(1, elapsedDays);
-    Object.values(byUser).forEach(u => {
+
+    const rows = [];
+    [...Object.values(byUser), ...Object.values(unlinkedUsers)].forEach(u => {
+      if (u.present === 0 && u.totalLeaveUsed === 0 && u.hours === 0 && u.late === 0) return;
+      
+      u.present = Math.round((u.present||0) * 100) / 100;
+      u.late = Math.round((u.late||0) * 100) / 100;
+      u.hours = Math.round((u.hours||0) * 100) / 100;
+      u.totalLeaveUsed = Math.round((u.totalLeaveUsed||0) * 100) / 100;
+
+      
       u.attPct = Math.min(100, Math.round((u.present / denom) * 100));
+      
+      // If no explicit leave breakdown was found but totalLeaveUsed > 0, fallback to auto-distribute
+      const explicitLeavesSum = ['CL','SL','EL','COL','ML','PH','UL','IL'].reduce((sum, code) => sum + (u.leaveByCode[code] || 0), 0);
+      if (explicitLeavesSum === 0 && u.totalLeaveUsed > 0) {
+        let remLeaveToDistribute = u.totalLeaveUsed;
+        policies.filter(po => ['CL','SL','EL','AL'].includes(po.code)).forEach(po => {
+           let totalAllowed = po.yearly_limit || 0;
+           let toTake = Math.min(remLeaveToDistribute, totalAllowed);
+           if (toTake > 0) {
+              u.leaveByCode[po.code] = toTake;
+              remLeaveToDistribute -= toTake;
+           }
+        });
+      }
+
+      rows.push(u);
     });
 
     // Cache for filter / export
-    _empReportCache = { year, rows: Object.values(byUser), policies, elapsedDays: denom };
+    _empReportCache = { year, rows: rows, policies, elapsedDays: denom };
 
     renderEmpReportSummary(_empReportCache);
     renderEmpReportPctTable(_empReportCache);
@@ -7253,7 +7313,7 @@ async function loadImportedActivity(forceYear) {
       _actAllRows.filter(r => (r.month||'').startsWith(activeYearStr)).forEach(r => {
          yearlyLeaves[r.employee_name] = (yearlyLeaves[r.employee_name]||0) + Number(r.total_leave||0);
       });
-      const totalAllowed = leavePol.reduce((s,po) => s + (po.yearly_limit||0), 0);
+      const totalAllowed = leavePol.filter(p => ['CL','SL','EL','AL'].includes(p.code)).reduce((s,po) => s + (po.yearly_limit||0), 0);
       if (monthRows.length === 0) {
         box.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fa-solid fa-inbox"></i><h3>${escapeHtml(selMonth)} মাসে কোনো ডাটা নেই</h3></div>`;
         return;
@@ -7418,21 +7478,100 @@ function openActivityEmpModal(name, year) {
       <td class="num" style="font-weight:800;color:${clr}">${pct?bnDigits(Math.round(pct))+'%':'—'}</td>
     </tr>`;
   }).join('');
+  const cache = typeof _empReportCache !== 'undefined' ? _empReportCache : null;
+  const u = cache && cache.rows ? cache.rows.find(x => x.profile.full_name === name || x.profile.email === name) : null;
+  const p = u ? u.profile : { full_name: name, email: '', designation: '' };
+  
+  const policies = cache && cache.policies ? cache.policies : [];
+  const totalAllowed = policies.filter(po => ['CL','SL','EL','AL'].includes(po.code)).reduce((s,po) => s + (po.yearly_limit||0), 0);
+  const remaining = Math.max(0, totalAllowed - totalLeave);
+  const present = u ? u.present : Math.round(totalW / 8);
+
+  let remLeaveToDistribute = totalLeave;
+  const leaveBalanceTable = policies.map(po => {
+    const isPH = po.code.toUpperCase() === 'PH';
+    const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : po.yearly_limit;
+    const hasLimit = total !== null && total !== undefined;
+    let used = u && u.leaveByCode ? (u.leaveByCode[po.code] || 0) : 0;
+    
+    // Distribute totalLeave into standard leaves if DB detailed usage is empty
+    if ((!u || Object.keys(u.leaveByCode || {}).length === 0) && remLeaveToDistribute > 0 && !isPH && ['CL','SL','EL','AL'].includes(po.code)) {
+       let toTake = Math.min(remLeaveToDistribute, total || 0);
+       if (toTake > 0) {
+           used = toTake;
+           remLeaveToDistribute -= toTake;
+       }
+    }
+
+    const remain = hasLimit ? Math.max(0, total - used) : null;
+    const pct = hasLimit && total ? Math.min(100, (used/total)*100) : 0;
+    const barColor = pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
+    return `
+      <tr>
+        <td><b>${escapeHtml(po.name_bn)}</b> <small style="color:var(--gray-400)">(${po.code})</small></td>
+        <td class="num">${hasLimit ? bnDigits(total) : '<span style="font-size:11px;color:var(--gray-400)">সীমা নেই</span>'}</td>
+        <td class="num" style="color:#dc2626">${bnDigits(used)}</td>
+        <td class="num" style="color:#059669;font-weight:800">${hasLimit ? bnDigits(remain) : '—'}</td>
+        <td>${hasLimit ? `<div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden;width:120px"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div>` : '<span style="font-size:10px;color:var(--gray-400)">প্রযোজ্য নয়</span>'}</td>
+      </tr>
+    `;
+  }).join('') || `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">কোনো পলিসি ডাটা নেই</td></tr>`;
+
   const init = (name||'এ').charAt(0).toUpperCase();
   showModal(
-    `<i class="fa-solid fa-chart-line" style="color:var(--purple-600)"></i> ${escapeHtml(name)} — ${bnDigits(year)}`,
+    `<i class="fa-solid fa-address-card" style="color:var(--gray-800)"></i> ${escapeHtml(name)} — বার্ষিক রিপোর্ট`,
     `
-    <div style="display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,var(--purple-50),var(--pink-100));border-radius:14px;margin-bottom:16px">
-      <div style="width:54px;height:54px;border-radius:14px;background:var(--gradient-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:var(--font-en)">${init}</div>
-      <div style="flex:1"><div style="font-size:18px;font-weight:800">${escapeHtml(name)}</div><div style="font-size:12px;color:var(--gray-500)">${bnDigits(rows.length)} মাসের তথ্য · ${bnDigits(year)} সাল</div></div>
-      <div style="text-align:center;background:#fff;border-radius:12px;padding:8px 14px"><div class="num" style="font-size:24px;font-weight:800;color:var(--purple-700)">${bnDigits(avgAct)}%</div><div style="font-size:10px;color:var(--gray-500);font-weight:700">গড় অ্যাক্টিভিটি</div></div>
+    <div style="display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,var(--purple-50),var(--pink-100));border-radius:14px;margin-bottom:18px">
+      <div style="width:56px;height:56px;border-radius:14px;background:var(--gradient-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:var(--font-en);overflow:hidden;flex-shrink:0">
+        ${p.photo_url ? `<img src="${escapeHtml(p.photo_url)}" style="width:100%;height:100%;object-fit:cover">` : init}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:18px;font-weight:800;color:var(--gray-900)">${escapeHtml(p.full_name||name)}</div>
+        <div style="font-size:12px;color:var(--gray-600);font-weight:600">${escapeHtml(p.designation || '')}${p.department?` • ${escapeHtml(p.department)}`:''}</div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:2px">${escapeHtml(p.email||'')}</div>
+      </div>
+      <div style="text-align:center;padding:8px 14px;background:white;border-radius:12px;box-shadow:var(--shadow-sm)">
+        <div class="num" style="font-size:24px;font-weight:800;color:var(--purple-700)">${bnDigits(year)}</div>
+        <div style="font-size:10px;color:var(--gray-500);font-weight:700;letter-spacing:.5px;text-transform:uppercase">বছর</div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">
-      <div style="padding:12px;background:#ecfdf5;border-left:3px solid #10b981;border-radius:10px"><div class="num" style="font-size:20px;font-weight:800;color:#059669">${bnDigits(totalW.toFixed(0))}</div><div style="font-size:11px;color:var(--gray-600);font-weight:700">মোট কাজ (ঘ.)</div></div>
-      <div style="padding:12px;background:#fce7f3;border-left:3px solid #ec4899;border-radius:10px"><div class="num" style="font-size:20px;font-weight:800;color:#be185d">${bnDigits(totalLeave)}</div><div style="font-size:11px;color:var(--gray-600);font-weight:700">মোট ছুটি</div></div>
-      <div style="padding:12px;background:#fee2e2;border-left:3px solid #ef4444;border-radius:10px"><div class="num" style="font-size:20px;font-weight:800;color:#dc2626">${bnDigits(totalLate)}</div><div style="font-size:11px;color:var(--gray-600);font-weight:700">মোট লেট</div></div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px">
+      <div style="padding:12px;background:#ecfdf5;border-left:3px solid #10b981;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#059669">${bnDigits(present)}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">উপস্থিত দিন</div>
+      </div>
+      <div style="padding:12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#d97706">${bnDigits(Number(totalLate.toFixed(1)))}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">লেট (ঘন্টা)</div>
+      </div>
+      <div style="padding:12px;background:#fce7f3;border-left:3px solid #ec4899;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#be185d">${bnDigits(totalLeave)}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">ছুটি নেওয়া</div>
+      </div>
+      <div style="padding:12px;background:#f3e8ff;border-left:3px solid #8b5cf6;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#7c3aed">${bnDigits(remaining)}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">ছুটি বাকি</div>
+      </div>
+      <div style="padding:12px;background:#dbeafe;border-left:3px solid #3b82f6;border-radius:10px">
+        <div class="num" style="font-size:22px;font-weight:800;color:#1d4ed8">${bnDigits(totalW.toFixed(0))}</div>
+        <div style="font-size:11px;color:var(--gray-600);font-weight:700">কাজের ঘন্টা</div>
+      </div>
     </div>
-    <div class="card-title" style="margin-bottom:8px"><span><i class="fa-solid fa-table-list"></i> মাসিক বিবরণ</span></div>
+
+    <div class="card-title" style="margin-bottom:10px;font-size:16px"><i class="fa-solid fa-scale-balanced" style="color:var(--purple-600)"></i> ছুটির ব্যালেন্স ভাঙা</div>
+    <div style="overflow-x:auto;border:1px solid var(--gray-100);border-radius:10px;margin-bottom:20px">
+      <table class="data-table" style="width:100%;font-size:13px;white-space:nowrap">
+        <thead style="background:#f9fafb;color:var(--gray-600)">
+          <tr><th style="text-align:left;padding:10px">ছুটির ধরন</th><th style="padding:10px">বার্ষিক সীমা</th><th style="padding:10px">ব্যবহৃত</th><th style="padding:10px">বাকি</th><th style="padding:10px">প্রগ্রেস</th></tr>
+        </thead>
+        <tbody>
+          ${leaveBalanceTable}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-title" style="margin-bottom:8px"><span><i class="fa-solid fa-table-list" style="color:var(--purple-600)"></i> মাসিক বিবরণ</span></div>
     <div style="overflow-x:auto;max-height:340px;overflow-y:auto;border:1px solid var(--gray-100);border-radius:10px">
       <table class="data-table" style="width:100%;font-size:13px">
         <thead style="position:sticky;top:0;background:white;z-index:1"><tr><th>মাস</th><th>কাজ(ঘ.)</th><th>মোট ছুটি</th><th>লেট(ঘ.)</th><th>Activity%</th></tr></thead>
@@ -7466,7 +7605,7 @@ function renderEmpReportGrid(cache) {
     const p = u.profile;
     const palet = palette[idx % palette.length];
     const init = (p.full_name || 'আ').charAt(0).toUpperCase();
-    const totalAllowed = (cache.policies||[]).reduce((s,po) => s + (po.yearly_limit||0), 0);
+    const totalAllowed = (cache.policies||[]).filter(p => ['CL','SL','EL','AL'].includes(p.code)).reduce((s,po) => s + (po.yearly_limit||0), 0);
     const remaining = Math.max(0, totalAllowed - u.totalLeaveUsed);
     const remainingPct = totalAllowed ? Math.round((remaining/totalAllowed)*100) : 0;
 
@@ -7565,7 +7704,7 @@ async function openEmpReportModal(userId) {
   if (!u) return showToast('তথ্য পাওয়া যায়নি', 'error');
   const p = u.profile;
   const policies = cache.policies || [];
-  const totalAllowed = policies.reduce((s,po) => s + (po.yearly_limit||0), 0);
+  const totalAllowed = policies.filter(p => ['CL','SL','EL','AL'].includes(p.code)).reduce((s,po) => s + (po.yearly_limit||0), 0);
   const remaining = Math.max(0, totalAllowed - u.totalLeaveUsed);
 
   // Fetch detailed leaves for this user
@@ -7584,14 +7723,16 @@ async function openEmpReportModal(userId) {
   `).join('') || `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--gray-400)">এই বছরে কোনো ছুটির রেকর্ড নেই</td></tr>`;
 
   const leaveBalanceTable = policies.map(po => {
+    const isPH = po.code.toUpperCase() === 'PH';
+    const total = isPH ? (window.APP_HOLIDAYS?.length || 0) : (po.yearly_limit || 0);
     const used = u.leaveByCode[po.code] || 0;
-    const remain = Math.max(0, (po.yearly_limit||0) - used);
-    const pct = po.yearly_limit ? Math.min(100, (used/po.yearly_limit)*100) : 0;
+    const remain = Math.max(0, total - used);
+    const pct = total ? Math.min(100, (used/total)*100) : 0;
     const barColor = pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
     return `
       <tr>
         <td><b>${escapeHtml(po.name_bn)}</b> <small style="color:var(--gray-400)">(${po.code})</small></td>
-        <td class="num">${bnDigits(po.yearly_limit||0)}</td>
+        <td class="num">${bnDigits(total)}</td>
         <td class="num" style="color:#dc2626">${bnDigits(used)}</td>
         <td class="num" style="color:#059669;font-weight:800">${bnDigits(remain)}</td>
         <td><div style="height:6px;background:var(--gray-100);border-radius:99px;overflow:hidden;width:120px"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div></div></td>
@@ -7669,7 +7810,7 @@ function exportEmpReportCSV() {
   const headers = ['নাম','ইমেইল','পদবি','ডিপার্টমেন্ট','উপস্থিত','লেট','লেট-মিনিট','কাজের-ঘন্টা', ...polCodes.flatMap(c => [`${c}-নেওয়া`,`${c}-বাকি`]), 'মোট-ছুটি-নেওয়া','মোট-ছুটি-বাকি'];
   const rows = cache.rows.map(u => {
     const p = u.profile;
-    const totalAllowed = (cache.policies||[]).reduce((s,po) => s + (po.yearly_limit||0), 0);
+    const totalAllowed = (cache.policies||[]).filter(p => ['CL','SL','EL','AL'].includes(p.code)).reduce((s,po) => s + (po.yearly_limit||0), 0);
     const remaining = Math.max(0, totalAllowed - u.totalLeaveUsed);
     const codeCols = (cache.policies||[]).flatMap(po => {
       const used = u.leaveByCode[po.code] || 0;
@@ -7728,6 +7869,7 @@ function renderImport() {
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-success" id="actOverallBtn" onclick="importOverall()" style="width:auto"><i class="fa-solid fa-layer-group"></i> Overall ইম্পোর্ট (সব মাস একসাথে)</button>
         <span style="font-size:12px;color:var(--gray-500)">Overall ট্যাব থেকে সব এমপ্লয়ীর সব মাসের ডাটা একসাথে পড়া হবে</span>
+        <button class="btn btn-outline" style="width:auto;color:#ef4444;border-color:#fca5a5;margin-left:auto" onclick="clearImportedData()"><i class="fa-solid fa-trash"></i> আগের ডাটা মুছুন</button>
       </div>
       <div id="actScanResult" style="margin-top:18px"></div>
     </div>
@@ -8139,6 +8281,22 @@ function monthToISO(label){
   return (mm && yy) ? `${yy}-${mm}` : null;
 }
 
+async function clearImportedData() {
+  if (!confirm('আপনি কি নিশ্চিত যে আগের সব ইম্পোর্ট করা মাসিক ডাটা মুছে ফেলতে চান?\n\n(এটি শুধুমাত্র শিট থেকে ইম্পোর্ট করা ডাটা মুছবে, রেগুলার অ্যাপের ডাটা নয়)')) return;
+  const btn = event.currentTarget;
+  setBtnLoading(btn, true);
+  try {
+    const { error } = await sb.from('monthly_activity').delete().neq('id', 0);
+    if (error) throw error;
+    showToast('✅ আগের সব মাসিক ডাটা মুছে ফেলা হয়েছে', 'success');
+    _actAllRows = null; 
+  } catch (e) {
+    showToast('❌ ' + (e.message||'ডিলিট ব্যর্থ'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
 async function importOverall() {
   const url = document.getElementById('actSheetUrl').value.trim();
   const sheetId = parseSheetId(url);
@@ -8172,7 +8330,28 @@ async function importOverall() {
       const leaveStart = bi === 0 ? 3 : (anchors[bi-1] + 3); // after prev block's activity col
       // leave breakdown: sum numeric cells between leaveStart and anchor
       let totalLeave = 0; const leaveCells = [];
-      for (let c = leaveStart; c < a; c++) { const n = ov_num(r[c]); if (n !== null) { totalLeave += n; leaveCells.push(n); } }
+      let sl = 0, cl = 0, el = 0, col = 0, ml = 0, ph = 0, ul = 0, il = 0;
+
+      for (let c = leaveStart; c < a; c++) { 
+         const n = ov_num(r[c]); 
+         if (n !== null) { 
+            totalLeave += n; 
+            leaveCells.push(n); 
+            // map header to specific leave — check whRowIdx first (actual header row), then row above
+            const h1 = (rows[whRowIdx]?.[c] || '').toLowerCase();
+            const h2 = (rows[whRowIdx-1]?.[c] || '').toLowerCase();
+            const h = (h1 && /sick|casual|earn|comp|marr|public|holiday|unpaid|without|irresponsib|responsib/.test(h1)) ? h1 : 
+                       (h2 && /sick|casual|earn|comp|marr|public|holiday|unpaid|without|irresponsib|responsib/.test(h2)) ? h2 : h1;
+            if (h.includes('sick')) sl += n;
+            else if (h.includes('casual')) cl += n;
+            else if (h.includes('earn')) el += n;
+            else if (h.includes('comp') && !h.includes('irresponsib') && !h.includes('responsib')) col += n;
+            else if (h.includes('marriage') || h.includes('marri')) ml += n;
+            else if (h.includes('public') || h.includes('holiday')) ph += n;
+            else if (h.includes('unpaid') || h.includes('without')) ul += n;
+            else if (h.includes('irresponsib') || h.includes('responsib')) il += n;
+         } 
+      }
       const worked = ov_hms(r[a]);
       let lateCol = a + 1, actCol = a + 2;
       for (let c = a + 1; c < Math.min(a + 5, r.length); c++) {
@@ -8182,7 +8361,7 @@ async function importOverall() {
       }
       const late = ov_num(r[lateCol]) || 0;       // late hrs
       const act = ov_num(r[actCol]);             // activity %
-      return { worked, late, act, totalLeave, leaveCells };
+      return { worked, late, act, totalLeave, leaveCells, sl, cl, el, col, ml, ph, ul, il };
     }
 
     // 4. Build each block's monthly worked-hours array (across all months)
@@ -8237,7 +8416,7 @@ async function importOverall() {
             month: monthISO, month_label: label,
             present_days: 0, late_count: 0,
             worked_hours: d.worked, late_hours: d.late,
-            cl_days:0, sl_days:0, el_days:0, col_days:0, ml_days:0, ph_days:0, ul_days:0, il_days:0,
+            cl_days: d.cl || 0, sl_days: d.sl || 0, el_days: d.el || 0, col_days: d.col || 0, ml_days: d.ml || 0, ph_days: d.ph || 0, ul_days: d.ul || 0, il_days: d.il || 0,
             total_leave: d.totalLeave || 0,
             activity_pct: d.act || 0, attendance_pct: d.act || 0,
             source: 'overall',
@@ -8322,7 +8501,7 @@ async function saveOverallImport() {
       }
       if (error) { failed += batch.length; console.warn(error); } else saved += batch.length;
     }
-    if (saved > 0) showToast(`✅ ${bnDigits(saved)} টি রেকর্ড আপডেট হয়েছে (v3)`, 'success');
+    if (saved > 0) showToast(`✅ ${bnDigits(saved)} টি মাসিক রেকর্ড সেভ হয়েছে`, 'success');
     else showToast('⚠️ সেভ হয়নি — supabase_v10 SQL চালান', 'error');
     _actAllRows = null;
   } catch (e) {
@@ -8391,6 +8570,15 @@ async function renderSettings() {
       <div class="card-title"><span><i class="fa-solid fa-gift"></i> বোনাস সেটিংস</span></div>
       <div class="note-banner"><i class="fa-solid fa-info-circle"></i> কাজের ঘন্টা এবং অ্যাক্টিভিটি পার্সেন্টেজের উপর ভিত্তি করে বোনাস সেট করুন।</div>
       <div id="bonusSettingsContainer"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span><i class="fa-solid fa-umbrella-beach"></i> ছুটির নীতি সেটিংস (Leave Policies)</span>
+        <button class="btn btn-primary" onclick="openLeavePolicyModal()" style="width:auto"><i class="fa-solid fa-plus"></i> নতুন ছুটির নীতি</button>
+      </div>
+      <div class="note-banner"><i class="fa-solid fa-info-circle"></i> প্রতিষ্ঠানের সকল ধরনের ছুটির নীতি (যেমন CL, SL, AL, PH) এখান থেকে ম্যানেজ করতে পারবেন।</div>
+      <div id="leavePoliciesContainer"><div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fa-solid fa-spinner fa-spin"></i> লোড হচ্ছে...</div></div>
     </div>
   `;
 }
@@ -8478,6 +8666,128 @@ async function saveBonusSettings(e) {
     showToast('❌ ' + e.message, 'error');
   } finally {
     setBtnLoading(btn, false);
+  }
+}
+
+// ═══ LEAVE POLICIES SETTINGS ═══
+async function renderLeavePolicies() {
+  const container = document.getElementById('leavePoliciesContainer');
+  if (!container) return;
+  try {
+    const { data, error } = await sb.from('leave_policies').select('*').order('display_order');
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p style="color:var(--gray-500);padding:14px">কোনো ছুটির নীতি সেট করা নেই।</p>';
+      return;
+    }
+    container.innerHTML = `
+      <table class="data-table" style="width:100%;font-size:14px">
+        <thead>
+          <tr><th>কোড</th><th>নাম (বাংলা)</th><th>Name (Eng)</th><th>বার্ষিক সীমা</th><th>বেতনসহ</th><th>একশন</th></tr>
+        </thead>
+        <tbody>
+          ${data.map(p => {
+            const isPH = p.code.toUpperCase() === 'PH';
+            const limitDisplay = isPH ? `<span style="color:var(--gray-500);font-size:12px"><i class="fa-solid fa-calendar"></i> ক্যালেন্ডার অনুযায়ী</span>` : bnDigits(p.yearly_limit || 0) + ' দিন';
+            return `
+              <tr>
+                <td><span class="priority-badge general">${p.code}</span></td>
+                <td><b>${escapeHtml(p.name_bn)}</b></td>
+                <td>${escapeHtml(p.name_en || '')}</td>
+                <td>${limitDisplay}</td>
+                <td>${p.is_paid ? '<span style="color:#10b981"><i class="fa-solid fa-check"></i> হ্যাঁ</span>' : '<span style="color:#ef4444"><i class="fa-solid fa-xmark"></i> না</span>'}</td>
+                <td>
+                  <button class="btn btn-outline btn-sm" onclick='openLeavePolicyModal(${JSON.stringify(p).replace(/'/g, "&apos;")})'><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fecaca" onclick="deleteLeavePolicy('${p.code}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+  }
+}
+
+function openLeavePolicyModal(pol = null) {
+  const isEdit = !!pol;
+  const isPH = isEdit && pol.code.toUpperCase() === 'PH';
+  showModal(
+    `<i class="fa-solid fa-umbrella-beach" style="color:var(--purple-600)"></i> ${isEdit ? 'ছুটির নীতি সম্পাদনা' : 'নতুন ছুটির নীতি'}`,
+    `
+      <div class="form-grid">
+        <div class="form-group">
+          <label>কোড (CL, SL, EL...) <span style="color:red">*</span></label>
+          <input type="text" class="form-input en" id="lp_code" placeholder="SL" value="${isEdit?escapeHtml(pol.code):''}" ${isEdit?'readonly':''}>
+        </div>
+        <div class="form-group" style="${isPH ? 'opacity:0.5;pointer-events:none' : ''}">
+          <label>বার্ষিক সীমা (দিন)</label>
+          <input type="number" min="0" class="form-input num" id="lp_limit" placeholder="10" value="${isEdit && pol.yearly_limit!=null?pol.yearly_limit:''}">
+          ${isPH ? '<div style="font-size:11px;color:var(--gray-500);margin-top:4px">PH এর জন্য ক্যালেন্ডার অনুযায়ী হিসাব হবে</div>' : ''}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>বাংলা নাম <span style="color:red">*</span></label>
+        <input type="text" class="form-input" id="lp_bn" placeholder="অসুস্থতা ছুটি" value="${isEdit?escapeHtml(pol.name_bn):''}">
+      </div>
+      <div class="form-group">
+        <label>English Name</label>
+        <input type="text" class="form-input en" id="lp_en" placeholder="Sick Leave" value="${isEdit?escapeHtml(pol.name_en||''):''}">
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="lp_paid" ${isEdit ? (pol.is_paid?'checked':'') : 'checked'} style="width:18px;height:18px">
+        <label for="lp_paid" style="margin:0;cursor:pointer">বেতনসহ ছুটি (Paid Leave)</label>
+      </div>
+    `,
+    `
+      <button class="btn btn-outline" onclick="closeModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveLeavePolicy(${isEdit ? `'${pol.code}'` : 'null'})"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ</button>
+    `
+  );
+}
+
+async function saveLeavePolicy(oldCode) {
+  const payload = {
+    code: document.getElementById('lp_code').value.trim().toUpperCase(),
+    name_bn: document.getElementById('lp_bn').value.trim(),
+    name_en: document.getElementById('lp_en').value.trim(),
+    yearly_limit: parseInt(document.getElementById('lp_limit').value) || null,
+    is_paid: document.getElementById('lp_paid').checked
+  };
+  if (!payload.code || !payload.name_bn) return showToast('কোড এবং বাংলা নাম আবশ্যক', 'warning');
+
+  const btn = event.currentTarget;
+  setBtnLoading(btn, true);
+  try {
+    let error;
+    if (oldCode) {
+      ({ error } = await sb.from('leave_policies').update(payload).eq('code', oldCode));
+    } else {
+      payload.display_order = 99;
+      ({ error } = await sb.from('leave_policies').insert(payload));
+    }
+    if (error) throw error;
+    showToast('✅ ছুটির নীতি সংরক্ষিত', 'success');
+    closeModal();
+    renderLeavePolicies();
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'সংরক্ষণ ব্যর্থ'), 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function deleteLeavePolicy(code) {
+  if (!confirm('এই ছুটির নীতিটি মুছে ফেলতে চান?')) return;
+  try {
+    const { error } = await sb.from('leave_policies').delete().eq('code', code);
+    if (error) throw error;
+    showToast('✅ মুছে ফেলা হয়েছে', 'success');
+    renderLeavePolicies();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
   }
 }
 
